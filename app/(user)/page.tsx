@@ -1,5 +1,8 @@
-const page = () => {
-    return <div>User view</div>;
-}
+import HeroBanner from "./components/layout/bannerTop";
+import HomePage from "./components/layout/TravelHomepage ";
 
-export default page;
+export default function Home() {
+    return (
+        <HomePage/>
+    );
+}
