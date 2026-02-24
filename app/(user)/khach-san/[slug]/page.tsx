@@ -1,4 +1,4 @@
-import HotelListingPage from "../../components/layout/HotelListingPage";
+import HotelListingPage from "../../components/hotels/HotelListingPage";
 
 interface Props {
   params: { slug: string };
