@@ -1,0 +1,705 @@
+==================================================
+PROJECT: TRAVEL BOOKING SYSTEM
+API DOCUMENTATION
+BASE DOMAIN: https://db-datn.onrender.com
+==================================================
+
+I. GIỚI THIỆU
+--------------------------------------------------
+Hệ thống Travel Booking System cung cấp API cho:
+- Quản lý người dùng
+- Quản lý tour
+- Quản lý khách sạn
+- Đặt tour
+- Review
+- Blog
+- Lịch trình
+- Dịch vụ đi kèm
+
+Chuẩn RESTful API.
+Dữ liệu trả về dạng JSON.
+
+II. PHÂN QUYỀN HỆ THỐNG
+--------------------------------------------------
+1. ADMIN
+   - Tạo / cập nhật / xoá tour
+   - Quản lý hotel
+   - Quản lý blog
+   - Quản lý service
+   - Duyệt booking
+
+2. USER
+   - Xem tour / hotel
+   - Đặt tour
+   - Viết review
+   - Cập nhật thông tin cá nhân
+
+==================================================
+MODULE: TOUR API
+BASE URL: https://db-datn.onrender.com/api/tours
+==================================================
+
+1. Tạo Tour
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/tours/create
+Mô tả: Tạo mới một tour du lịch.
+Content-Type: multipart/form-data
+Upload: images (tối đa 5 ảnh)
+Middleware sử dụng: multer
+
+2. Lấy Danh Sách Tour
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn.onrender.com/api/tours/
+Mô tả: Lấy danh sách tất cả các tour.
+Content-Type: application/json
+
+3. Lấy Chi Tiết Tour Theo Slug
+--------------------------------------------------
+Method: GET
+Endpoint: /detail/:slug
+Full URL: https://db-datn.onrender.com/api/tours/detail/{slug}
+Mô tả: Lấy thông tin chi tiết của tour dựa vào slug.
+Content-Type: application/json
+
+4. Cập Nhật Tour
+--------------------------------------------------
+Method: PUT
+Endpoint: /update/:slug
+Full URL: https://db-datn.onrender.com/api/tours/update/{slug}
+Mô tả: Cập nhật thông tin tour.
+Content-Type: multipart/form-data
+Upload: images (tối đa 5 ảnh, không bắt buộc)
+
+5. Xoá Ảnh Của Tour
+--------------------------------------------------
+Method: DELETE
+Endpoint: /image/:imageId
+Full URL: https://db-datn.onrender.com/api/tours/image/{imageId}
+Mô tả: Xoá một ảnh cụ thể của tour theo imageId.
+Content-Type: application/json
+
+6. Cập Nhật Trạng Thái Tour
+--------------------------------------------------
+Method: PATCH
+Endpoint: /status/:slug
+Full URL: https://db-datn.onrender.com/api/tours/status/{slug}
+Mô tả: Cập nhật trạng thái tour (ví dụ: hoạt động / ngừng hoạt động).
+Content-Type: application/json
+
+==================================================
+MODULE: USER API
+BASE URL: https://db-datn.onrender.com/api/users
+==================================================
+
+1. Lấy Danh Sách Người Dùng
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn.onrender.com/api/users/
+Mô tả: Lấy danh sách tất cả người dùng trong hệ thống.
+Content-Type: application/json
+
+2. Đăng Ký Tài Khoản
+--------------------------------------------------
+Method: POST
+Endpoint: /register
+Full URL: https://db-datn.onrender.com/api/users/register
+Mô tả: Tạo tài khoản mới cho người dùng.
+Content-Type: application/json
+
+3. Đăng Nhập
+--------------------------------------------------
+Method: POST
+Endpoint: /login
+Full URL: https://db-datn.onrender.com/api/users/login
+Mô tả: Xác thực người dùng và trả về token đăng nhập (nếu có sử dụng JWT).
+Content-Type: application/json
+
+4. Xác Thực Email (Gửi Mã Xác Nhận)
+--------------------------------------------------
+Method: POST
+Endpoint: /verify-email
+Full URL: https://db-datn.onrender.com/api/users/verify-email
+Mô tả: Gửi mã xác thực email cho người dùng.
+Content-Type: application/json
+
+5. Xác Thực Email (Kiểm Tra Mã)
+--------------------------------------------------
+Method: GET
+Endpoint: /verify-email/:email/:code
+Full URL: https://db-datn.onrender.com/api/users/verify-email/{email}/{code}
+Mô tả: Kiểm tra mã xác thực email.
+Content-Type: application/json
+
+6. Cập Nhật Trạng Thái Người Dùng
+--------------------------------------------------
+Method: PATCH
+Endpoint: /status/:id
+Full URL: https://db-datn.onrender.com/api/users/status/{id}
+Mô tả: Cập nhật trạng thái người dùng (ví dụ: active / inactive / blocked).
+Content-Type: application/json
+
+==================================================
+MODULE: BOOKING API
+BASE URL: https://db-datn.onrender.com/api/bookings
+==================================================
+
+Yêu cầu xác thực:
+- Các API đều yêu cầu đăng nhập (JWT Token).
+- Một số API yêu cầu quyền ADMIN.
+
+1. Tạo Booking
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/bookings/create
+Middleware: authMiddleware
+Mô tả: Người dùng tạo đơn đặt tour.
+Content-Type: application/json
+
+2. Lấy Danh Sách Booking Của Tôi
+--------------------------------------------------
+Method: GET
+Endpoint: /my-bookings
+Full URL: https://db-datn.onrender.com/api/bookings/my-bookings
+Middleware: authMiddleware
+Mô tả: Lấy danh sách các booking của người dùng hiện tại.
+Content-Type: application/json
+
+3. Lấy Chi Tiết Booking
+--------------------------------------------------
+Method: GET
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/bookings/{id}
+Middleware: authMiddleware
+Mô tả: Lấy thông tin chi tiết một booking theo ID.
+Content-Type: application/json
+
+4. Huỷ Booking
+--------------------------------------------------
+Method: PATCH
+Endpoint: /:id/cancel
+Full URL: https://db-datn.onrender.com/api/bookings/{id}/cancel
+Middleware: authMiddleware
+Mô tả: Người dùng huỷ booking của mình.
+Content-Type: application/json
+
+================ ADMIN =================
+
+5. Lấy Tất Cả Booking (Admin)
+--------------------------------------------------
+Method: GET
+Endpoint: /admin/all
+Full URL: https://db-datn.onrender.com/api/bookings/admin/all
+Middleware: authMiddleware + isAdmin
+Mô tả: Admin xem toàn bộ booking trong hệ thống.
+Content-Type: application/json
+
+6. Xác Nhận Thanh Toán (Admin)
+--------------------------------------------------
+Method: PATCH
+Endpoint: /admin/:id/confirm-payment
+Full URL: https://db-datn.onrender.com/api/bookings/admin/{id}/confirm-payment
+Middleware: authMiddleware + isAdmin
+Mô tả: Admin xác nhận thanh toán cho booking.
+Content-Type: application/json
+
+==================================================
+MODULE: HOTEL API
+BASE URL: https://db-datn.onrender.com/api/hotels
+==================================================
+
+1. Tạo Khách Sạn
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/hotels/create
+Mô tả: Tạo mới một khách sạn.
+Content-Type: multipart/form-data
+Upload: images (nếu có sử dụng upload hình)
+
+2. Lấy Danh Sách Khách Sạn
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn.onrender.com/api/hotels/
+Mô tả: Lấy danh sách tất cả khách sạn.
+Content-Type: application/json
+
+3. Lấy Chi Tiết Khách Sạn
+--------------------------------------------------
+Method: GET
+Endpoint: /detail/:slug
+Full URL: https://db-datn.onrender.com/api/hotels/detail/{slug}
+Mô tả: Lấy thông tin chi tiết khách sạn theo slug.
+Content-Type: application/json
+
+4. Cập Nhật Khách Sạn
+--------------------------------------------------
+Method: PUT
+Endpoint: /update/:slug
+Full URL: https://db-datn.onrender.com/api/hotels/update/{slug}
+Mô tả: Cập nhật thông tin khách sạn.
+Content-Type: multipart/form-data
+
+5. Xoá Khách Sạn
+--------------------------------------------------
+Method: DELETE
+Endpoint: /delete/:id
+Full URL: https://db-datn.onrender.com/api/hotels/delete/{id}
+Mô tả: Xoá khách sạn theo ID.
+Content-Type: application/json
+
+6. Cập Nhật Trạng Thái Khách Sạn
+--------------------------------------------------
+Method: PATCH
+Endpoint: /status/:slug
+Full URL: https://db-datn.onrender.com/api/hotels/status/{slug}
+Mô tả: Cập nhật trạng thái khách sạn (active / inactive).
+Content-Type: application/json
+
+==================================================
+MODULE: REVIEW API
+BASE URL: https://db-datn.onrender.com/api/reviews
+==================================================
+
+1. Tạo Review
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/reviews/create
+Mô tả: Người dùng tạo đánh giá cho một tour.
+Content-Type: application/json
+
+2. Lấy Tất Cả Review Theo Tour
+--------------------------------------------------
+Method: GET
+Endpoint: /tour/:tour_id
+Full URL: https://db-datn.onrender.com/api/reviews/tour/{tour_id}
+Mô tả: Lấy toàn bộ đánh giá của một tour dựa vào tour_id.
+Content-Type: application/json
+
+3. Cập Nhật Review
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/reviews/{id}
+Mô tả: Cập nhật nội dung review theo ID.
+Content-Type: application/json
+
+4. Xoá Review
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/reviews/{id}
+Mô tả: Xoá review theo ID.
+Content-Type: application/json
+
+==================================================
+MODULE: BLOG API
+BASE URL: https://db-datn.onrender.com/api/blogs
+==================================================
+
+1. Tạo Blog
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/blogs/create
+Mô tả: Tạo bài viết blog mới.
+Content-Type: application/json
+
+2. Lấy Danh Sách Blog
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn.onrender.com/api/blogs/
+Mô tả: Lấy danh sách tất cả bài viết blog.
+Content-Type: application/json
+
+3. Cập Nhật Nội Dung Blog Theo Slug
+--------------------------------------------------
+Method: PATCH
+Endpoint: /:slug/content
+Full URL: https://db-datn.onrender.com/api/blogs/{slug}/content
+Mô tả: Cập nhật nội dung bài viết theo slug.
+Content-Type: application/json
+
+4. Cập Nhật Trạng Thái Blog
+--------------------------------------------------
+Method: PATCH
+Endpoint: /:slug/status
+Full URL: https://db-datn.onrender.com/api/blogs/{slug}/status
+Mô tả: Cập nhật trạng thái blog (ví dụ: draft / published).
+Content-Type: application/json
+
+5. Xoá Blog
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:slug
+Full URL: https://db-datn.onrender.com/api/blogs/{slug}
+Mô tả: Xoá bài viết blog theo slug.
+Content-Type: application/json
+
+==================================================
+MODULE: CATEGORY API
+BASE URL: https://db-datn.onrender.com/api/categories
+==================================================
+
+1. Tạo Category
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/categories/create
+Mô tả: Tạo mới một danh mục (ví dụ: Du lịch biển, Du lịch núi, Tour nước ngoài...).
+Content-Type: application/json
+
+2. Lấy Danh Sách Category
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn.onrender.com/api/categories/
+Mô tả: Lấy tất cả danh mục trong hệ thống.
+Content-Type: application/json
+
+3. Lấy Category Theo Slug
+--------------------------------------------------
+Method: GET
+Endpoint: /:slug
+Full URL: https://db-datn.onrender.com/api/categories/{slug}
+Mô tả: Lấy thông tin chi tiết danh mục theo slug.
+Content-Type: application/json
+
+4. Cập Nhật Category
+--------------------------------------------------
+Method: PUT
+Endpoint: /:slug
+Full URL: https://db-datn.onrender.com/api/categories/{slug}
+Mô tả: Cập nhật thông tin danh mục.
+Content-Type: application/json
+
+5. Cập Nhật Trạng Thái Category
+--------------------------------------------------
+Method: PATCH
+Endpoint: /:slug/status
+Full URL: https://db-datn.onrender.com/api/categories/{slug}/status
+Mô tả: Cập nhật trạng thái danh mục (active / inactive).
+Content-Type: application/json
+
+==================================================
+MODULE: ITINERARY API
+BASE URL: https://db-datn.onrender.com/api/itineraries
+==================================================
+
+1. Tạo Itinerary
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/itineraries/create
+Mô tả: Tạo lịch trình cho một tour (ví dụ: Ngày 1, Ngày 2...).
+Content-Type: application/json
+
+2. Lấy Danh Sách Itinerary Theo Tour
+--------------------------------------------------
+Method: GET
+Endpoint: /tour/:tourId
+Full URL: https://db-datn.onrender.com/api/itineraries/tour/{tourId}
+Mô tả: Lấy toàn bộ lịch trình của một tour dựa theo tourId.
+Content-Type: application/json
+
+3. Cập Nhật Itinerary
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/itineraries/{id}
+Mô tả: Cập nhật nội dung lịch trình theo ID.
+Content-Type: application/json
+
+4. Xoá Itinerary
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/itineraries/{id}
+Mô tả: Xoá lịch trình theo ID.
+Content-Type: application/json
+
+==================================================
+MODULE: ITINERARY DETAIL API
+BASE URL: https://db-datn.onrender.com/api/itinerary-details
+==================================================
+
+1. Tạo Itinerary Detail
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/itinerary-details/create
+Mô tả: Tạo chi tiết hoạt động cho một itinerary (ví dụ: Buổi sáng tham quan, Buổi chiều di chuyển...).
+Content-Type: application/json
+
+2. Lấy Chi Tiết Theo Itinerary
+--------------------------------------------------
+Method: GET
+Endpoint: /itinerary/:itineraryId
+Full URL: https://db-datn.onrender.com/api/itinerary-details/itinerary/{itineraryId}
+Mô tả: Lấy toàn bộ chi tiết thuộc một itinerary.
+Content-Type: application/json
+
+3. Cập Nhật Itinerary Detail
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/itinerary-details/{id}
+Mô tả: Cập nhật nội dung chi tiết theo ID.
+Content-Type: application/json
+
+4. Xoá Itinerary Detail
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/itinerary-details/{id}
+Mô tả: Xoá chi tiết itinerary theo ID.
+Content-Type: application/json
+
+==================================================
+MODULE: ITINERARY SERVICE API
+BASE URL: https://db-datn.onrender.com/api/itinerary-services
+==================================================
+
+1. Tạo Itinerary Service
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/itinerary-services/create
+Mô tả: Thêm dịch vụ vào một itinerary (ví dụ: Bao gồm ăn sáng, Vé tham quan, Xe đưa đón...).
+Content-Type: application/json
+
+2. Lấy Danh Sách Service Theo Itinerary
+--------------------------------------------------
+Method: GET
+Endpoint: /itinerary/:itineraryId
+Full URL: https://db-datn.onrender.com/api/itinerary-services/itinerary/{itineraryId}
+Mô tả: Lấy toàn bộ dịch vụ thuộc một itinerary.
+Content-Type: application/json
+
+3. Cập Nhật Itinerary Service
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/itinerary-services/{id}
+Mô tả: Cập nhật thông tin dịch vụ theo ID.
+Content-Type: application/json
+
+4. Xoá Itinerary Service
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/itinerary-services/{id}
+Mô tả: Xoá dịch vụ khỏi itinerary theo ID.
+Content-Type: application/json
+
+==================================================
+MODULE: SERVICE API
+BASE URL: https://db-datn.onrender.com/api/services
+==================================================
+
+1. Tạo Service
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/services/create
+Mô tả: Tạo dịch vụ mới trong hệ thống (ví dụ: Ăn sáng, Vé tham quan, Xe đưa đón...).
+Content-Type: application/json
+
+2. Lấy Danh Sách Service
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn.onrender.com/api/services/
+Mô tả: Lấy tất cả dịch vụ hiện có trong hệ thống.
+Content-Type: application/json
+
+3. Lấy Chi Tiết Service
+--------------------------------------------------
+Method: GET
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/services/{id}
+Mô tả: Lấy thông tin chi tiết dịch vụ theo ID.
+Content-Type: application/json
+
+4. Cập Nhật Service
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/services/{id}
+Mô tả: Cập nhật thông tin dịch vụ theo ID.
+Content-Type: application/json
+
+5. Xoá Service
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/services/{id}
+Mô tả: Xoá dịch vụ khỏi hệ thống.
+Content-Type: application/json
+
+==================================================
+MODULE: TRIP API
+BASE URL: https://db-datn.onrender.com/api/trips
+==================================================
+
+1. Tạo Trip (Đợt Khởi Hành)
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/trips/create
+Mô tả: Tạo một đợt khởi hành cụ thể cho tour (ví dụ: Tour Đà Lạt ngày 20/06/2026).
+Content-Type: application/json
+
+2. Lấy Danh Sách Trip
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn.onrender.com/api/trips/
+Mô tả: Lấy tất cả các đợt khởi hành trong hệ thống.
+Content-Type: application/json
+
+3. Lấy Trip Theo Slug Tour
+--------------------------------------------------
+Method: GET
+Endpoint: /tour/:slug
+Full URL: https://db-datn.onrender.com/api/trips/tour/{slug}
+Mô tả: Lấy danh sách các đợt khởi hành thuộc một tour dựa vào slug.
+Content-Type: application/json
+
+4. Cập Nhật Trip
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/trips/{id}
+Mô tả: Cập nhật thông tin đợt khởi hành theo ID.
+Content-Type: application/json
+
+5. Xoá Trip
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/trips/{id}
+Mô tả: Xoá đợt khởi hành khỏi hệ thống.
+Content-Type: application/json
+
+==================================================
+MODULE: TOUR MEMBER API
+BASE URL: https://db-datn.onrender.com/api/tour-members
+==================================================
+
+1. Tạo Tour Member
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/tour-members/create
+Mô tả: Thêm thành viên tham gia vào một Trip cụ thể.
+Content-Type: application/json
+
+2. Lấy Danh Sách Tour Member
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn.onrender.com/api/tour-members/
+Mô tả: Lấy toàn bộ danh sách thành viên trong hệ thống.
+Content-Type: application/json
+
+3. Lấy Danh Sách Thành Viên Theo Trip
+--------------------------------------------------
+Method: GET
+Endpoint: /tour/:tour_id
+Full URL: https://db-datn.onrender.com/api/tour-members/tour/{tour_id}
+Mô tả: Lấy danh sách thành viên thuộc một Trip cụ thể.
+Content-Type: application/json
+
+4. Cập Nhật Tour Member
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/tour-members/{id}
+Mô tả: Cập nhật thông tin thành viên theo ID.
+Content-Type: application/json
+
+5. Xoá Tour Member
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/tour-members/{id}
+Mô tả: Xoá thành viên khỏi Trip.
+Content-Type: application/json
+
+==================================================
+MODULE: PLACE API
+BASE URL: https://db-datn.onrender.com/api/places
+==================================================
+
+1. Tạo Place
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/places/create
+Mô tả: Tạo địa điểm mới trong hệ thống (ví dụ: Thác Datanla, Núi Langbiang...).
+Content-Type: multipart/form-data
+Upload: images (tối đa 10 ảnh)
+Middleware: multer
+
+2. Cập Nhật Place
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/places/{id}
+Mô tả: Cập nhật thông tin địa điểm theo ID.
+Content-Type: multipart/form-data
+Upload: images (tối đa 10 ảnh)
+
+3. Xoá Place
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/places/{id}
+Mô tả: Xoá địa điểm khỏi hệ thống.
+Content-Type: application/json
+
+==================================================
+MODULE: DESCRIPTION API
+BASE URL: https://db-datn.onrender.com/api/descriptions
+==================================================
+
+1. Tạo Description
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn.onrender.com/api/descriptions/create
+Mô tả: Tạo nội dung mô tả cho một tour (ví dụ: Bao gồm, Không bao gồm, Lưu ý...).
+Content-Type: application/json
+
+2. Lấy Description Theo Tour
+--------------------------------------------------
+Method: GET
+Endpoint: /tour/:tour_id
+Full URL: https://db-datn.onrender.com/api/descriptions/tour/{tour_id}
+Mô tả: Lấy tất cả nội dung mô tả của một tour.
+Content-Type: application/json
+
+3. Cập Nhật Description
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/descriptions/{id}
+Mô tả: Cập nhật nội dung mô tả theo ID.
+Content-Type: application/json
+
+4. Xoá Description
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn.onrender.com/api/descriptions/{id}
+Mô tả: Xoá mô tả khỏi tour.
+Content-Type: application/json
