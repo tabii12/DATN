@@ -25,7 +25,7 @@ export default function RootLayout({
         {/* ================= HEADER ================= */}
         <Header />
         {/* ================= MAIN ================= */}
-        <main className="flex-grow w-full">{children}</main>
+        <main className="grow w-full">{children}</main>
 
         {/* ================= FOOTER ================= */}
         <Footer />

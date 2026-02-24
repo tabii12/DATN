@@ -284,7 +284,7 @@ function HotelCard({ hotel }: { hotel: typeof HOTELS[0] }) {
     return (
         <a href={`/khach-san-quy-nhon/${hotel.slug}`} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col no-underline">
             {/* Image */}
-            <div className="relative overflow-hidden aspect-[374/280] flex-shrink-0">
+            <div className="relative overflow-hidden aspect-374/280 shrink-0">
                 <img
                     src={hotel.image}
                     alt={hotel.name}
@@ -292,7 +292,7 @@ function HotelCard({ hotel }: { hotel: typeof HOTELS[0] }) {
                     loading="lazy"
                 />
                 {hotel.combo && (
-                    <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent px-3 pt-2.5 pb-4">
+                    <div className="absolute top-0 left-0 right-0 bg-linear-to-b from-black/60 to-transparent px-3 pt-2.5 pb-4">
                         <span className="text-white text-[11px] font-semibold drop-shadow">{hotel.combo}</span>
                     </div>
                 )}
@@ -315,9 +315,9 @@ function HotelCard({ hotel }: { hotel: typeof HOTELS[0] }) {
 
                 {/* Address */}
                 <div className="flex items-start gap-1">
-                    <span className="text-orange-400 text-xs flex-shrink-0 mt-0.5">📍</span>
+                    <span className="text-orange-400 text-xs shrink-0 mt-0.5">📍</span>
                     <span className="text-[11px] text-gray-500 line-clamp-1">{hotel.address}</span>
-                    <button className="text-[11px] text-orange-500 hover:underline flex-shrink-0 ml-auto bg-transparent border-none cursor-pointer p-0 whitespace-nowrap">Xem bản đồ</button>
+                    <button className="text-[11px] text-orange-500 hover:underline shrink-0 ml-auto bg-transparent border-none cursor-pointer p-0 whitespace-nowrap">Xem bản đồ</button>
                 </div>
 
                 {/* Tags */}
@@ -361,7 +361,7 @@ export default function HotelListingPage() {
 
             {/* ══════════ SEARCH BAR ══════════ */}
             <div className="bg-white border-b border-gray-100">
-                <div className="max-w-[1200px] mx-auto px-4 py-2.5">
+                <div className="max-w-300 mx-auto px-4 py-2.5">
                     <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 max-w-sm">
                         <span className="text-gray-400 text-sm">🔍</span>
                         <span className="text-[13px] text-gray-400">Tìm kiếm</span>
@@ -369,7 +369,7 @@ export default function HotelListingPage() {
                 </div>
             </div>
 
-            <div className="max-w-[1200px] mx-auto px-4 py-4">
+            <div className="max-w-300 mx-auto px-4 py-4">
 
                 {/* ══════════ BREADCRUMB ══════════ */}
                 <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
@@ -408,7 +408,7 @@ export default function HotelListingPage() {
                         <button
                             key={loc.id}
                             onClick={() => setSelectedLocation(loc.id)}
-                            className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${selectedLocation === loc.id
+                            className={`shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${selectedLocation === loc.id
                                 ? "bg-orange-500 text-white border-orange-500 font-semibold"
                                 : "bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-500"
                                 }`}
@@ -422,13 +422,13 @@ export default function HotelListingPage() {
                 <div className="flex gap-5 items-start">
 
                     {/* ── SIDEBAR FILTER (Desktop) ── */}
-                    <aside className="hidden lg:block w-[220px] flex-shrink-0 sticky top-[68px]">
+                    <aside className="hidden lg:block w-55 shrink-0 sticky top-17">
                         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
 
                             {/* Support box */}
                             {/* <div className="bg-orange-50 p-3 border-b border-orange-100">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 bg-gray-200">
+                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 bg-gray-200">
                     <img src="//cdn1.ivivu.com/iVivu/2018/12/04/09/undefined.png" alt="" className="w-full h-full object-cover"/>
                   </div>
                   <div>
@@ -443,7 +443,7 @@ export default function HotelListingPage() {
                             <div className="p-3 border-b border-gray-50">
                                 <p className="text-xs font-bold text-gray-700 mb-2">Tìm theo tên</p>
                                 <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5">
-                                    <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                    <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                                     <input
                                         type="text"
                                         placeholder="Nhập tên khách sạn..."
@@ -589,7 +589,7 @@ export default function HotelListingPage() {
             {mobileFilterOpen && (
                 <div className="fixed inset-0 z-50 flex">
                     <div className="absolute inset-0 bg-black/40" onClick={() => setMobileFilterOpen(false)} />
-                    <div className="relative ml-auto w-[280px] h-full bg-white overflow-y-auto">
+                    <div className="relative ml-auto w-70 h-full bg-white overflow-y-auto">
                         <div className="flex items-center justify-between p-4 border-b border-gray-100">
                             <span className="font-bold text-gray-900">Bộ lọc</span>
                             <button onClick={() => setMobileFilterOpen(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none bg-transparent border-none cursor-pointer">✕</button>
