@@ -103,45 +103,91 @@ Full URL: https://db-datn.onrender.com/api/users/
 Mô tả: Lấy danh sách tất cả người dùng trong hệ thống.
 Content-Type: application/json
 
+
 2. Đăng Ký Tài Khoản
 --------------------------------------------------
 Method: POST
 Endpoint: /register
 Full URL: https://db-datn.onrender.com/api/users/register
-Mô tả: Tạo tài khoản mới cho người dùng.
+Mô tả: Tạo tài khoản mới và gửi mã xác thực email.
 Content-Type: application/json
+
+Body mẫu:
+{
+  "name": "Nguyen Van A",
+  "email": "example@gmail.com",
+  "password": "123456"
+}
+
 
 3. Đăng Nhập
 --------------------------------------------------
 Method: POST
 Endpoint: /login
 Full URL: https://db-datn.onrender.com/api/users/login
-Mô tả: Xác thực người dùng và trả về token đăng nhập (nếu có sử dụng JWT).
+Mô tả: Đăng nhập bằng email và mật khẩu (chỉ áp dụng cho tài khoản đăng ký thường).
 Content-Type: application/json
 
-4. Xác Thực Email (Gửi Mã Xác Nhận)
+Body mẫu:
+{
+  "email": "example@gmail.com",
+  "password": "123456"
+}
+
+
+4. Đăng Nhập / Đăng Ký Bằng Google
+--------------------------------------------------
+Method: POST
+Endpoint: /google-auth
+Full URL: https://db-datn.onrender.com/api/users/google-auth
+Mô tả: Xác thực người dùng bằng Google ID Token. 
+Nếu email chưa tồn tại sẽ tự động tạo tài khoản mới.
+Nếu đã tồn tại sẽ đăng nhập và trả về JWT.
+Content-Type: application/json
+
+Body mẫu:
+{
+  "token": "google_id_token"
+}
+
+
+5. Xác Thực Email (Kiểm Tra Mã từ Body)
 --------------------------------------------------
 Method: POST
 Endpoint: /verify-email
 Full URL: https://db-datn.onrender.com/api/users/verify-email
-Mô tả: Gửi mã xác thực email cho người dùng.
+Mô tả: Kiểm tra mã xác thực email được gửi về email người dùng.
 Content-Type: application/json
 
-5. Xác Thực Email (Kiểm Tra Mã)
+Body mẫu:
+{
+  "email": "example@gmail.com",
+  "code": "123456"
+}
+
+
+6. Xác Thực Email (Qua Link Email)
 --------------------------------------------------
 Method: GET
 Endpoint: /verify-email/:email/:code
 Full URL: https://db-datn.onrender.com/api/users/verify-email/{email}/{code}
-Mô tả: Kiểm tra mã xác thực email.
-Content-Type: application/json
+Mô tả: Xác thực tài khoản thông qua đường link gửi trong email.
+Content-Type: text/html
 
-6. Cập Nhật Trạng Thái Người Dùng
+
+7. Cập Nhật Trạng Thái Người Dùng
 --------------------------------------------------
 Method: PATCH
 Endpoint: /status/:id
 Full URL: https://db-datn.onrender.com/api/users/status/{id}
-Mô tả: Cập nhật trạng thái người dùng (ví dụ: active / inactive / blocked).
+Mô tả: Cập nhật trạng thái người dùng.
+Giá trị hợp lệ: active | inactive | blocked
 Content-Type: application/json
+
+Body mẫu:
+{
+  "status": "blocked"
+}
 
 ==================================================
 MODULE: BOOKING API

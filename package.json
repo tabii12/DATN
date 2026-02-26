@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.4",
+    "axios": "^1.13.5",
+    "lucide-react": "^0.575.0",
     "next": "^16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
@@ -18,7 +21,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^10.0.2",
+    "eslint": "^7.32.0",
     "eslint-config-next": "^12.0.4",
     "tailwindcss": "^4",
     "typescript": "^5"
