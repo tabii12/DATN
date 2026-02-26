@@ -1,6 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+// ─────────────────────────── TYPES ───────────────────────────
+
+type TourAPI = {
+  name: string;
+  images: { image_url: string }[];
+  descriptions: { title: string; content: string }[];
+  itineraries: any[];
+  hotel_id: {
+    name: string;
+    address: string;
+    city: string;
+    rating: number;
+  };
+};
 
 // ─────────────────────────── DATA ───────────────────────────
 
@@ -82,30 +97,58 @@ const POLICIES = [
 
 // ─────────────────────────── COMPONENT ───────────────────────────
 
-export default function HotelDetailPage() {
+export default function HotelDetailPage({ slug }: { slug: string }) {
+  const [tour, setTour] = useState<TourAPI | null>(null);
+  const [loadingTour, setLoadingTour] = useState(true);
+
   const [activeImg, setActiveImg] = useState(0);
   const [thumbOffset, setThumbOffset] = useState(0);
   const [reviewIdx, setReviewIdx] = useState(0);
   const THUMB_VISIBLE = 8;
 
-  const mainGrid = [ALL_IMAGES[0], ALL_IMAGES[1], ALL_IMAGES[2]];
+  // Fetch tour data từ API
+  useEffect(() => {
+    if (!slug) return;
+    fetch(`https://db-datn.onrender.com/api/tours/detail/${slug}`)
+      .then(r => r.json())
+      .then(res => { if (res.data) setTour(res.data); })
+      .catch(() => {})
+      .finally(() => setLoadingTour(false));
+  }, [slug]);
+
+  // Dùng API data nếu có, fallback về hardcode
+  const hotelName    = tour?.hotel_id?.name    ?? "Khu nghỉ dưỡng InterContinental Phu Quoc Long Beach";
+  const hotelAddress = tour?.hotel_id?.address ?? "Bãi Trường, Dương Tơ, Phú Quốc, Tỉnh Kiên Giang";
+  const hotelCity    = tour?.hotel_id?.city    ?? "";
+  const hotelStars   = tour?.hotel_id?.rating  ?? 5;
+  const tourName     = tour?.name              ?? hotelName;
+  const descriptions = tour?.descriptions      ?? [];
+
+  // Merge ảnh API vào đầu array, giữ hardcode làm fallback
+  const apiImages = (tour?.images ?? []).map(img => ({ src: img.image_url, alt: tourName }));
+  const IMAGES_MERGED = apiImages.length > 0
+    ? [...apiImages, ...ALL_IMAGES].slice(0, ALL_IMAGES.length)
+    : ALL_IMAGES;
+
+  const mainGrid = [IMAGES_MERGED[0], IMAGES_MERGED[1], IMAGES_MERGED[2]];
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
 
-
+      {/* ══════════ HEADER ══════════ */}
+    
 
       {/* ══════════ HOTEL OVERVIEW ══════════ */}
       <div className="bg-white">
-        <div className="max-w-300 mx-auto px-4">
+        <div className="max-w-[1200px] mx-auto px-4">
 
           {/* Title row */}
           <div className="flex justify-between items-start py-4 gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <h1 className="text-xl font-black text-gray-900 leading-snug">Khu nghỉ dưỡng InterContinental Phu Quoc Long Beach</h1>
-                <div className="flex gap-0.5 shrink-0">
-                  {[1,2,3,4,5].map(i => (
+                <h1 className="text-xl font-black text-gray-900 leading-snug">{loadingTour ? "Đang tải..." : hotelName}</h1>
+                <div className="flex gap-0.5 flex-shrink-0">
+                  {Array.from({ length: Math.round(hotelStars) }).map((_, i) => (
                     <svg key={i} className="w-3.5 h-3.5 fill-amber-400" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
@@ -114,11 +157,11 @@ export default function HotelDetailPage() {
               </div>
               <div className="hidden lg:flex items-center gap-1 mt-1">
                 <span className="text-orange-500 text-sm">📍</span>
-                <span className="text-[13px] text-gray-500">Bãi Trường, Dương Tơ, Phú Quốc, Tỉnh Kiên Giang </span>
+                <span className="text-[13px] text-gray-500">{hotelAddress}{hotelCity ? `, ${hotelCity}` : ""}</span>
               </div>
             </div>
             {/* Desktop actions */}
-            <div className="hidden lg:flex items-center gap-4 shrink-0">
+            <div className="hidden lg:flex items-center gap-4 flex-shrink-0">
               <span className="text-2xl text-gray-300 cursor-pointer hover:text-red-400 transition-colors leading-none">♡</span>
               <span className="text-xl text-gray-300 cursor-pointer hover:text-orange-400 transition-colors leading-none">⎋</span>
               <button className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-5 py-2 rounded-full transition-colors">Đặt ngay</button>
@@ -142,7 +185,7 @@ export default function HotelDetailPage() {
 
         {/* ── Desktop image layout ── */}
         <div className="hidden lg:block">
-          <div className="max-w-300 mx-auto px-4">
+          <div className="max-w-[1200px] mx-auto px-4">
             <div className="flex gap-3">
 
               {/* LEFT: images */}
@@ -153,7 +196,7 @@ export default function HotelDetailPage() {
                 </div>
 
                 {/* Main 3-col grid — first column is 2x wide */}
-                <div className="grid gap-1 h-80" style={{gridTemplateColumns: "2fr 1fr 1fr"}}>
+                <div className="grid gap-1 h-[320px]" style={{gridTemplateColumns: "2fr 1fr 1fr"}}>
                   {mainGrid.map((img, i) => (
                     <div key={i} className="overflow-hidden rounded cursor-pointer group">
                       <img src={img.src} alt={img.alt} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
@@ -162,7 +205,7 @@ export default function HotelDetailPage() {
                 </div>
 
                 {/* Sub 5-col strip */}
-                <div className="grid grid-cols-5 gap-1 mt-1 h-27.5">
+                <div className="grid grid-cols-5 gap-1 mt-1 h-[110px]">
                   {/* Video */}
                   <div className="relative overflow-hidden rounded cursor-pointer group">
                     <img src="//img.youtube.com/vi/S9--XaH5huo/default.jpg" alt="Video" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
@@ -173,14 +216,14 @@ export default function HotelDetailPage() {
                     </div>
                   </div>
                   {/* 3 regular */}
-                  {[ALL_IMAGES[3], ALL_IMAGES[4], ALL_IMAGES[5]].map((img, i) => (
+                  {[IMAGES_MERGED[3], IMAGES_MERGED[4], IMAGES_MERGED[5]].map((img, i) => (
                     <div key={i} className="overflow-hidden rounded cursor-pointer group">
                       <img src={img.src} alt={img.alt} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
                     </div>
                   ))}
                   {/* Last with +count overlay */}
                   <div className="relative overflow-hidden rounded cursor-pointer group">
-                    <img src={ALL_IMAGES[6].src} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
+                    <img src={IMAGES_MERGED[6]?.src ?? IMAGES_MERGED[0]?.src} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"/>
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <span className="text-white text-sm font-bold">+45 hình</span>
                     </div>
@@ -189,9 +232,9 @@ export default function HotelDetailPage() {
               </div>
 
               {/* RIGHT: Map + Reviews */}
-              <div className="w-72.5 shrink-0 flex flex-col gap-2">
+              <div className="w-[290px] flex-shrink-0 flex flex-col gap-2">
                 {/* Map */}
-                <div className="h-48.75 rounded-lg overflow-hidden border border-gray-200">
+                <div className="h-[195px] rounded-lg overflow-hidden border border-gray-200">
                   <iframe
                     width="100%" height="100%" frameBorder="0" scrolling="no"
                     src="https://maps.google.com/maps?q=10.11295818,103.98370721&hl=vi&z=14&ie=UTF8&iwloc=&output=embed"
@@ -223,7 +266,7 @@ export default function HotelDetailPage() {
                           <p className="text-xs text-gray-600 leading-relaxed line-clamp-5">{r.text}</p>
                           <div className="flex items-center justify-between mt-2">
                             <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[10px] font-bold text-orange-500 shrink-0">{r.initials}</div>
+                              <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[10px] font-bold text-orange-500 flex-shrink-0">{r.initials}</div>
                               <span className="text-xs font-semibold text-gray-700">{r.name}</span>
                             </div>
                             <span className="text-[11px] text-gray-400">{r.date}</span>
@@ -251,27 +294,27 @@ export default function HotelDetailPage() {
               className="flex transition-transform duration-300 ease-in-out"
               style={{transform: `translate3d(-${activeImg * 100}vw, 0, 0)`}}
             >
-              {ALL_IMAGES.map((img, i) => (
-                <div key={i} className="relative shrink-0 h-65" style={{minWidth: "100vw"}}>
+              {IMAGES_MERGED.map((img, i) => (
+                <div key={i} className="relative flex-shrink-0 h-[260px]" style={{minWidth: "100vw"}}>
                   <img src={img.src} alt={img.alt} className="w-full h-full object-cover"/>
                   <span className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white text-xs drop-shadow whitespace-nowrap">{img.alt}</span>
                 </div>
               ))}
             </div>
             <button className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/40 rounded-full flex items-center justify-center text-white text-2xl leading-none border-none cursor-pointer" onClick={() => setActiveImg(p => Math.max(0, p - 1))}>‹</button>
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/40 rounded-full flex items-center justify-center text-white text-2xl leading-none border-none cursor-pointer" onClick={() => setActiveImg(p => Math.min(ALL_IMAGES.length - 1, p + 1))}>›</button>
-            <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">{activeImg + 1}/{ALL_IMAGES.length}</div>
+            <button className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/40 rounded-full flex items-center justify-center text-white text-2xl leading-none border-none cursor-pointer" onClick={() => setActiveImg(p => Math.min(IMAGES_MERGED.length - 1, p + 1))}>›</button>
+            <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full">{activeImg + 1}/{IMAGES_MERGED.length}</div>
           </div>
 
           {/* Mobile thumb strip */}
           <div className="bg-white px-4 py-2">
-            <p className="text-xs text-gray-500 text-center mb-1.5">{ALL_IMAGES[activeImg]?.alt}</p>
+            <p className="text-xs text-gray-500 text-center mb-1.5">{IMAGES_MERGED[activeImg]?.alt}</p>
             <div className="flex gap-1 overflow-hidden">
               {THUMBS.slice(0, 10).map((src, i) => (
                 <div
                   key={i}
                   onClick={() => setActiveImg(i)}
-                  className={`shrink-0 overflow-hidden rounded cursor-pointer border-2 transition-colors ${activeImg === i ? "border-orange-500" : "border-transparent"}`}
+                  className={`flex-shrink-0 overflow-hidden rounded cursor-pointer border-2 transition-colors ${activeImg === i ? "border-orange-500" : "border-transparent"}`}
                   style={{width: 73, height: 55}}
                 >
                   <img src={src} alt="" className="w-full h-full object-cover" loading="lazy"/>
@@ -287,7 +330,7 @@ export default function HotelDetailPage() {
               <span className="text-orange-500">📍</span>
               <span className="text-[13px] text-gray-500">Bãi Trường, Dương Tơ, Phú Quốc, Tỉnh Kiên Giang</span>
             </div>
-            <div className="h-25">
+            <div className="h-[100px]">
               <iframe width="100%" height="100%" frameBorder="0" scrolling="no"
                 src="https://maps.google.com/maps?q=10.11295818,103.98370721&hl=vi&z=14&ie=UTF8&iwloc=&output=embed"/>
             </div>
@@ -315,7 +358,7 @@ export default function HotelDetailPage() {
 
       {/* ══════════ COMBO SECTION ══════════ */}
       <div className="bg-white mt-2">
-        <div className="max-w-300 mx-auto px-4 py-5 flex flex-col lg:flex-row gap-8">
+        <div className="max-w-[1200px] mx-auto px-4 py-5 flex flex-col lg:flex-row gap-8">
 
           {/* LEFT: combo details */}
           <div className="flex-1 min-w-0">
@@ -353,7 +396,7 @@ export default function HotelDetailPage() {
           </div>
 
           {/* RIGHT: booking box */}
-          <div className="w-full lg:w-70 shrink-0">
+          <div className="w-full lg:w-[280px] flex-shrink-0">
             <div className="border border-gray-200 rounded-xl overflow-hidden">
 
               {/* Prices */}
@@ -420,19 +463,19 @@ export default function HotelDetailPage() {
 
       {/* ══════════ SEARCH BOX (Desktop) ══════════ */}
       <div className="bg-white mt-2 hidden lg:block">
-        <div className="max-w-300 mx-auto px-4 py-3">
+        <div className="max-w-[1200px] mx-auto px-4 py-3">
           <div className="flex items-stretch border border-gray-200 rounded-xl overflow-hidden">
 
             {/* Hotel name */}
-            <div className="flex-2 flex items-center gap-2 px-3 py-2.5 border-r border-gray-100">
-              <span className="text-gray-300 shrink-0 text-sm">🔍</span>
+            <div className="flex-[2] flex items-center gap-2 px-3 py-2.5 border-r border-gray-100">
+              <span className="text-gray-300 flex-shrink-0 text-sm">🔍</span>
               <span className="text-[13px] font-semibold text-gray-700 line-clamp-2">Khu nghỉ dưỡng InterContinental Phu Quoc Long Beach</span>
             </div>
 
             {/* Date select */}
-            <div className="flex-3 flex border-r border-gray-100">
+            <div className="flex-[3] flex border-r border-gray-100">
               <button className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-transparent border-none cursor-pointer">
-                <span className="text-orange-500 shrink-0 text-sm">📅</span>
+                <span className="text-orange-500 flex-shrink-0 text-sm">📅</span>
                 <div className="text-left">
                   <span className="text-[10px] text-orange-500 font-semibold block">Thứ tư</span>
                   <span className="text-sm font-bold text-gray-800">25-02-2026</span>
@@ -445,7 +488,7 @@ export default function HotelDetailPage() {
                 </div>
               </div>
               <button className="flex-1 flex items-center gap-2 px-3 py-2.5 bg-transparent border-none cursor-pointer">
-                <span className="text-orange-500 shrink-0 text-sm">📅</span>
+                <span className="text-orange-500 flex-shrink-0 text-sm">📅</span>
                 <div className="text-left">
                   <span className="text-[10px] text-orange-500 font-semibold block">Thứ năm</span>
                   <span className="text-sm font-bold text-gray-800">26-02-2026</span>
@@ -455,7 +498,7 @@ export default function HotelDetailPage() {
 
             {/* Room / guest */}
             <div className="flex-1 flex items-center gap-2 px-3 py-2.5 border-r border-gray-100 cursor-pointer">
-              <span className="text-gray-300 shrink-0 text-sm">👤</span>
+              <span className="text-gray-300 flex-shrink-0 text-sm">👤</span>
               <div>
                 <span className="text-sm font-bold text-gray-800 block">1 Phòng</span>
                 <span className="text-[11px] text-gray-400">2 người lớn, 0 trẻ em</span>
@@ -473,7 +516,7 @@ export default function HotelDetailPage() {
 
       {/* ══════════ HOTEL UTILITIES ══════════ */}
       <div className="bg-white mt-2">
-        <div className="max-w-300 mx-auto px-4">
+        <div className="max-w-[1200px] mx-auto px-4">
 
           {/* Thông tin khách sạn */}
           <div className="py-5 border-b border-gray-100" id="hd-info">
@@ -505,7 +548,7 @@ export default function HotelDetailPage() {
                 {label: "Thời gian trả phòng:", value: "Trước 12:00"},
               ].map(item => (
                 <div key={item.label} className="flex items-center gap-6 py-3 border-b border-gray-50">
-                  <div className="flex items-center gap-2 min-w-50">
+                  <div className="flex items-center gap-2 min-w-[200px]">
                     <span className="text-gray-400 text-sm">🕐</span>
                     <span className="text-[13px] text-gray-500">{item.label}</span>
                   </div>
@@ -518,7 +561,7 @@ export default function HotelDetailPage() {
               {/* Policy rows */}
               {POLICIES.map((p, i) => (
                 <div key={i} className={`flex flex-col lg:flex-row gap-2 lg:gap-6 py-3 ${i < POLICIES.length - 1 ? "border-b border-gray-50" : ""}`}>
-                  <div className="flex items-start gap-2 lg:min-w-50 lg:shrink-0">
+                  <div className="flex items-start gap-2 lg:min-w-[200px] lg:flex-shrink-0">
                     <span className="text-gray-400 font-bold text-sm mt-0.5">✓</span>
                     <span className="text-[13px] text-gray-500">{p.label}</span>
                   </div>
@@ -528,6 +571,26 @@ export default function HotelDetailPage() {
                   />
                 </div>
               ))}
+
+              {/* Descriptions từ API tour (Giá bao gồm, Điều khoản, Lưu ý...) */}
+              {descriptions.length > 0 && (
+                <>
+                  <div className="h-px bg-gray-100 my-3" />
+                  <p className="text-sm font-bold text-gray-700 mb-2">Thông tin tour</p>
+                  {descriptions.map((d, i) => (
+                    <div key={i} className={`flex flex-col lg:flex-row gap-2 lg:gap-6 py-3 ${i < descriptions.length - 1 ? "border-b border-gray-50" : ""}`}>
+                      <div className="lg:min-w-[200px] lg:flex-shrink-0">
+                        <span className="text-[13px] font-semibold text-gray-500">{d.title}</span>
+                      </div>
+                      <div className="flex-1 text-[13px] text-gray-600 leading-relaxed">
+                        {d.content.split("\n").map((line, idx) => (
+                          <p key={idx} className="mb-0.5">{line.startsWith("-") ? "•" + line.slice(1) : line}</p>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
 
             </div>
           </div>

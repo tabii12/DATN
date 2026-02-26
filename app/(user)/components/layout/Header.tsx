@@ -15,16 +15,16 @@ export default function Header() {
           {/* MENU */}
           <nav className="hidden md:flex items-center gap-6 text-2xl font-medium text-gray-700">
             <Link href="#" className="hover:text-blue-500">
-              Khách Sạn
+              Trang Chủ
             </Link>
             <Link href="#" className="hover:text-blue-500">
               Tours
             </Link>
             <Link href="#" className="hover:text-blue-500">
-              Vé máy bay
+              Blog
             </Link>
             <Link href="#" className="hover:text-blue-500">
-              Vé vui chơi
+              Tin tức
             </Link>
             <Link href="#" className="hover:text-blue-500">
               Vé tàu

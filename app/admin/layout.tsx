@@ -1,0 +1,34 @@
+"use client";
+
+import Link from "next/link";
+
+export default function AdminLayout({ children }) {
+    return (
+        <div className="flex min-h-screen bg-gray-100">
+            {/* SIDEBAR */}
+            <aside className="w-64 bg-blue-900 text-white">
+                <div className="px-6 py-4 text-lg font-bold border-b border-blue-800">
+                    Booking Tour Admin
+                </div>
+
+                <nav className="px-4 py-4 space-y-1 text-sm">
+                    <Link href="/admin" className="block px-3 py-2 rounded hover:bg-blue-700">📊 Dashboard</Link>
+                    <Link href="/admin/tours" className="block px-3 py-2 rounded hover:bg-blue-700">🧳 Tours</Link>
+                    <Link href="/admin/bookings" className="block px-3 py-2 rounded hover:bg-blue-700">📄 Bookings</Link>
+                    <Link href="/admin/blogs" className="block px-3 py-2 rounded hover:bg-blue-700">📝 Blogs</Link>
+                    <Link href="/admin/services" className="block px-3 py-2 rounded hover:bg-blue-700">🛎 Services</Link>
+                </nav>
+            </aside>
+
+            {/* MAIN */}
+            <main className="flex-1">
+                <header className="h-14 bg-white border-b px-6 flex items-center justify-between">
+                    <span className="font-semibold">Quản Lý Tour Du Lịch</span>
+                    <span className="text-sm text-gray-500">Admin</span>
+                </header>
+
+                <div className="p-6">{children}</div>
+            </main>
+        </div>
+    );
+}
