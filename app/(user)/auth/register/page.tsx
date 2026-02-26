@@ -219,7 +219,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Google Login */}
-      <div className="w-full flex justify-center">
+      <div className="w-full [&>div]:w-full">
         <GoogleLogin
           onSuccess={async (credentialResponse) => {
             try {
@@ -235,7 +235,6 @@ export default function RegisterPage() {
             }
           }}
           onError={() => console.log("Google Login Failed")}
-          width="100%"
         />
       </div>
 
