@@ -1,3 +1,5 @@
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
 export default function AuthLayout({
   children,
 }: {
@@ -12,7 +14,11 @@ export default function AuthLayout({
       }}
     >
       <div className="min-h-screen flex items-center justify-center bg-black/40">
-        {children}
+        <GoogleOAuthProvider
+          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
+        >
+          {children}
+        </GoogleOAuthProvider>
       </div>
     </div>
   );

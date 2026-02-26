@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -217,14 +219,22 @@ export default function RegisterPage() {
       </div>
 
       {/* Google Login */}
-      <button className="w-full border rounded-md py-2 flex items-center justify-center gap-2 hover:bg-gray-50 transition text-gray-700">
-        <img
-          src="https://www.svgrepo.com/show/475656/google-color.svg"
-          alt="Google"
-          className="w-5 h-5"
-        />
-        Đăng ký với Google
-      </button>
+      <GoogleLogin
+        onSuccess={async (credentialResponse) => {
+          try {
+            const res = await axios.post(
+              "https://db-datn.onrender.com/api/users/google-auth",
+              { token: credentialResponse.credential },
+            );
+
+            localStorage.setItem("token", res.data.token);
+            window.location.href = "/";
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+        onError={() => console.log("Google Login Failed")}
+      />
 
       <p className="text-sm text-center mt-6 text-gray-500">
         Đã có tài khoản?{" "}
