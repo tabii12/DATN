@@ -111,7 +111,7 @@ export default function RegisterPage() {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       const res = await axios.post(
-        "https://backend-url/api/users/google-auth",
+        "https://db-datn.onrender.com/api/users/google-auth",
         { token: tokenResponse.access_token },
       );
 
