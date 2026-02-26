@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 
 export default function RegisterPage() {
@@ -107,6 +107,18 @@ export default function RegisterPage() {
 
     return !Object.values(newErrors).some((err) => err !== "");
   };
+
+  const login = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      const res = await axios.post(
+        "https://backend-url/api/users/google-auth",
+        { token: tokenResponse.access_token },
+      );
+
+      localStorage.setItem("token", res.data.token);
+      window.location.href = "/";
+    },
+  });
 
   return (
     <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
@@ -219,24 +231,17 @@ export default function RegisterPage() {
       </div>
 
       {/* Google Login */}
-      <div className="w-full [&>div]:w-full">
-        <GoogleLogin
-          onSuccess={async (credentialResponse) => {
-            try {
-              const res = await axios.post(
-                "https://db-datn.onrender.com/api/users/google-auth",
-                { token: credentialResponse.credential },
-              );
-
-              localStorage.setItem("token", res.data.token);
-              window.location.href = "/";
-            } catch (err) {
-              console.error(err);
-            }
-          }}
-          onError={() => console.log("Google Login Failed")}
+      <button
+        onClick={() => login()}
+        className="w-full border rounded-md py-2 flex items-center justify-center gap-2 hover:bg-gray-50 transition text-gray-700"
+      >
+        <img
+          src="https://www.svgrepo.com/show/475656/google-color.svg"
+          alt="Google"
+          className="w-5 h-5"
         />
-      </div>
+        Đăng nhập bằng Google
+      </button>
 
       <p className="text-sm text-center mt-6 text-gray-500">
         Đã có tài khoản?{" "}
