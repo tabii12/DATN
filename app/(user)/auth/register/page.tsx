@@ -219,22 +219,25 @@ export default function RegisterPage() {
       </div>
 
       {/* Google Login */}
-      <GoogleLogin
-        onSuccess={async (credentialResponse) => {
-          try {
-            const res = await axios.post(
-              "https://db-datn.onrender.com/api/users/google-auth",
-              { token: credentialResponse.credential },
-            );
+      <div className="w-full flex justify-center">
+        <GoogleLogin
+          onSuccess={async (credentialResponse) => {
+            try {
+              const res = await axios.post(
+                "https://db-datn.onrender.com/api/users/google-auth",
+                { token: credentialResponse.credential },
+              );
 
-            localStorage.setItem("token", res.data.token);
-            window.location.href = "/";
-          } catch (err) {
-            console.error(err);
-          }
-        }}
-        onError={() => console.log("Google Login Failed")}
-      />
+              localStorage.setItem("token", res.data.token);
+              window.location.href = "/";
+            } catch (err) {
+              console.error(err);
+            }
+          }}
+          onError={() => console.log("Google Login Failed")}
+          width="100%"
+        />
+      </div>
 
       <p className="text-sm text-center mt-6 text-gray-500">
         Đã có tài khoản?{" "}
