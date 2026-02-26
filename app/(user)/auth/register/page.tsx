@@ -223,12 +223,14 @@ export default function RegisterPage() {
         <div className="w-full flex justify-center">
           <GoogleLogin
             onSuccess={async (credentialResponse) => {
-              await axios.post(
+              const res = await axios.post(
                 "https://db-datn.onrender.com/api/users/google-auth",
                 {
-                  token: credentialResponse.credential, // 👈 vẫn là ID token
+                  token: credentialResponse.credential,
                 },
               );
+              localStorage.setItem("token", res.data.token);
+              window.location.href = "/";
             }}
             onError={() => console.log("Login Failed")}
             useOneTap={false}
