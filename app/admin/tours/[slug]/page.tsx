@@ -5,13 +5,64 @@ import { useParams } from "next/navigation";
 
 const API = "https://db-datn.onrender.com/api";
 
+type Hotel = {
+  _id: string;
+  name: string;
+};
+
+type Category = {
+  _id: string;
+  name: string;
+};
+
+type TourDescription = {
+  _id: string;
+  title: string;
+  content: string;
+};
+
+type ItineraryDetail = {
+  _id: string;
+  title: string;
+  content: string;
+  type: string;
+  order: number;
+};
+
+type Itinerary = {
+  _id: string;
+  day_number: number;
+  title: string;
+  meal_note: string;
+  details: ItineraryDetail[];
+};
+
+type Tour = {
+  _id: string;
+  name: string;
+  slug: string;
+  status: string;
+  hotel_id?: Hotel;
+  category_id?: Category;
+  images: TourImage[];
+  descriptions: TourDescription[];
+  itineraries: Itinerary[];
+};
+
+type TourImage = {
+  _id: string;
+  tour_id: string;
+  image_url: string;
+  public_id: string;
+};
+
 export default function EditTourPage() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
 
-  const [tour, setTour] = useState<any>(null);
-  const [hotels, setHotels] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [tour, setTour] = useState<Tour | null>(null);
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [tab, setTab] = useState("info");
 
   const [descTitle, setDescTitle] = useState("");
@@ -32,12 +83,12 @@ export default function EditTourPage() {
     fetchTour();
 
     fetch(`${API}/hotels`)
-      .then(r => r.json())
-      .then(d => setHotels(d.data || []));
+      .then((r) => r.json())
+      .then((d) => setHotels(d.data || []));
 
     fetch(`${API}/categories`)
-      .then(r => r.json())
-      .then(d => setCategories(d.data || []));
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data || []));
   }, [slug]);
 
   if (!slug || !tour) {
@@ -64,7 +115,10 @@ export default function EditTourPage() {
   const uploadImage = async (file: File) => {
     const fd = new FormData();
     fd.append("image", file);
-    await fetch(`${API}/tours/detail/${slug}/images`, { method: "POST", body: fd });
+    await fetch(`${API}/tours/detail/${slug}/images`, {
+      method: "POST",
+      body: fd,
+    });
     fetchTour();
   };
 
@@ -125,13 +179,11 @@ export default function EditTourPage() {
   /* ================= UI ================= */
   return (
     <div className="bg-white p-6 rounded shadow text-black">
-      <h1 className="text-xl font-bold mb-4">
-        ✏️ Edit Tour: {tour.name}
-      </h1>
+      <h1 className="text-xl font-bold mb-4">✏️ Edit Tour: {tour.name}</h1>
 
       {/* TAB */}
       <div className="flex gap-3 border-b mb-6">
-        {["info", "images", "descriptions", "itineraries"].map(t => (
+        {["info", "images", "descriptions", "itineraries"].map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -153,7 +205,7 @@ export default function EditTourPage() {
           <input
             className="w-full border p-2 rounded"
             value={tour.name}
-            onChange={e => setTour({ ...tour, name: e.target.value })}
+            onChange={(e) => setTour({ ...tour, name: e.target.value })}
           />
 
           <input
@@ -165,15 +217,15 @@ export default function EditTourPage() {
           <select
             className="w-full border p-2 rounded"
             value={tour.hotel_id?._id || ""}
-            onChange={e =>
+            onChange={(e) =>
               setTour({
                 ...tour,
-                hotel_id: hotels.find(h => h._id === e.target.value),
+                hotel_id: hotels.find((h) => h._id === e.target.value),
               })
             }
           >
             <option value="">-- Chọn khách sạn --</option>
-            {hotels.map(h => (
+            {hotels.map((h) => (
               <option key={h._id} value={h._id}>
                 {h.name}
               </option>
@@ -183,15 +235,15 @@ export default function EditTourPage() {
           <select
             className="w-full border p-2 rounded"
             value={tour.category_id?._id || ""}
-            onChange={e =>
+            onChange={(e) =>
               setTour({
                 ...tour,
-                category_id: categories.find(c => c._id === e.target.value),
+                category_id: categories.find((c) => c._id === e.target.value),
               })
             }
           >
             <option value="">-- Chọn danh mục --</option>
-            {categories.map(c => (
+            {categories.map((c) => (
               <option key={c._id} value={c._id}>
                 {c.name}
               </option>
@@ -210,9 +262,12 @@ export default function EditTourPage() {
       {/* IMAGE */}
       {tab === "images" && (
         <>
-          <input type="file" onChange={e => uploadImage(e.target.files![0])} />
+          <input
+            type="file"
+            onChange={(e) => uploadImage(e.target.files![0])}
+          />
           <div className="grid grid-cols-4 gap-4 mt-4">
-            {tour.images.map(img => (
+            {tour.images.map((img) => (
               <div key={img._id} className="relative">
                 <img
                   src={img.image_url}
@@ -236,13 +291,13 @@ export default function EditTourPage() {
           <input
             placeholder="Tiêu đề"
             value={descTitle}
-            onChange={e => setDescTitle(e.target.value)}
+            onChange={(e) => setDescTitle(e.target.value)}
             className="w-full border p-2 mb-2"
           />
           <textarea
             placeholder="Nội dung"
             value={descContent}
-            onChange={e => setDescContent(e.target.value)}
+            onChange={(e) => setDescContent(e.target.value)}
             className="w-full border p-2 mb-2"
           />
           <button
@@ -252,7 +307,7 @@ export default function EditTourPage() {
             Thêm
           </button>
 
-          {tour.descriptions.map(d => (
+          {tour.descriptions.map((d) => (
             <div key={d._id} className="border p-3 mt-3">
               <div className="font-medium">{d.title}</div>
               <pre className="text-sm whitespace-pre-wrap">{d.content}</pre>
@@ -277,13 +332,13 @@ export default function EditTourPage() {
             + Thêm ngày
           </button>
 
-          {tour.itineraries.map(day => (
+          {tour.itineraries.map((day) => (
             <div key={day._id} className="border p-4 mb-4">
               <div className="font-bold mb-2">
                 Ngày {day.day_number}: {day.title}
               </div>
 
-              {day.details.map(dt => (
+              {day.details.map((dt) => (
                 <div key={dt._id} className="text-sm border-l pl-3 mb-2">
                   • {dt.title}
                 </div>
