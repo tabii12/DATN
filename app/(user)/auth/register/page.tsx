@@ -37,7 +37,7 @@ export default function RegisterPage() {
 
     try {
       const res = await fetch(
-        "https://db-datn.onrender.com/api/users/register",
+        "https://db-datn-six.vercel.app/api/users/register",
         {
           method: "POST",
           headers: {
@@ -228,7 +228,7 @@ export default function RegisterPage() {
           <GoogleLogin
             onSuccess={async (credentialResponse) => {
               const res = await axios.post(
-                "https://db-datn.onrender.com/api/users/google-auth",
+                "https://db-datn-six.vercel.app/api/users/google-auth",
                 {
                   token: credentialResponse.credential,
                 },

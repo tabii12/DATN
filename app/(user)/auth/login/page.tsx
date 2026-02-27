@@ -63,7 +63,7 @@ export default function LoginPage() {
     if (!validateAll()) return;
 
     try {
-      const res = await fetch("https://db-datn.onrender.com/api/users/login", {
+      const res = await fetch("https://db-datn-six.vercel.app/api/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +164,7 @@ export default function LoginPage() {
         <GoogleLogin
           onSuccess={async (credentialResponse) => {
             const res = await axios.post(
-              "https://db-datn.onrender.com/api/users/google-auth",
+              "https://db-datn-six.vercel.app/api/users/google-auth",
               {
                 token: credentialResponse.credential,
               },
