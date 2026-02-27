@@ -1,3 +1,5 @@
+"use client";
+
 import HotelListingPage from "../components/hotels/HotelListingPage";
 
 interface Props {
