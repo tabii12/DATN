@@ -101,7 +101,7 @@ function RatingBadge({ rating }: { rating: number }) {
 function SkeletonCard() {
     return (
         <div className="bg-white rounded-xl overflow-hidden shadow-sm animate-pulse">
-            <div className="bg-gray-200 aspect-[374/280]" />
+            <div className="bg-gray-200 aspect-374/280" />
             <div className="p-3 flex flex-col gap-2">
                 <div className="h-3 bg-gray-200 rounded w-1/2" />
                 <div className="h-4 bg-gray-200 rounded w-full" />
@@ -115,7 +115,7 @@ function SkeletonCard() {
 function HotelCard({ hotel }: { hotel: Hotel }) {
     return (
         <a href={`/tours/${hotel.slug}`} className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col no-underline">
-            <div className="relative overflow-hidden aspect-[374/280] shrink-0">
+            <div className="relative overflow-hidden aspect-374/280 shrink-0">
                 {hotel.image ? (
                     <img src={hotel.image} alt={hotel.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
                 ) : (
@@ -124,7 +124,7 @@ function HotelCard({ hotel }: { hotel: Hotel }) {
                     </div>
                 )}
                 {hotel.combo && (
-                    <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent px-3 pt-2.5 pb-4">
+                    <div className="absolute top-0 left-0 right-0 bg-linear-to-b from-black/60 to-transparent px-3 pt-2.5 pb-4">
                         <span className="text-white text-[11px] font-semibold drop-shadow line-clamp-1">{hotel.combo}</span>
                     </div>
                 )}

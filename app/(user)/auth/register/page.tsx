@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -22,6 +23,8 @@ export default function RegisterPage() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -56,6 +59,7 @@ export default function RegisterPage() {
       }
 
       alert(data.message);
+      router.push("/auth/login");
     } catch (error) {
       console.error(error);
       alert("Lỗi server");
