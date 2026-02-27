@@ -167,7 +167,7 @@ export default function HotelListingPage() {
 
     // ── FETCH ──
     useEffect(() => {
-        fetch("https://db-datn.onrender.com/api/tours")
+        fetch("https://db-datn-six.vercel.app/api/tours")
             .then(r => r.json())
             .then(res => {
                 if (res.success && Array.isArray(res.data)) {

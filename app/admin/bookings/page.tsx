@@ -15,7 +15,7 @@ export default function AdminBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   useEffect(() => {
-    fetch("https://db-datn.onrender.com/api/bookings/admin/all", {
+    fetch("https://db-datn-six.vercel.app/api/bookings/admin/all", {
       headers: {
         Authorization: "Bearer TOKEN_ADMIN",
       },
@@ -26,7 +26,7 @@ export default function AdminBookings() {
 
   const confirmPayment = async (id: string) => {
     await fetch(
-      `https://db-datn.onrender.com/api/bookings/admin/${id}/confirm-payment`,
+      `https://db-datn-six.vercel.app/api/bookings/admin/${id}/confirm-payment`,
       {
         method: "PATCH",
         headers: {

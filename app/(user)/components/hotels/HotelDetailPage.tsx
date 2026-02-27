@@ -109,7 +109,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   // Fetch tour data từ API
   useEffect(() => {
     if (!slug) return;
-    fetch(`https://db-datn.onrender.com/api/tours/detail/${slug}`)
+    fetch(`https://db-datn-six.vercel.app/api/tours/detail/${slug}`)
       .then(r => r.json())
       .then(res => { if (res.data) setTour(res.data); })
       .catch(() => {})

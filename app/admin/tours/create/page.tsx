@@ -20,8 +20,8 @@ export default function CreateTourPage() {
   /* ---------------- FETCH SELECT DATA ---------------- */
   useEffect(() => {
     Promise.all([
-      fetch("https://db-datn.onrender.com/api/hotels").then(r => r.json()),
-      fetch("https://db-datn.onrender.com/api/categories").then(r => r.json()),
+      fetch("https://db-datn-six.vercel.app/api/hotels").then(r => r.json()),
+      fetch("https://db-datn-six.vercel.app/api/categories").then(r => r.json()),
     ]).then(([hotelRes, cateRes]) => {
       setHotels(hotelRes.data || []);
       setCategories(cateRes.data || []);
@@ -50,7 +50,7 @@ export default function CreateTourPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch("https://db-datn.onrender.com/api/tours", {
+    const res = await fetch("https://db-datn-six.vercel.app/api/tours", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

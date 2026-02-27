@@ -22,7 +22,7 @@ export default function AdminTours() {
     const [editName, setEditName] = useState("");
     const [editStatus, setEditStatus] = useState("active");
     useEffect(() => {
-        fetch("https://db-datn.onrender.com/api/tours")
+        fetch("https://db-datn-six.vercel.app/api/tours")
             .then(res => res.json())
             .then(data => {
                 setTours(data.data || []);
@@ -35,7 +35,7 @@ export default function AdminTours() {
 
         try {
             const res = await fetch(
-                `https://db-datn.onrender.com/api/tours/${id}`,
+                `https://db-datn-six.vercel.app/api/tours/${id}`,
                 {
                     method: "DELETE",
                     headers: {
@@ -220,7 +220,7 @@ export default function AdminTours() {
                                     onClick={async () => {
                                         try {
                                             const res = await fetch(
-                                                `https://db-datn.onrender.com/api/tours/${editingTour._id}`,
+                                                `https://db-datn-six.vercel.app/api/tours/${editingTour._id}`,
                                                 {
                                                     method: "PUT",
                                                     headers: {
