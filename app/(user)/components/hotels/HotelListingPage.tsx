@@ -66,11 +66,11 @@ function mapTourToHotel(tour: TourAPI): Hotel {
 
 const LOCATIONS = [
     { id: 0, label: "Tất cả" },
-    { id: 85418, label: "Gần Kỳ Co - Eo Gió" },
-    { id: 85419, label: "Gần Ghềnh Ráng Tiên Sa" },
-    { id: 85420, label: "Gần bãi biển Quy Nhơn" },
-    { id: 85421, label: "Gần Linh Phong Thiền Tự" },
-    { id: 85481, label: "Gần Ga Quy Nhơn" },
+    { id: 85418, label: "Quy Nhơn" },
+    { id: 85419, label: "Vũng Tàu" },
+    { id: 85420, label: "Nha Trang" },
+    { id: 85421, label: "Cần Thơ" },
+    { id: 85481, label: "Hạ Long" },
 ];
 
 const OTHER_DESTINATIONS = [
@@ -227,7 +227,7 @@ export default function HotelListingPage() {
                     <span>/</span>
                     <a href="/tour" className="hover:text-orange-500 no-underline">Tours</a>
                     <span>/</span>
-                    <span className="text-gray-600 font-medium">Quy Nhơn</span>
+                    <span className="text-gray-600 font-medium">...</span>
                 </div>
 
                 {/* TITLE */}
@@ -361,17 +361,17 @@ export default function HotelListingPage() {
                         <div className="mt-8 bg-white rounded-xl p-5 border border-gray-100">
                             <h2 className="text-base font-extrabold text-gray-900 mb-3">Tour du lịch</h2>
                             <p className="text-[13px] text-gray-600 leading-relaxed mb-2">
-                                Quy Nhơn từng được mệnh danh là "thiên đường biển đảo bị lãng quên" của Việt Nam trước kia vì được thiên nhiên ưu ái cho bờ biển dài, đẹp nhưng lại ít được du khách biết tới. Thế nhưng những năm gần đây Quy Nhơn đang từng bước trở thành điểm đến yêu thích của nhiều du khách nhờ vẻ hoang sơ và mới lạ.
+                                 từng được mệnh danh là "thiên đường biển đảo bị lãng quên" của Việt Nam trước kia vì được thiên nhiên ưu ái cho bờ biển dài, đẹp nhưng lại ít được du khách biết tới. Thế nhưng những năm gần đây  đang từng bước trở thành điểm đến yêu thích của nhiều du khách nhờ vẻ hoang sơ và mới lạ.
                             </p>
                             <p className="text-[13px] text-gray-600 leading-relaxed">
-                                Nếu thích nghỉ dưỡng thì các <strong className="text-gray-800">khách sạn Quy Nhơn</strong> ở khu vực Nhơn Lý, Eo Gió là lý tưởng nhất, còn muốn ngắm phố phường sôi động thì bạn có thể chọn các khách sạn ở khu vực trung tâm thành phố.
+                                Nếu thích nghỉ dưỡng thì các <strong className="text-gray-800">khách sạn </strong> ở khu vực Nhơn Lý, Eo Gió là lý tưởng nhất, còn muốn ngắm phố phường sôi động thì bạn có thể chọn các khách sạn ở khu vực trung tâm thành phố.
                             </p>
                         </div>
 
                         <div className="mt-4 bg-white rounded-xl p-5 border border-gray-100">
-                            <h2 className="text-base font-extrabold text-gray-900 mb-3">Kinh nghiệm du lịch Quy Nhơn</h2>
+                            <h2 className="text-base font-extrabold text-gray-900 mb-3">Kinh nghiệm du lịch </h2>
                             <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                                Kỳ Co, Eo Gió, Hòn Khô, Cù Lao Xanh… là những nơi bạn phải ghé khi đến Quy Nhơn. Bên cạnh đó đừng quên thưởng thức các món đặc sản như bánh xèo tôm nhảy, bánh hỏi lòng heo, bún cá, bánh mì lagu...
+                                Kỳ Co, Eo Gió, Hòn Khô, Cù Lao Xanh… là những nơi bạn phải ghé khi đến . Bên cạnh đó đừng quên thưởng thức các món đặc sản như bánh xèo tôm nhảy, bánh hỏi lòng heo, bún cá, bánh mì lagu...
                             </p>
                             <a href="#" className="text-xs text-orange-500 font-semibold hover:underline no-underline">Xem thêm →</a>
                         </div>

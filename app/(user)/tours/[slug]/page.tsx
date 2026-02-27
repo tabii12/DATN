@@ -1,13 +1,10 @@
-"use client";
-
+import { use } from "react";
 import HotelDetailPage from "../../components/hotels/HotelDetailPage";
-
-// Page nhận params từ Next.js App Router → truyền slug xuống client component
-export default async function TourDetailPage({
+export default function TourDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
+  const { slug } = use(params);
   return <HotelDetailPage slug={slug} />;
 }
