@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import HotelListingPage from "../components/hotels/HotelListingPage";
 
-interface Props {
-  params: { slug: string };
-}
-
-export default function HotelSlugPage({ params }: Props) {
-  return <HotelListingPage />;
+export default function HotelSlugPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HotelListingPage />
+    </Suspense>
+  );
 }
