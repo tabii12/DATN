@@ -1,8 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
+interface Booking {
+  _id: string;
+  payment_status: string;
+  user?: {
+    name: string;
+  };
+  tour?: {
+    name: string;
+  };
+}
 
 export default function AdminBookings() {
-  const [bookings, setBookings] = useState([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
   useEffect(() => {
     fetch("https://db-datn.onrender.com/api/bookings/admin/all", {
@@ -14,7 +24,7 @@ export default function AdminBookings() {
       .then(data => setBookings(data.data || []));
   }, []);
 
-  const confirmPayment = async (id) => {
+  const confirmPayment = async (id: string) => {
     await fetch(
       `https://db-datn.onrender.com/api/bookings/admin/${id}/confirm-payment`,
       {
