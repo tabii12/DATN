@@ -1,12 +1,5 @@
-"use client";
+import ToursLandingPage from "../components/Tourlandingpage";
 
-import { Suspense } from "react";
-import HotelListingPage from "../components/hotels/HotelListingPage";
-
-export default function HotelSlugPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <HotelListingPage />
-    </Suspense>
-  );
+export default function ToursPage() {
+  return <ToursLandingPage />;
 }

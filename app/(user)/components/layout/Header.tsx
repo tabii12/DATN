@@ -20,10 +20,10 @@ export default function Header() {
             <Link href="/tours" className="hover:text-blue-500">
               Tours
             </Link>
-            <Link href="#" className="hover:text-blue-500">
+            <Link href="/info" className="hover:text-blue-500">
               Giới thiệu
             </Link>
-            <Link href="#" className="hover:text-blue-500">
+            <Link href="/blogs" className="hover:text-blue-500">
               Tin tức
             </Link>
             <Link href="#" className="hover:text-blue-500">

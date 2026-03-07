@@ -199,7 +199,7 @@ export default function HotelListingPage() {
         <div className="min-h-screen bg-gray-50 font-sans">
 
             {/* SEARCH BAR */}
-            <div className="bg-white border-b border-gray-100">
+            {/* <div className="bg-white border-b border-gray-100">
                 <div className="max-w-300 mx-auto px-4 py-2.5">
                     <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 max-w-sm focus-within:border-orange-400 transition-colors">
                         <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,9 +217,9 @@ export default function HotelListingPage() {
                         )}
                     </div>
                 </div>
-            </div>
+            </div> */}
 
-            <div className="max-w-300 mx-auto px-4 py-4">
+            <div className="max-w-7xl mx-auto px-4 py-4">
 
                 {/* BREADCRUMB */}
                 <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
