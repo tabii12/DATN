@@ -244,7 +244,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
       <div className="bg-white">
-        <div className="max-w-[1200px] mx-auto px-4">
+        <div className="max-w-300 mx-auto px-4">
           <div className="flex justify-between items-start py-4 gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
@@ -292,7 +292,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
         {/* ── Desktop: ảnh trái + bản đồ/review phải ── */}
         {images.length > 0 && (
           <div className="hidden lg:block">
-            <div className="max-w-[1200px] mx-auto px-4 pb-4">
+            <div className="max-w-300 mx-auto px-4 pb-4">
               {/* Badge combo */}
               {/* <div className="inline-flex items-center bg-[#1a1a2e] hover:bg-[#2d2d5e] text-white text-xs font-semibold px-3 py-1.5 rounded-md mb-2 cursor-pointer transition-colors">
                 3N2Đ VMB + Đón tiền | 7.699 triệu/ khách
@@ -303,7 +303,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 <div className="flex-1 min-w-0">
                   {/* Hàng trên: 3 ảnh, cột đầu 2x */}
                   <div
-                    className="grid gap-1 h-[320px]"
+                    className="grid gap-1 h-80"
                     style={{ gridTemplateColumns: "2fr 1fr 1fr" }}
                   >
                     {mainImgs.map((img, i) => (
@@ -323,7 +323,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   {/* Hàng dưới: sub images */}
                   {subImgs.length > 0 && (
                     <div
-                      className="grid gap-1 mt-1 h-[110px]"
+                      className="grid gap-1 mt-1 h-27.5"
                       style={{
                         gridTemplateColumns:
                           "repeat(" + subImgs.length + ", 1fr)",
@@ -354,9 +354,9 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 </div>
 
                 {/* RIGHT: Bản đồ + Review */}
-                <div className="w-[290px] flex-shrink-0 flex flex-col gap-2">
+                <div className="w-72.5 shrink-0 flex flex-col gap-2">
                   {/* Map */}
-                  <div className="h-[200px] rounded-lg overflow-hidden border border-gray-200 relative">
+                  <div className="h-50 rounded-lg overflow-hidden border border-gray-200 relative">
                     <iframe
                       width="100%"
                       height="100%"
@@ -409,7 +409,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                       </p>
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[10px] font-bold text-orange-500 flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[10px] font-bold text-orange-500 shrink-0">
                             TD
                           </div>
                           <span className="text-xs font-semibold text-gray-700">
@@ -445,7 +445,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 {images.map((img, i) => (
                   <div
                     key={i}
-                    className="relative flex-shrink-0 h-[260px]"
+                    className="relative shrink-0 h-65"
                     style={{ minWidth: "100vw" }}
                   >
                     <img
@@ -481,7 +481,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                     key={i}
                     onClick={() => setActiveImg(i)}
                     className={
-                      "flex-shrink-0 rounded cursor-pointer border-2 overflow-hidden transition-colors " +
+                      "shrink-0 rounded cursor-pointer border-2 overflow-hidden transition-colors " +
                       (activeImg === i
                         ? "border-orange-500"
                         : "border-transparent")
@@ -503,7 +503,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
       </div>
 
       <div className="bg-white mt-2">
-        <div className="max-w-[1200px] mx-auto px-4 py-5 flex flex-col lg:flex-row gap-8">
+        <div className="max-w-300 mx-auto px-4 py-5 flex flex-col lg:flex-row gap-8">
           <div className="flex-1 min-w-0 flex flex-col gap-4">
             <h2 className="text-base font-extrabold text-gray-900">
               {tour.name}
@@ -517,7 +517,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
               </div>
             ))}
           </div>
-          <div className="w-full lg:w-[280px] flex-shrink-0">
+          <div className="w-full lg:w-70 shrink-0">
             <div className="border border-gray-200 rounded-xl overflow-hidden sticky top-20">
               <div className="p-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
@@ -579,7 +579,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
       {tour.itineraries?.length > 0 && (
         <div className="bg-white mt-2">
-          <div className="max-w-[1200px] mx-auto px-4 py-5">
+          <div className="max-w-300 mx-auto px-4 py-5">
             <div className="flex items-center gap-2.5 mb-4">
               <span className="text-xl">🗓️</span>
               <span className="text-base font-extrabold text-gray-900">
@@ -620,7 +620,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                         if (!place) return null;
                         return (
                           <div key={j} className="flex gap-3">
-                            <div className="flex flex-col items-center flex-shrink-0">
+                            <div className="flex flex-col items-center shrink-0">
                               <div className="w-2.5 h-2.5 rounded-full bg-orange-400 mt-1" />
                               {j < day.details.length - 1 && (
                                 <div className="w-px flex-1 bg-orange-100 mt-1" />
@@ -642,7 +642,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                                       key={k}
                                       src={img.image_url}
                                       alt={place.title}
-                                      className="h-24 w-36 object-cover rounded-lg flex-shrink-0"
+                                      className="h-24 w-36 object-cover rounded-lg shrink-0"
                                       loading="lazy"
                                     />
                                   ))}
