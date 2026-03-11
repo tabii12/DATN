@@ -20,44 +20,80 @@ interface TokenPayload {
   exp: number;
 }
 
+interface UserType {
+  name: string;
+  email: string;
+}
+
 export default function UserDropdown() {
 
   const [open, setOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserType | null>(null);
 
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
 
-    const storedToken = localStorage.getItem("token");
+    const fetchUser = async () => {
 
-    if (!storedToken) return;
+      const storedToken = localStorage.getItem("token");
+      if (!storedToken) return;
 
-    const decoded: TokenPayload = jwtDecode(storedToken);
+      try {
 
-    // kiểm tra token hết hạn
-    const now = Date.now() / 1000;
-    if (decoded.exp < now) {
-      localStorage.removeItem("token");
-      return;
-    }
+        const decoded: TokenPayload = jwtDecode(storedToken);
 
-    setToken(storedToken);
+        const now = Date.now() / 1000;
 
-    // gọi API lấy user
-    fetch(`https://db-datn-six.vercel.app/api/users/${decoded.id}`)
-      .then(res => res.json())
-      .then(data => setUser(data));
+        // kiểm tra token hết hạn
+        if (decoded.exp < now) {
+          localStorage.removeItem("token");
+          return;
+        }
+
+        setToken(storedToken);
+
+        const res = await fetch(
+          `https://db-datn-six.vercel.app/api/users/${decoded.id}`
+        );
+
+        if (!res.ok) {
+          throw new Error("Không lấy được user");
+        }
+
+        const data = await res.json();
+
+        console.log("USER DATA:", data);
+
+        // nếu API trả thẳng user
+        if (data.name) {
+          setUser(data);
+        }
+        // nếu API trả dạng { data: {...} }
+        else if (data.data) {
+          setUser(data.data);
+        }
+
+      } catch (error) {
+        console.error("Lỗi lấy user:", error);
+      }
+
+    };
+
+    fetchUser();
 
   }, []);
 
-  // click ngoài dropdown tự đóng
+  // click ngoài dropdown
   useEffect(() => {
 
-    const handleClickOutside = (event: any) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -73,7 +109,7 @@ export default function UserDropdown() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setToken(null);
-    router.push("/login");
+    router.push("/auth/login");
   };
 
   // chưa đăng nhập
@@ -105,10 +141,10 @@ export default function UserDropdown() {
 
           <div className="p-4 border-b">
             <p className="font-semibold">
-              {user?.name || "Loading..."}
+              {user ? user.name : "Loading..."}
             </p>
             <p className="text-sm text-gray-500">
-              {user?.email}
+              {user ? user.email : ""}
             </p>
           </div>
 
