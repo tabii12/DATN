@@ -1,4 +1,5 @@
 import Link from "next/link";
+import UserDropdown from "../UserDropdown";
 
 export default function Header() {
   return (
@@ -32,12 +33,7 @@ export default function Header() {
           </nav>
 
           {/* ACCOUNT */}
-          <Link
-            href="#"
-            className="text-2xl font-medium text-gray-700 hover:text-blue-500"
-          >
-            Tài khoản
-          </Link>
+          <UserDropdown />
         </div>
       </div>
     </header>
