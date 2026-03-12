@@ -130,7 +130,7 @@ export default function UserDropdown() {
 
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 hover:text-blue-500"
+        className="text-black flex items-center gap-1 hover:text-orange-500"
       >
         <User size={22}/>
         <ChevronDown size={16}/>
