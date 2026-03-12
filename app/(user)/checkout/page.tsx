@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Plane,
@@ -43,7 +43,7 @@ function validate(name: string, value: string): string {
   }
 }
 
-export default function CheckoutPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -394,5 +394,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense>
+      <SearchContent />
+    </Suspense>
   );
 }
