@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { JSX } from "react";
 
 const SECTIONS = [
@@ -236,9 +237,9 @@ const CONTENT: Record<string, JSX.Element> = {
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
           <p className="font-semibold text-gray-800 mb-2">🏦 Chuyển khoản ngân hàng</p>
           <ul className="text-sm space-y-1 text-gray-600">
-            <li>Ngân hàng: <strong>MBBank</strong></li>
-            <li>Số tài khoản: <strong>0336323498</strong></li>
-            <li>Chủ tài khoản: <strong>DU LỊCH PICK YOUR WAY</strong></li>
+            <li>Ngân hàng: <strong>Vietcombank</strong></li>
+            <li>Số tài khoản: <strong>1234 5678 9012</strong></li>
+            <li>Chủ tài khoản: <strong>CÔNG TY DU LỊCH PICK YOUR WAY</strong></li>
             <li>Nội dung: <strong>[Mã đơn hàng] - [Họ tên]</strong></li>
           </ul>
         </div>
@@ -298,7 +299,7 @@ const CONTENT: Record<string, JSX.Element> = {
         <h2 className="text-2xl font-bold text-gray-900">Bảo hiểm du lịch</h2>
       </div>
       <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
-        <p>Tất cả tour của Pick Your Way đều bao gồm <strong>bảo hiểm du lịch</strong> trong suốt hành trình.</p>
+        <p>Tất cả tour của Pick Your Way đều bao gồm <strong>bảo hiểm du lịch</strong> trong suốt hành trình, được cung cấp bởi <strong>Bảo Việt</strong>.</p>
         <div className="space-y-2">
           {[["Tai nạn thân thể", "200.000.000 đ"], ["Chi phí y tế", "100.000.000 đ"], ["Hủy chuyến bất khả kháng", "20.000.000 đ"], ["Mất hành lý", "5.000.000 đ"]].map(([coverage, limit]) => (
             <div key={coverage as string} className="flex justify-between items-center border-b border-gray-100 py-2.5 last:border-0">
@@ -362,9 +363,9 @@ const CONTENT: Record<string, JSX.Element> = {
         <h2 className="text-2xl font-bold text-gray-900">Về chúng tôi</h2>
       </div>
       <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
-        <p><strong>Du lịch Pick Your Way</strong> được thành lập năm 2026, trụ sở tại TP. Hồ Chí Minh, chuyên cung cấp dịch vụ tour du lịch nội địa cao cấp trên toàn Việt Nam.</p>
+        <p><strong>Công ty TNHH Du lịch Pick Your Way</strong> được thành lập năm 2015, trụ sở tại TP. Hồ Chí Minh, chuyên cung cấp dịch vụ tour du lịch nội địa cao cấp trên toàn Việt Nam.</p>
         <div className="space-y-2 text-sm">
-          {[["Tên công ty", "Du lịch Pick Your Way"], ["Mã số thuế", "0123 456 789"], ["Địa chỉ", "Công Viên Phần Mềm Quang Trung, Quận 12, TP. HCM"]].map(([label, value]) => (
+          {[["Tên công ty", "Công ty TNHH Du lịch Pick Your Way"], ["Mã số thuế", "0312 345 678"], ["Địa chỉ", "123 Nguyễn Huệ, Quận 1, TP. HCM"], ["Giấy phép LHQT", "01-1234/2015/TCDL-GP LHQT"]].map(([label, value]) => (
             <div key={label as string} className="flex gap-4 border-b border-gray-100 pb-2 last:border-0">
               <span className="w-36 text-gray-400 flex-shrink-0">{label}</span>
               <span className="text-gray-700 font-medium">{value}</span>
@@ -389,9 +390,28 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
-export default function TourInfoPage() {
+function TourInfoContent() {
+  const searchParams = useSearchParams();
   const [activeId, setActiveId] = useState("gioi-thieu");
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ "chinh-sach": true, "huong-dan": true, "ho-tro": true });
+
+  useEffect(() => {
+    const section = searchParams.get("section");
+    if (!section) return;
+    setActiveId(section);
+    const parentMap: Record<string, string> = {
+      "chinh-sach-huy": "chinh-sach",
+      "chinh-sach-thanh-toan": "chinh-sach",
+      "chinh-sach-doi-lich": "chinh-sach",
+      "huong-dan-dat": "huong-dan",
+      "huong-dan-thanh-toan": "huong-dan",
+      "huong-dan-check-in": "huong-dan",
+      "ho-tro-lien-he": "ho-tro",
+      "ho-tro-faq": "ho-tro",
+    };
+    const parent = parentMap[section];
+    if (parent) setOpenGroups(prev => ({ ...prev, [parent]: true }));
+  }, [searchParams]);
 
   function toggleGroup(id: string) {
     setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }));
@@ -409,7 +429,7 @@ export default function TourInfoPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 pt-4">
+      <div className="max-w-[1280] mx-auto px-4 pt-4">
         <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
           <a href="/" className="hover:text-orange-500 no-underline">Trang chủ</a>
           <span>/</span>
@@ -417,7 +437,7 @@ export default function TourInfoPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 flex gap-6 items-start">
+      <div className="max-w-[1280] mx-auto px-4 py-8 flex gap-6 items-start">
         {/* SIDEBAR */}
         <aside className="w-[240px] flex-shrink-0 sticky top-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -482,5 +502,13 @@ export default function TourInfoPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function TourInfoPage() {
+  return (
+    <Suspense>
+      <TourInfoContent />
+    </Suspense>
   );
 }

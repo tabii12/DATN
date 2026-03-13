@@ -1,0 +1,460 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+const API = "https://db-datn-six.vercel.app/api";
+
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  status: "active" | "inactive";
+  createdAt: string;
+  updatedAt: string;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  return status === "active" ? (
+    <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+      Hoạt động
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-gray-100 text-gray-400 px-2.5 py-1 rounded-full">
+      <span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block" />
+      Tạm ẩn
+    </span>
+  );
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("vi-VN", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+}
+
+const CATEGORY_ICONS: Record<string, string> = {
+  "tour-nghi-duong": "🌴",
+  "tour-bien": "🏖️",
+  "tour-am-thuc": "🍜",
+  "tour-thien-nhien-and-kham-pha": "🏔️",
+  "tour-trai-nghiem-and-giai-tri": "🎡",
+  "tour-du-thuyen": "🛥️",
+  "tour-gia-dinh": "👨‍👩‍👧",
+  "tour-check-in-and-tham-quan": "📸",
+};
+
+export default function AdminCategories() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+
+  // Add modal
+  const [showAdd, setShowAdd] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addStatus, setAddStatus] = useState<"active" | "inactive">("active");
+  const [adding, setAdding] = useState(false);
+
+  // Edit modal
+  const [editingCat, setEditingCat] = useState<Category | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editStatus, setEditStatus] = useState<"active" | "inactive">("active");
+  const [saving, setSaving] = useState(false);
+
+  // Delete confirm
+  const [deletingCat, setDeletingCat] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Toast
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  function showToast(msg: string, type: "success" | "error" = "success") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  useEffect(() => {
+    fetch(`${API}/categories`)
+      .then(r => r.json())
+      .then(d => setCategories(d.data || []))
+      .catch(() => showToast("Không tải được danh mục", "error"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = categories.filter(c => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || c.name.toLowerCase().includes(q) || c.slug.includes(q);
+    const matchStatus = filterStatus === "all" || c.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  function openEdit(cat: Category) {
+    setEditingCat(cat);
+    setEditName(cat.name);
+    setEditStatus(cat.status);
+  }
+
+  function openAdd() {
+    setAddName("");
+    setAddStatus("active");
+    setShowAdd(true);
+  }
+
+  async function handleAdd() {
+    if (!addName.trim()) return;
+    setAdding(true);
+    try {
+      const res = await fetch(`${API}/categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: addName.trim(), status: addStatus }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setCategories(prev => [data.data, ...prev]);
+      setShowAdd(false);
+      showToast("Thêm danh mục thành công!");
+    } catch {
+      showToast("Thêm thất bại, thử lại sau", "error");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!editingCat) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API}/categories/${editingCat._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName, status: editStatus }),
+      });
+      if (!res.ok) throw new Error();
+      setCategories(prev => prev.map(c =>
+        c._id === editingCat._id ? { ...c, name: editName, status: editStatus } : c
+      ));
+      setEditingCat(null);
+      showToast("Cập nhật thành công!");
+    } catch {
+      showToast("Lưu thất bại, thử lại sau", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deletingCat) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API}/categories/${deletingCat._id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setCategories(prev => prev.filter(c => c._id !== deletingCat._id));
+      setDeletingCat(null);
+      showToast("Đã xóa danh mục!");
+    } catch {
+      showToast("Xóa thất bại, thử lại sau", "error");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function toggleStatus(cat: Category) {
+    const newStatus = cat.status === "active" ? "inactive" : "active";
+    try {
+      const res = await fetch(`${API}/categories/${cat._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error();
+      setCategories(prev => prev.map(c =>
+        c._id === cat._id ? { ...c, status: newStatus } : c
+      ));
+      showToast(newStatus === "active" ? "Đã bật danh mục" : "Đã tắt danh mục");
+    } catch {
+      showToast("Cập nhật thất bại", "error");
+    }
+  }
+
+  const totalActive = categories.filter(c => c.status === "active").length;
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6 font-sans">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white transition-all ${toast.type === "success" ? "bg-emerald-500" : "bg-red-500"}`}>
+          {toast.type === "success" ? "✓ " : "✕ "}{toast.msg}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Quản lý danh mục</h1>
+          <p className="text-sm text-gray-400 mt-0.5">Tổng {categories.length} danh mục</p>
+        </div>
+        <button
+          onClick={openAdd}
+          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm"
+        >
+          <span className="text-base leading-none">+</span> Thêm danh mục
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        {[
+          { label: "Tổng danh mục", value: categories.length, icon: "🗂️", color: "text-blue-600 bg-blue-50" },
+          { label: "Đang hoạt động", value: totalActive, icon: "✅", color: "text-emerald-600 bg-emerald-50" },
+          { label: "Tạm ẩn", value: categories.length - totalActive, icon: "🔒", color: "text-gray-500 bg-gray-100" },
+        ].map(({ label, value, icon, color }) => (
+          <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm">
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl ${color}`}>{icon}</div>
+            <div>
+              <p className="text-2xl font-black text-gray-900">{value}</p>
+              <p className="text-xs text-gray-400">{label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4 flex flex-wrap gap-3 items-center">
+        <input
+          type="text"
+          placeholder="Tìm tên danh mục..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="border border-gray-200 rounded-xl px-4 py-2 text-sm w-60 focus:outline-none focus:ring-2 focus:ring-orange-300"
+        />
+        <select
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
+          className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+        >
+          <option value="all">Tất cả trạng thái</option>
+          <option value="active">Hoạt động</option>
+          <option value="inactive">Tạm ẩn</option>
+        </select>
+        {(search || filterStatus !== "all") && (
+          <button
+            onClick={() => { setSearch(""); setFilterStatus("all"); }}
+            className="text-xs text-gray-400 hover:text-gray-600 underline"
+          >
+            Xóa bộ lọc
+          </button>
+        )}
+        <span className="ml-auto text-xs text-gray-400">{filtered.length} kết quả</span>
+      </div>
+
+      {/* Grid cards */}
+      {loading ? (
+        <div className="flex items-center justify-center py-24 text-gray-400 gap-3">
+          <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          </svg>
+          Đang tải...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20 text-gray-400 bg-white rounded-2xl border border-gray-100">
+          <p className="text-4xl mb-3">🔍</p>
+          <p className="text-sm">Không tìm thấy danh mục nào</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map(cat => (
+            <div
+              key={cat._id}
+              className={`bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-3 transition-all hover:shadow-md ${cat.status === "inactive" ? "opacity-60 border-gray-100" : "border-gray-100"}`}
+            >
+              {/* Icon + name */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center text-2xl flex-shrink-0">
+                    {CATEGORY_ICONS[cat.slug] ?? "🏷️"}
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm leading-tight">{cat.name}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5 font-mono">{cat.slug}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status + date */}
+              <div className="flex items-center justify-between">
+                <StatusBadge status={cat.status} />
+                <span className="text-[11px] text-gray-400">{formatDate(cat.createdAt)}</span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
+                {/* Toggle status */}
+                <button
+                  onClick={() => toggleStatus(cat)}
+                  title={cat.status === "active" ? "Tắt danh mục" : "Bật danh mục"}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    cat.status === "active"
+                      ? "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                  }`}
+                >
+                  {cat.status === "active" ? "Tắt" : "Bật"}
+                </button>
+                <button
+                  onClick={() => openEdit(cat)}
+                  className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-500 hover:bg-blue-100 transition-colors"
+                >
+                  ✏️ Sửa
+                </button>
+                <button
+                  onClick={() => setDeletingCat(cat)}
+                  className="py-1.5 px-3 rounded-lg text-xs font-semibold bg-red-50 text-red-400 hover:bg-red-100 transition-colors"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── ADD MODAL ── */}
+      {showAdd && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-gray-900">Thêm danh mục mới</h2>
+              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Tên danh mục <span className="text-red-400">*</span></label>
+                <input
+                  value={addName}
+                  onChange={e => setAddName(e.target.value)}
+                  placeholder="VD: Tour Mạo Hiểm"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Trạng thái</label>
+                <select
+                  value={addStatus}
+                  onChange={e => setAddStatus(e.target.value as "active" | "inactive")}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                >
+                  <option value="active">Hoạt động</option>
+                  <option value="inactive">Tạm ẩn</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAdd(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleAdd}
+                disabled={adding || !addName.trim()}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold disabled:opacity-60 transition-colors"
+              >
+                {adding ? "Đang thêm..." : "Thêm danh mục"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── EDIT MODAL ── */}
+      {editingCat && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-gray-900">Chỉnh sửa danh mục</h2>
+              <button onClick={() => setEditingCat(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-5">
+              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-xl">
+                {CATEGORY_ICONS[editingCat.slug] ?? "🏷️"}
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Slug (tự động)</p>
+                <p className="text-sm font-mono text-gray-600">{editingCat.slug}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Tên danh mục</label>
+                <input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Trạng thái</label>
+                <select
+                  value={editStatus}
+                  onChange={e => setEditStatus(e.target.value as "active" | "inactive")}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                >
+                  <option value="active">Hoạt động</option>
+                  <option value="inactive">Tạm ẩn</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingCat(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold disabled:opacity-60 transition-colors"
+              >
+                {saving ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DELETE MODAL ── */}
+      {deletingCat && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div className="text-5xl mb-3">🗑️</div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Xóa danh mục?</h2>
+            <p className="text-sm text-gray-500 mb-1">Bạn có chắc muốn xóa danh mục</p>
+            <p className="font-semibold text-gray-800 mb-2">"{deletingCat.name}"?</p>
+            <p className="text-xs text-red-400 mb-6">Các tour thuộc danh mục này có thể bị ảnh hưởng.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingCat(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold disabled:opacity-60"
+              >
+                {deleting ? "Đang xóa..." : "Xóa"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
