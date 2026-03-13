@@ -39,13 +39,25 @@ export default function AdminLayout({
             href="/admin/blogs"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >
-            📝 Blogs
+            📝 Tin tức
           </Link>
           <Link
-            href="/admin/services"
+            href="/admin/category"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >
-            🛎 Services
+            🛎 Danh Mục
+          </Link>
+          <Link
+            href="/admin/users"
+            className="block px-3 py-2 rounded hover:bg-blue-700"
+          >
+            🛎 Tài khoản
+          </Link>
+          <Link
+            href="/admin/users"
+            className="block px-3 py-2 rounded hover:bg-blue-700"
+          >
+            🛎 Bình luận
           </Link>
         </nav>
       </aside>

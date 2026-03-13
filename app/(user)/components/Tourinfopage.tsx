@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { JSX } from "react";
 
 const SECTIONS = [
   {
