@@ -42,7 +42,7 @@ export default function AdminLayout({
             📝 Tin tức
           </Link>
           <Link
-            href="/admin/category"
+            href="/admin/categories"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >
             🛎 Danh Mục

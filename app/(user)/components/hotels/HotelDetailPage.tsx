@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 interface PlaceDetail { title: string; content: string; images?: { image_url: string }[]; }
 interface ItineraryDetail {
@@ -87,11 +88,37 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const [attempt, setAttempt]     = useState(0);
   const [activeImg, setActiveImg] = useState(0);
   const [openDay, setOpenDay]     = useState<number | null>(0);
+  const [adults, setAdults]         = useState(1);
+  const [children, setChildren]     = useState(0);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewRef  = useRef<HTMLDivElement | null>(null);
 
   const scrollToReview = () => {
     reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const router = useRouter();
+
+  const handleBook = () => {
+    const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("token");
+    const checkoutParams = new URLSearchParams({
+      tourName:      tour?.name ?? "",
+      hotelName:     tour?.hotel_id?.name ?? "",
+      city:          tour?.hotel_id?.city ?? "",
+      thumbnail:     tour?.images?.[0]?.image_url ?? "",
+      tourSlug:      slug,
+      pricePerAdult: String(tour?.hotel_id?.price_per_night ?? 0),
+      pricePerChild: String(Math.round((tour?.hotel_id?.price_per_night ?? 0) * 0.7)),
+      adults:        String(adults),
+      children:      String(children),
+    });
+    const checkoutUrl = `/checkout?${checkoutParams.toString()}`;
+    if (!isLoggedIn) {
+      const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+      router.push(`/auth/login?redirect=${encodeURIComponent(currentUrl)}`);
+    } else {
+      router.push(checkoutUrl);
+    }
   };
 
   function startFetch(n: number) {
@@ -205,8 +232,6 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
         {images.length > 0 && (
           <div className="hidden lg:block">
             <div className="max-w-[1200px] mx-auto px-4 pb-4">
-              
-
               <div className="flex gap-3">
                 {/* LEFT: ảnh */}
                 <div className="flex-1 min-w-0">
@@ -339,12 +364,55 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 <div className="h-px bg-gray-100" />
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Giá từ</span>
-                  <span className="text-xl font-black text-orange-500">{formatVND(hotel.price_per_night)}<span className="text-xs font-normal text-gray-400">/đêm</span></span>
+                  <span className="text-xl font-black text-orange-500">{formatVND(hotel.price_per_night)}<span className="text-xs font-normal text-gray-400">/người</span></span>
                 </div>
+
+                {/* ── Số lượng ── */}
+                <div className="h-px bg-gray-100" />
+                {/* Người lớn */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">Người lớn</p>
+                    <p className="text-[11px] text-gray-400">Từ 12 tuổi trở lên</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setAdults(a => Math.max(1, a - 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid">−</button>
+                    <span className="w-5 text-center text-sm font-bold text-gray-800">{adults}</span>
+                    <button onClick={() => setAdults(a => Math.min(20, a + 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid">+</button>
+                  </div>
+                </div>
+                {/* Trẻ em */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">Trẻ em</p>
+                    <p className="text-[11px] text-gray-400">Dưới 12 tuổi (70% giá)</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setChildren(c => Math.max(0, c - 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid">−</button>
+                    <span className="w-5 text-center text-sm font-bold text-gray-800">{children}</span>
+                    <button onClick={() => setChildren(c => Math.min(20, c + 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid">+</button>
+                  </div>
+                </div>
+
+                {/* Tổng tạm tính */}
+                <div className="h-px bg-gray-100" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Tạm tính</span>
+                  <span className="text-sm font-black text-orange-500">
+                    {formatVND(adults * hotel.price_per_night + children * Math.round(hotel.price_per_night * 0.7))}đ
+                  </span>
+                </div>
+
                 <div className="text-[11px] text-gray-400">{hotel.address}, {hotel.city}</div>
               </div>
               <div className="border-t border-gray-100 bg-gray-50 p-4 flex flex-col gap-2">
-                <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-sm transition-colors border-none cursor-pointer">Yêu cầu đặt</button>
+                <button onClick={handleBook} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-sm transition-colors border-none cursor-pointer">
+                  Yêu cầu đặt {adults + children > 0 ? `(${adults + children} người)` : ""}
+                </button>
                 <p className="text-center text-xs text-gray-400">Cần hỗ trợ? Gọi ngay</p>
                 <a href="tel:19001870" className="flex items-center justify-center gap-1 no-underline">
                   <span>📞</span>
@@ -431,12 +499,15 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
         <ReviewSection hotelName={hotel.name} tourId={tour._id} />
       </div>
 
+      {/* ── RELATED TOURS ── */}
+      <RelatedTours city={hotel.city} currentSlug={slug} />
+
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex items-center justify-between z-40">
         <div>
           <p className="text-[11px] text-gray-400">Giá từ</p>
           <p className="text-lg font-black text-orange-500">{formatVND(hotel.price_per_night)}<span className="text-[10px] font-normal text-gray-400">/đêm</span></p>
         </div>
-        <button className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-full text-sm border-none cursor-pointer transition-colors">Đặt ngay</button>
+        <button onClick={handleBook} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-full text-sm border-none cursor-pointer transition-colors">Đặt ngay</button>
       </div>
       <div className="lg:hidden h-16" />
     </div>
@@ -461,27 +532,27 @@ interface Review {
 
 const FAKE_REVIEWS: Review[] = [
   {
-    id: "1", name: "Chu Kha", avatar: "CK", score: 9.2, date: "10-03-2026",
+    id: "1", name: "Nguyễn Minh Tú", avatar: "MT", score: 9.2, date: "10-03-2026",
     text: "Tour rất tuyệt vời! Hướng dẫn viên nhiệt tình, chu đáo. Khách sạn sạch sẽ, view biển đẹp mê hồn. Chắc chắn sẽ quay lại lần sau.",
     tags: ["Hướng dẫn viên tốt", "Phòng sạch", "View đẹp"], helpful: 12,
   },
   {
-    id: "2", name: "Chu Kha", avatar: "CK", score: 8.8, date: "02-03-2026",
+    id: "2", name: "Trần Phương Linh", avatar: "PL", score: 8.8, date: "02-03-2026",
     text: "Lịch trình hợp lý, không quá dày. Ăn uống ổn, đặc biệt bữa sáng buffet rất ngon. Chỉ tiếc xe hơi chật một chút.",
     tags: ["Ăn uống ngon", "Lịch trình hợp lý"], helpful: 7,
   },
   {
-    id: "3", name: "Chu Kha", avatar: "CK", score: 9.5, date: "25-02-2026",
+    id: "3", name: "Lê Hoàng Dũng", avatar: "HD", score: 9.5, date: "25-02-2026",
     text: "Đây là lần thứ 3 mình đặt tour ở đây rồi. Dịch vụ ngày càng cải thiện. Kỳ Co đẹp không thua gì Maldives, nước trong vắt luôn!",
     tags: ["Địa điểm đẹp", "Dịch vụ tốt", "Sẽ quay lại"], helpful: 24,
   },
   {
-    id: "4", name: "Chu Kha", avatar: "CK", score: 8.4, date: "18-02-2026",
+    id: "4", name: "Võ Thị Hoa", avatar: "TH", score: 8.4, date: "18-02-2026",
     text: "Nói chung là ổn, giá cả hợp lý cho chất lượng. Khách sạn resort đúng chuẩn 4 sao. Điểm trừ là buổi tối không có nhiều hoạt động.",
     tags: ["Giá hợp lý", "Đáng tiền"], helpful: 5,
   },
   {
-    id: "5", name: "Chu Kha", avatar: "CK", score: 9.0, date: "14-02-2026",
+    id: "5", name: "Phạm Quốc Bảo", avatar: "QB", score: 9.0, date: "14-02-2026",
     text: "Đi cùng gia đình, các bé rất thích. Resort có hồ bơi rộng, nhân viên thân thiện. Hướng dẫn viên biết cách xử lý tình huống.",
     tags: ["Phù hợp gia đình", "Hồ bơi đẹp"], helpful: 18,
   },
@@ -797,6 +868,131 @@ function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: strin
           </div>
         )}
 
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   RELATED TOURS
+════════════════════════════════════════ */
+
+interface RelatedTour {
+  _id: string;
+  name: string;
+  slug: string;
+  images: { image_url: string }[];
+  hotel_id: { name: string; city: string; rating: number; price_per_night: number; };
+  category_id: { name: string } | null;
+}
+
+function RelatedTourCard({ tour }: { tour: RelatedTour }) {
+  const stars = tour.hotel_id?.rating ?? 0;
+  const price = tour.hotel_id?.price_per_night ?? 0;
+  const img   = tour.images?.[0]?.image_url ?? "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80";
+
+  return (
+    <a href={`/tours/${tour.slug}`} className="group block bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 no-underline flex-shrink-0 w-[260px] md:w-auto">
+      <div className="relative h-44 overflow-hidden">
+        <img src={img} alt={tour.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        {tour.category_id && (
+          <span className="absolute top-2 left-2 text-[10px] bg-orange-500 text-white font-bold px-2 py-0.5 rounded-full">
+            {tour.category_id.name}
+          </span>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+          <span>📍</span>{tour.hotel_id?.city}
+        </p>
+        <h3 className="text-sm font-bold text-gray-800 leading-snug line-clamp-2 mb-2 group-hover:text-orange-500 transition-colors">
+          {tour.name}
+        </h3>
+        <p className="text-[11px] text-gray-400 truncate mb-2">{tour.hotel_id?.name}</p>
+        <div className="flex gap-0.5 mb-2">
+          {Array.from({ length: Math.round(stars) }).map((_, i) => (
+            <svg key={i} className="w-3 h-3 fill-amber-400" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          ))}
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-400">Từ</span>
+          <span className="text-base font-black text-orange-500">
+            {price.toLocaleString("vi-VN")}<span className="text-[10px] font-normal text-gray-400">/người</span>
+          </span>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function RelatedTours({ city, currentSlug }: { city: string; currentSlug: string }) {
+  const [tours, setTours]   = useState<RelatedTour[]>([]);
+  const [loading, setLoading] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("https://db-datn-six.vercel.app/api/tours")
+      .then(r => r.json())
+      .then(res => {
+        if (!res.success || !Array.isArray(res.data)) return;
+        const related = res.data.filter(
+          (t: RelatedTour) =>
+            t.hotel_id?.city?.toLowerCase() === city.toLowerCase() &&
+            t.slug !== currentSlug
+        ).slice(0, 8);
+        setTours(related);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [city, currentSlug]);
+
+  const scroll = (dir: "left" | "right") => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollBy({ left: dir === "left" ? -280 : 280, behavior: "smooth" });
+  };
+
+  if (loading) return (
+    <div className="bg-white mt-2 px-4 py-8 flex justify-center">
+      <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+    </div>
+  );
+
+  if (tours.length === 0) return null;
+
+  return (
+    <div className="bg-white mt-2">
+      <div className="max-w-[1200px] mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🗺️</span>
+            <div>
+              <h2 className="text-base font-extrabold text-gray-900">Tour liên quan</h2>
+              <p className="text-xs text-gray-400">Các tour khác tại {city}</p>
+            </div>
+          </div>
+          <div className="hidden md:flex gap-2">
+            <button onClick={() => scroll("left")}
+              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white cursor-pointer text-lg">
+              ‹
+            </button>
+            <button onClick={() => scroll("right")}
+              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white cursor-pointer text-lg">
+              ›
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile: horizontal scroll | Desktop: 4-col grid */}
+        <div ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-4 md:overflow-visible"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {tours.slice(0, 4).map(t => (
+            <RelatedTourCard key={t._id} tour={t} />
+          ))}
+        </div>
       </div>
     </div>
   );
