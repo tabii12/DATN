@@ -309,40 +309,40 @@ Mô tả: Cập nhật trạng thái khách sạn (active / inactive).
 Content-Type: application/json
 
 ==================================================
-MODULE: REVIEW API
-BASE URL: https://db-datn-six.vercel.app/api/reviews
+MODULE: Comment API
+BASE URL: https://db-datn-six.vercel.app/api/comments
 ==================================================
 
-1. Tạo Review
+1. Tạo Comment
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/reviews/create
-Mô tả: Người dùng tạo đánh giá cho một tour.
+Full URL: https://db-datn-six.vercel.app/api/comments/create
+Mô tả: Người dùng tạo bình luận cho một tour.
 Content-Type: application/json
 
-2. Lấy Tất Cả Review Theo Tour
+2. Lấy Tất Cả Comment Theo Tour
 --------------------------------------------------
 Method: GET
-Endpoint: /tour/:tour_id
-Full URL: https://db-datn-six.vercel.app/api/reviews/tour/{tour_id}
-Mô tả: Lấy toàn bộ đánh giá của một tour dựa vào tour_id.
+Endpoint: /tour/
+Full URL: https://db-datn-six.vercel.app/api/comments/tour/{tour_id}
+Mô tả: Lấy toàn bộ bình luận của một tour dựa vào tour_id.
 Content-Type: application/json
 
-3. Cập Nhật Review
+3. Cập Nhật Comment
 --------------------------------------------------
 Method: PUT
-Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/reviews/{id}
-Mô tả: Cập nhật nội dung review theo ID.
+Endpoint: /
+Full URL: https://db-datn-six.vercel.app/api/comments/{id}
+Mô tả: Cập nhật nội dung comment theo ID.
 Content-Type: application/json
 
-4. Xoá Review
+4. Xoá Comment
 --------------------------------------------------
 Method: DELETE
-Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/reviews/{id}
-Mô tả: Xoá review theo ID.
+Endpoint: /
+Full URL: https://db-datn-six.vercel.app/api/comments/{id}
+Mô tả: Xoá comment theo ID.
 Content-Type: application/json
 
 ==================================================
