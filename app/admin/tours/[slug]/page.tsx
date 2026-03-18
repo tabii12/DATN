@@ -144,7 +144,7 @@ export default function EditTourPage() {
       if (data.success) {
         const newSlug = data.data.slug;
 
-        router.push(`/tours/${newSlug}`);
+        router.push(`admin/tours/${newSlug}`);
       } else {
         alert(data.message || "Cập nhật thất bại");
       }
