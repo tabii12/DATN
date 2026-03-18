@@ -124,19 +124,35 @@ export default function EditTourPage() {
     );
 
   const updateInfo = async () => {
-    setSavingInfo(true);
-    await fetch(`${API}/tours/update/${slug}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: tour.name,
-        status: tour.status,
-        hotel_id: tour.hotel_id?._id,
-        category_id: tour.category_id?._id,
-      }),
-    });
-    setSavingInfo(false);
-    fetchTour();
+    try {
+      setSavingInfo(true);
+
+      const res = await fetch(`${API}/tours/update/${slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: tour.name,
+          status: tour.status,
+          hotel_id: tour.hotel_id?._id,
+          category_id: tour.category_id?._id,
+        }),
+      });
+
+      const data = await res.json();
+      setSavingInfo(false);
+
+      if (data.success) {
+        const newSlug = data.data.slug;
+
+        router.push(`/tours/${newSlug}`);
+      } else {
+        alert(data.message || "Cập nhật thất bại");
+      }
+    } catch (error) {
+      setSavingInfo(false);
+      console.error(error);
+      alert("Có lỗi xảy ra khi cập nhật tour");
+    }
   };
 
   const uploadImage = async (file: File) => {
@@ -204,7 +220,7 @@ export default function EditTourPage() {
 
   const addDay = async () => {
     const nextDay = tour.itineraries.length + 1;
-    
+
     await fetch(`${API}/itineraries/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
