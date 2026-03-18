@@ -78,11 +78,11 @@ function SearchContent() {
     },
     ...(children > 0
       ? [
-          {
-            label: `Giá tour (${children} trẻ em)`,
-            value: formatVND(subtotalChildren),
-          },
-        ]
+        {
+          label: `Giá tour (${children} trẻ em)`,
+          value: formatVND(subtotalChildren),
+        },
+      ]
       : []),
     { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
   ];
@@ -129,12 +129,11 @@ function SearchContent() {
   };
 
   const inputClass = (name: string) =>
-    `w-full border rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 transition ${
-      touched[name] && errors[name]
-        ? "border-red-300 focus:ring-red-200 focus:border-red-400 bg-red-50"
-        : touched[name] && !errors[name]
-          ? "border-green-300 focus:ring-green-200 focus:border-green-400 bg-green-50/30"
-          : "border-slate-200 focus:ring-indigo-300 focus:border-indigo-400"
+    `w-full border rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 transition ${touched[name] && errors[name]
+      ? "border-red-300 focus:ring-red-200 focus:border-red-400 bg-red-50"
+      : touched[name] && !errors[name]
+        ? "border-green-300 focus:ring-green-200 focus:border-green-400 bg-green-50/30"
+        : "border-slate-200 focus:ring-indigo-300 focus:border-indigo-400"
     }`;
 
   const FieldIcon = ({ name }: { name: string }) => {
@@ -154,12 +153,6 @@ function SearchContent() {
       {/* Header */}
       <header className="bg-white border-b border-slate-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
-          <div className="bg-indigo-600 text-white p-2 rounded-xl">
-            <Plane size={20} />
-          </div>
-          <span className="font-bold text-xl text-slate-800 tracking-tight">
-            TourViet
-          </span>
           {/* Step indicator */}
           <div className="ml-auto flex items-center gap-2 text-sm">
             <span className="bg-indigo-600 text-white px-3 py-1 rounded-full font-medium text-xs">

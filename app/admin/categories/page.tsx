@@ -44,8 +44,21 @@ const CATEGORY_ICONS: Record<string, string> = {
   "tour-check-in-and-tham-quan": "📸",
 };
 
+interface TourInCategory {
+  _id: string;
+  name: string;
+  slug: string;
+  status: string;
+  images?: { image_url: string }[];
+  hotel_id?: { name: string; city: string; price_per_night: number };
+}
+
 export default function AdminCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
+  // Category tours modal
+  const [viewingCat, setViewingCat] = useState<Category | null>(null);
+  const [catTours, setCatTours] = useState<TourInCategory[]>([]);
+  const [catToursLoading, setCatToursLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
@@ -72,6 +85,25 @@ export default function AdminCategories() {
   function showToast(msg: string, type: "success" | "error" = "success") {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
+  }
+
+  async function openCatTours(cat: Category) {
+    setViewingCat(cat);
+    setCatTours([]);
+    setCatToursLoading(true);
+    try {
+      const res = await fetch(`${API}/tours`);
+      const data = await res.json();
+      const tours: TourInCategory[] = (data.data ?? []).filter(
+        (t: { category_id?: { _id?: string } | null }) =>
+          t.category_id?._id === cat._id || t.category_id === cat._id
+      );
+      setCatTours(tours);
+    } catch {
+      setCatTours([]);
+    } finally {
+      setCatToursLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -271,17 +303,18 @@ export default function AdminCategories() {
               key={cat._id}
               className={`bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-3 transition-all hover:shadow-md ${cat.status === "inactive" ? "opacity-60 border-gray-100" : "border-gray-100"}`}
             >
-              {/* Icon + name */}
-              <div className="flex items-start justify-between gap-2">
+              {/* Icon + name — click để xem tours */}
+              <div className="flex items-start justify-between gap-2 cursor-pointer" onClick={() => openCatTours(cat)}>
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center text-2xl flex-shrink-0">
                     {CATEGORY_ICONS[cat.slug] ?? "🏷️"}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm leading-tight">{cat.name}</p>
+                    <p className="font-bold text-gray-900 text-sm leading-tight hover:text-orange-500 transition-colors">{cat.name}</p>
                     <p className="text-[11px] text-gray-400 mt-0.5 font-mono">{cat.slug}</p>
                   </div>
                 </div>
+                <span className="text-gray-300 text-sm">›</span>
               </div>
 
               {/* Status + date */}
@@ -422,6 +455,92 @@ export default function AdminCategories() {
                 className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold disabled:opacity-60 transition-colors"
               >
                 {saving ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── CAT TOURS MODAL ── */}
+      {viewingCat && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-xl">
+                  {CATEGORY_ICONS[viewingCat.slug] ?? "🏷️"}
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">{viewingCat.name}</h2>
+                  <p className="text-xs text-gray-400">Danh sách tour thuộc danh mục này</p>
+                </div>
+              </div>
+              <button onClick={() => setViewingCat(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none bg-transparent border-none cursor-pointer">×</button>
+            </div>
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {catToursLoading ? (
+                <div className="flex items-center justify-center py-12 text-gray-400 gap-3">
+                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Đang tải...
+                </div>
+              ) : catTours.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <p className="text-4xl mb-3">📭</p>
+                  <p className="text-sm">Chưa có tour nào trong danh mục này</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs text-gray-400 mb-1">{catTours.length} tour</p>
+                  {catTours.map(tour => (
+                    <div key={tour._id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                      {/* Thumbnail */}
+                      <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                        {tour.images?.[0]?.image_url ? (
+                          <img src={tour.images[0].image_url} alt={tour.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">No img</div>
+                        )}
+                      </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{tour.name}</p>
+                        <p className="text-[11px] text-gray-400 truncate">
+                          {tour.hotel_id?.name} · {tour.hotel_id?.city}
+                          {tour.hotel_id?.price_per_night ? ` · ${tour.hotel_id.price_per_night.toLocaleString("vi-VN")}đ` : ""}
+                        </p>
+                      </div>
+                      {/* Status */}
+                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${
+                        tour.status === "active"
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-gray-100 text-gray-400"
+                      }`}>
+                        {tour.status === "active" ? "Hoạt động" : "Tạm ẩn"}
+                      </span>
+                      {/* Link */}
+                      <a
+                        href={`/admin/tours/${tour._id}`}
+                        className="text-xs text-blue-500 hover:underline shrink-0 no-underline"
+                      >
+                        Chi tiết →
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-100 flex justify-end">
+              <button
+                onClick={() => setViewingCat(null)}
+                className="px-5 py-2 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 cursor-pointer"
+              >
+                Đóng
               </button>
             </div>
           </div>
