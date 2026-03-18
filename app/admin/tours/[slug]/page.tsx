@@ -125,7 +125,7 @@ export default function EditTourPage() {
 
   const updateInfo = async () => {
     setSavingInfo(true);
-    await fetch(`${API}/tours/detail/${slug}`, {
+    await fetch(`${API}/tours/update/${slug}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
