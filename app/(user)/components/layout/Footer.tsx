@@ -1,11 +1,45 @@
+import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
+
+const VE_CHUNG_TOI = [
+  { label: "Giới thiệu",   id: "gioi-thieu"  },
+  { label: "Liên hệ",      id: "ho-tro-lien-he" },
+  { label: "Về chúng tôi", id: "ve-chung-toi" },
+  { label: "Blog du lịch", id: null },          // chưa có trang riêng
+];
+
+const DIEU_KHOAN = [
+  { label: "Điều khoản sử dụng",   id: "dieu-khoan"           },
+  { label: "Chính sách hoàn hủy",  id: "chinh-sach-huy"       },
+  { label: "Chính sách thanh toán",id: "chinh-sach-thanh-toan" },
+  { label: "Đổi lịch & hoàn tiền", id: "chinh-sach-doi-lich"  },
+];
+
+const HO_TRO = [
+  { label: "Trung tâm trợ giúp",     id: "ho-tro-lien-he"      },
+  { label: "Hướng dẫn đặt tour",     id: "huong-dan-dat"       },
+  { label: "Hướng dẫn thanh toán",   id: "huong-dan-thanh-toan"},
+  { label: "Câu hỏi thường gặp",     id: "ho-tro-faq"          },
+];
+
+function InfoLink({ label, id }: { label: string; id: string | null }) {
+  if (!id) return <span className="text-gray-500 cursor-not-allowed">{label}</span>;
+  return (
+    <Link
+      href={`/info?section=${id}`}
+      className="hover:text-white transition-colors no-underline"
+    >
+      {label}
+    </Link>
+  );
+}
 
 export default function Footer() {
   return (
     <footer className="bg-[#1a1f2b] text-gray-300 pt-12 pb-6">
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
 
-        {/* COLUMN 1 - BRAND — full width on mobile */}
+        {/* COLUMN 1 - BRAND */}
         <div className="col-span-2 md:col-span-3 lg:col-span-1">
           <h2 className="text-xl font-bold text-white mb-3">
             <span className="text-blue-400">Pick</span>
@@ -22,8 +56,8 @@ export default function Footer() {
         <div>
           <h3 className="text-white font-semibold mb-4 text-sm">Về chúng tôi</h3>
           <ul className="space-y-3 text-sm">
-            {["Giới thiệu", "Liên hệ", "Tuyển dụng", "Blog du lịch"].map(l => (
-              <li key={l}><a href="#" className="hover:text-white transition-colors">{l}</a></li>
+            {VE_CHUNG_TOI.map(({ label, id }) => (
+              <li key={label}><InfoLink label={label} id={id} /></li>
             ))}
           </ul>
         </div>
@@ -32,8 +66,8 @@ export default function Footer() {
         <div>
           <h3 className="text-white font-semibold mb-4 text-sm">Điều khoản</h3>
           <ul className="space-y-3 text-sm">
-            {["Điều khoản sử dụng", "Chính sách bảo mật", "Chính sách hoàn hủy", "Quy chế hoạt động"].map(l => (
-              <li key={l}><a href="#" className="hover:text-white transition-colors">{l}</a></li>
+            {DIEU_KHOAN.map(({ label, id }) => (
+              <li key={label}><InfoLink label={label} id={id} /></li>
             ))}
           </ul>
         </div>
@@ -42,8 +76,8 @@ export default function Footer() {
         <div>
           <h3 className="text-white font-semibold mb-4 text-sm">Hỗ trợ khách hàng</h3>
           <ul className="space-y-3 text-sm">
-            {["Trung tâm trợ giúp", "Hướng dẫn đặt tour", "Hướng dẫn thanh toán", "Câu hỏi thường gặp"].map(l => (
-              <li key={l}><a href="#" className="hover:text-white transition-colors">{l}</a></li>
+            {HO_TRO.map(({ label, id }) => (
+              <li key={label}><InfoLink label={label} id={id} /></li>
             ))}
           </ul>
         </div>
@@ -52,11 +86,10 @@ export default function Footer() {
         <div className="col-span-2 md:col-span-1">
           <h3 className="text-white font-semibold mb-4 text-sm">Liên hệ</h3>
           <ul className="space-y-3 text-sm text-gray-400">
-            <li>Hotline: <span className="text-white font-medium">1900 1234</span></li>
+            <li>Hotline: <span className="text-white font-medium">1900 1870</span></li>
             <li>support@PickYourWay.vn</li>
             <li>TP. Hồ Chí Minh, Việt Nam</li>
           </ul>
-
           <div className="flex gap-3 mt-5">
             <a href="#" className="bg-blue-700 hover:bg-white hover:text-black transition-colors w-9 h-9 flex items-center justify-center rounded-full">
               <FaFacebookF size={14} />
@@ -69,11 +102,6 @@ export default function Footer() {
             </a>
           </div>
         </div>
-      </div>
-
-      {/* BOTTOM BAR */}
-      <div className="border-t border-gray-700 mt-10 pt-6 text-center text-xs text-gray-500">
-        © 2026 PickYourWay. All rights reserved.
       </div>
     </footer>
   );

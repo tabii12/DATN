@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 interface PlaceDetail { title: string; content: string; images?: { image_url: string }[]; }
 interface ItineraryDetail {
@@ -87,11 +88,81 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const [attempt, setAttempt]     = useState(0);
   const [activeImg, setActiveImg] = useState(0);
   const [openDay, setOpenDay]     = useState<number | null>(0);
+  const [adults, setAdults]           = useState(1);
+  const [children, setChildren]       = useState(0);
+  const [departureDate, setDepartureDate] = useState("");
+
+  // Tạo danh sách ngày khởi hành cố định: mỗi thứ 6 & thứ 2 trong 8 tuần tới
+  const departureDates = (() => {
+    const dates: string[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let i = 3; i <= 60; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      if (d.getDay() === 1 || d.getDay() === 5) { // Thứ 2 & Thứ 6
+        dates.push(d.toISOString().split("T")[0]);
+      }
+      if (dates.length >= 8) break;
+    }
+    return dates;
+  })();
+  const [singleRoom, setSingleRoom]   = useState(false);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewRef  = useRef<HTMLDivElement | null>(null);
 
   const scrollToReview = () => {
     reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const router = useRouter();
+
+  const basePrice   = tour?.hotel_id?.price_per_night ?? 0;
+  const childHalf   = Math.round(basePrice * 0.5);   // trẻ được 50%
+  const childFull   = basePrice;                      // trẻ vượt quota → 100%
+
+  // Mỗi người lớn "bảo lãnh" 1 trẻ → trẻ trong quota tính 50%, vượt tính 100%
+  const childQuota       = adults;                    // số trẻ được giảm giá
+  const childDiscounted  = Math.min(children, childQuota);
+  const childFullPrice   = Math.max(0, children - childQuota);
+
+  // Phòng chỉ tính theo người lớn
+  const roomsNeeded  = Math.ceil(adults / 2);
+  const isOddAdult   = adults % 2 !== 0;
+  const singleSupplement = singleRoom || isOddAdult
+    ? Math.round(basePrice * 0.3)
+    : 0;
+
+  const totalPrice =
+    adults * basePrice +
+    childDiscounted * childHalf +
+    childFullPrice * childFull +
+    singleSupplement;
+
+  const handleBook = () => {
+    const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("token");
+    const checkoutParams = new URLSearchParams({
+      tourName:          tour?.name ?? "",
+      hotelName:         tour?.hotel_id?.name ?? "",
+      city:              tour?.hotel_id?.city ?? "",
+      thumbnail:         tour?.images?.[0]?.image_url ?? "",
+      tourSlug:          slug,
+      pricePerAdult:     String(basePrice),
+      pricePerChild:     String(childHalf),
+      adults:            String(adults),
+      children:          String(children),
+      departureDate:     departureDate,
+      singleSupplement:  String(singleSupplement),
+      totalPrice:        String(totalPrice),
+      rooms:             String(roomsNeeded),
+    });
+    const checkoutUrl = `/checkout?${checkoutParams.toString()}`;
+    if (!isLoggedIn) {
+      const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+      router.push(`/auth/login?redirect=${encodeURIComponent(currentUrl)}`);
+    } else {
+      router.push(checkoutUrl);
+    }
   };
 
   function startFetch(n: number) {
@@ -200,7 +271,6 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
             </div>
           </div>
         </div>
-
         {/* ── Desktop: ảnh trái + bản đồ/review phải ── */}
         {images.length > 0 && (
           <div className="hidden lg:block">
@@ -339,12 +409,161 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 <div className="h-px bg-gray-100" />
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Giá từ</span>
-                  <span className="text-xl font-black text-orange-500">{formatVND(hotel.price_per_night)}<span className="text-xs font-normal text-gray-400">/đêm</span></span>
+                  <span className="text-xl font-black text-orange-500">{formatVND(hotel.price_per_night)}<span className="text-xs font-normal text-gray-400">/người</span></span>
                 </div>
+
+                {/* ── Ngày khởi hành ── */}
+                <div className="h-px bg-gray-100" />
+                <div>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">📅 Ngày khởi hành</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {departureDates.map(date => {
+                      const d = new Date(date);
+                      const day = d.getDay();
+                      const dayLabel = day === 1 ? "T2" : "T6";
+                      const dateLabel = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+                      const isSelected = departureDate === date;
+                      return (
+                        <button
+                          key={date}
+                          onClick={() => setDepartureDate(date)}
+                          className={`flex flex-col items-center px-2.5 py-1.5 rounded-xl border-2 cursor-pointer transition-all text-center ${
+                            isSelected
+                              ? "border-orange-500 bg-orange-500 text-white"
+                              : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
+                          }`}
+                        >
+                          <span className={`text-[10px] font-bold ${isSelected ? "text-orange-100" : "text-gray-400"}`}>{dayLabel}</span>
+                          <span className="text-xs font-bold leading-tight">{dateLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!departureDate && (
+                    <p className="text-[11px] text-amber-500 mt-1.5">⚠️ Vui lòng chọn ngày khởi hành</p>
+                  )}
+                  {departureDate && (
+                    <p className="text-[11px] text-emerald-600 mt-1.5 font-semibold">
+                      ✓ Khởi hành: {new Date(departureDate).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
+                    </p>
+                  )}
+                </div>
+
+                {/* ── Số lượng ── */}
+                <div className="h-px bg-gray-100" />
+                {/* Người lớn */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">Người lớn</p>
+                    <p className="text-[11px] text-gray-400">Từ 12 tuổi trở lên</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setAdults(a => Math.max(1, a - 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid">−</button>
+                    <span className="w-5 text-center text-sm font-bold text-gray-800">{adults}</span>
+                    <button onClick={() => setAdults(a => Math.min(20, a + 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid">+</button>
+                  </div>
+                </div>
+                {/* Trẻ em */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">Trẻ em</p>
+                    <p className="text-[11px] text-gray-400">Dưới 12 tuổi (70% giá)</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setChildren(c => Math.max(0, c - 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid">−</button>
+                    <span className="w-5 text-center text-sm font-bold text-gray-800">{children}</span>
+                    <button onClick={() => setChildren(c => Math.min(20, c + 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid">+</button>
+                  </div>
+                </div>
+
+                {/* ── Số phòng tự tính ── */}
+                <div className="bg-blue-50 rounded-lg px-3 py-2 flex items-start gap-2">
+                  <span className="text-sm mt-0.5">🏨</span>
+                  <div className="flex-1">
+                    <p className="text-xs text-blue-700 font-semibold">
+                      {roomsNeeded} phòng ({adults} người lớn, 2 NL/phòng)
+                    </p>
+                    {isOddAdult && !singleRoom && (
+                      <p className="text-[11px] text-amber-600 mt-0.5">
+                        Lẻ 1 người lớn — sẽ ghép phòng hoặc chọn phòng đơn bên dưới
+                      </p>
+                    )}
+                    {singleRoom && (
+                      <p className="text-[11px] text-blue-500 mt-0.5">
+                        Phụ thu phòng đơn: +{formatVND(singleSupplement)}đ
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Toggle phòng đơn ── */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">Phòng đơn riêng</p>
+                    <p className="text-[11px] text-gray-400">+30% phụ thu ({formatVND(Math.round(hotel.price_per_night * 0.3))}đ)</p>
+                  </div>
+                  <button
+                    onClick={() => setSingleRoom(s => !s)}
+                    className={`relative w-11 h-6 rounded-full transition-colors border-none cursor-pointer shrink-0 ${singleRoom ? "bg-orange-500" : "bg-gray-200"}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${singleRoom ? "translate-x-5" : "translate-x-0"}`} />
+                  </button>
+                </div>
+
+                {/* Tổng tạm tính */}
+                <div className="h-px bg-gray-100" />
+                <div className="space-y-1">
+                  {/* Người lớn */}
+                  <div className="flex items-center justify-between text-[11px] text-gray-400">
+                    <span>Người lớn × {adults}</span>
+                    <span>{formatVND(adults * basePrice)}đ</span>
+                  </div>
+                  {/* Trẻ em được giảm 50% */}
+                  {childDiscounted > 0 && (
+                    <div className="flex items-center justify-between text-[11px] text-gray-400">
+                      <span>Trẻ em × {childDiscounted} <span className="text-emerald-500">(50%)</span></span>
+                      <span>{formatVND(childDiscounted * childHalf)}đ</span>
+                    </div>
+                  )}
+                  {/* Trẻ em vượt quota → tính 100% */}
+                  {childFullPrice > 0 && (
+                    <div className="flex items-center justify-between text-[11px] text-amber-500">
+                      <span>Trẻ em × {childFullPrice} <span className="font-semibold">(100% — vượt quota)</span></span>
+                      <span>{formatVND(childFullPrice * childFull)}đ</span>
+                    </div>
+                  )}
+                  {/* Ghi chú quota */}
+                  {children > 0 && (
+                    <p className="text-[10px] text-gray-400 bg-gray-50 rounded-lg px-2 py-1 leading-relaxed">
+                      {childFullPrice > 0
+                        ? `⚠️ ${adults} người lớn chỉ bảo lãnh được ${childQuota} trẻ giảm giá. ${childFullPrice} trẻ còn lại tính giá người lớn.`
+                        : `✓ ${childDiscounted}/${children} trẻ trong quota giảm giá (1 NL bảo lãnh 1 trẻ)`
+                      }
+                    </p>
+                  )}
+                  {/* Phụ thu phòng đơn */}
+                  {singleSupplement > 0 && (
+                    <div className="flex items-center justify-between text-[11px] text-amber-500">
+                      <span>Phụ thu phòng đơn</span>
+                      <span>+{formatVND(singleSupplement)}đ</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-1.5 border-t border-gray-100 mt-1">
+                    <span className="text-xs font-semibold text-gray-600">Tổng cộng</span>
+                    <span className="text-base font-black text-orange-500">{formatVND(totalPrice)}đ</span>
+                  </div>
+                </div>
+
                 <div className="text-[11px] text-gray-400">{hotel.address}, {hotel.city}</div>
               </div>
               <div className="border-t border-gray-100 bg-gray-50 p-4 flex flex-col gap-2">
-                <button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-sm transition-colors border-none cursor-pointer">Yêu cầu đặt</button>
+                <button onClick={handleBook} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-sm transition-colors border-none cursor-pointer">
+                  Yêu cầu đặt {adults + children > 0 ? `(${adults + children} người)` : ""}
+                </button>
                 <p className="text-center text-xs text-gray-400">Cần hỗ trợ? Gọi ngay</p>
                 <a href="tel:19001870" className="flex items-center justify-center gap-1 no-underline">
                   <span>📞</span>
@@ -431,12 +650,15 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
         <ReviewSection hotelName={hotel.name} tourId={tour._id} />
       </div>
 
+      {/* ── RELATED TOURS ── */}
+      <RelatedTours city={hotel.city} currentSlug={slug} />
+
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex items-center justify-between z-40">
         <div>
           <p className="text-[11px] text-gray-400">Giá từ</p>
           <p className="text-lg font-black text-orange-500">{formatVND(hotel.price_per_night)}<span className="text-[10px] font-normal text-gray-400">/đêm</span></p>
         </div>
-        <button className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-full text-sm border-none cursor-pointer transition-colors">Đặt ngay</button>
+        <button onClick={handleBook} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-full text-sm border-none cursor-pointer transition-colors">Đặt ngay</button>
       </div>
       <div className="lg:hidden h-16" />
     </div>
@@ -466,25 +688,10 @@ const FAKE_REVIEWS: Review[] = [
     tags: ["Hướng dẫn viên tốt", "Phòng sạch", "View đẹp"], helpful: 12,
   },
   {
-    id: "2", name: "Chu Kha", avatar: "CK", score: 8.8, date: "02-03-2026",
+    id: "2", name: "Kha Chu", avatar: "KC", score: 8.8, date: "02-03-2026",
     text: "Lịch trình hợp lý, không quá dày. Ăn uống ổn, đặc biệt bữa sáng buffet rất ngon. Chỉ tiếc xe hơi chật một chút.",
     tags: ["Ăn uống ngon", "Lịch trình hợp lý"], helpful: 7,
-  },
-  {
-    id: "3", name: "Chu Kha", avatar: "CK", score: 9.5, date: "25-02-2026",
-    text: "Đây là lần thứ 3 mình đặt tour ở đây rồi. Dịch vụ ngày càng cải thiện. Kỳ Co đẹp không thua gì Maldives, nước trong vắt luôn!",
-    tags: ["Địa điểm đẹp", "Dịch vụ tốt", "Sẽ quay lại"], helpful: 24,
-  },
-  {
-    id: "4", name: "Chu Kha", avatar: "CK", score: 8.4, date: "18-02-2026",
-    text: "Nói chung là ổn, giá cả hợp lý cho chất lượng. Khách sạn resort đúng chuẩn 4 sao. Điểm trừ là buổi tối không có nhiều hoạt động.",
-    tags: ["Giá hợp lý", "Đáng tiền"], helpful: 5,
-  },
-  {
-    id: "5", name: "Chu Kha", avatar: "CK", score: 9.0, date: "14-02-2026",
-    text: "Đi cùng gia đình, các bé rất thích. Resort có hồ bơi rộng, nhân viên thân thiện. Hướng dẫn viên biết cách xử lý tình huống.",
-    tags: ["Phù hợp gia đình", "Hồ bơi đẹp"], helpful: 18,
-  },
+  }
 ];
 
 const SCORE_LABELS: Record<number, string> = { 1: "Tệ", 2: "Kém", 3: "Tạm", 4: "Ổn", 5: "Tốt", 6: "Khá", 7: "Tốt", 8: "Rất tốt", 9: "Xuất sắc", 10: "Hoàn hảo" };
@@ -564,6 +771,28 @@ function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: strin
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
   const [submitted, setSubmitted] = useState(false);
 
+  // Kiểm tra quyền bình luận
+  const [canReview, setCanReview] = useState<"loading" | "yes" | "no" | "notlogged">("loading");
+
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) { setCanReview("notlogged"); return; }
+
+    fetch("https://db-datn-six.vercel.app/api/bookings/my-bookings", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(res => {
+        const bookings: { tour_id?: string | { _id?: string } }[] = res.data ?? res.bookings ?? [];
+        const hasTour = bookings.some(b => {
+          const id = typeof b.tour_id === "object" ? b.tour_id?._id : b.tour_id;
+          return id === tourId;
+        });
+        setCanReview(hasTour ? "yes" : "no");
+      })
+      .catch(() => setCanReview("no"));
+  }, [tourId]);
+
   // Form state
   const [form, setForm] = useState({ name: "", score: 8, text: "", tags: [] as string[], images: [] as string[] });
   const [formError, setFormError] = useState("");
@@ -626,12 +855,24 @@ function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: strin
               <p className="text-xs text-gray-400">{reviews.length} đánh giá cho {hotelName}</p>
             </div>
           </div>
-          <button onClick={() => setShowForm(s => !s)}
-            className={`flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl border-none cursor-pointer transition-all ${
-              showForm ? "bg-gray-100 text-gray-600" : "bg-orange-500 hover:bg-orange-600 text-white"
-            }`}>
-            {showForm ? "✕ Đóng" : "✍️ Viết đánh giá"}
-          </button>
+          {canReview === "loading" ? (
+            <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+          ) : canReview === "yes" ? (
+            <button onClick={() => setShowForm(s => !s)}
+              className={`flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl border-none cursor-pointer transition-all ${
+                showForm ? "bg-gray-100 text-gray-600" : "bg-orange-500 hover:bg-orange-600 text-white"
+              }`}>
+              {showForm ? "✕ Đóng" : "✍️ Viết đánh giá"}
+            </button>
+          ) : canReview === "notlogged" ? (
+            <a href="/auth/login" className="flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors no-underline">
+              🔒 Đăng nhập để đánh giá
+            </a>
+          ) : (
+            <div className="flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+              🎫 Chỉ khách đã đặt tour mới được đánh giá
+            </div>
+          )}
         </div>
 
         {/* Summary row */}
@@ -677,7 +918,7 @@ function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: strin
         )}
 
         {/* Write review form */}
-        {showForm && (
+        {showForm && canReview === "yes" && (
           <div className="mb-6 bg-orange-50/50 border border-orange-100 rounded-2xl p-5 space-y-4">
             <p className="text-sm font-black text-gray-800">✍️ Chia sẻ trải nghiệm của bạn</p>
 
@@ -797,6 +1038,131 @@ function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: strin
           </div>
         )}
 
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   RELATED TOURS
+════════════════════════════════════════ */
+
+interface RelatedTour {
+  _id: string;
+  name: string;
+  slug: string;
+  images: { image_url: string }[];
+  hotel_id: { name: string; city: string; rating: number; price_per_night: number; };
+  category_id: { name: string } | null;
+}
+
+function RelatedTourCard({ tour }: { tour: RelatedTour }) {
+  const stars = tour.hotel_id?.rating ?? 0;
+  const price = tour.hotel_id?.price_per_night ?? 0;
+  const img   = tour.images?.[0]?.image_url ?? "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80";
+
+  return (
+    <a href={`/tours/${tour.slug}`} className="group block bg-white rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 no-underline flex-shrink-0 w-[260px] md:w-auto">
+      <div className="relative h-44 overflow-hidden">
+        <img src={img} alt={tour.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        {tour.category_id && (
+          <span className="absolute top-2 left-2 text-[10px] bg-orange-500 text-white font-bold px-2 py-0.5 rounded-full">
+            {tour.category_id.name}
+          </span>
+        )}
+      </div>
+      <div className="p-3">
+        <p className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+          <span>📍</span>{tour.hotel_id?.city}
+        </p>
+        <h3 className="text-sm font-bold text-gray-800 leading-snug line-clamp-2 mb-2 group-hover:text-orange-500 transition-colors">
+          {tour.name}
+        </h3>
+        <p className="text-[11px] text-gray-400 truncate mb-2">{tour.hotel_id?.name}</p>
+        <div className="flex gap-0.5 mb-2">
+          {Array.from({ length: Math.round(stars) }).map((_, i) => (
+            <svg key={i} className="w-3 h-3 fill-amber-400" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          ))}
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-400">Từ</span>
+          <span className="text-base font-black text-orange-500">
+            {price.toLocaleString("vi-VN")}<span className="text-[10px] font-normal text-gray-400">/người</span>
+          </span>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function RelatedTours({ city, currentSlug }: { city: string; currentSlug: string }) {
+  const [tours, setTours]   = useState<RelatedTour[]>([]);
+  const [loading, setLoading] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch("https://db-datn-six.vercel.app/api/tours")
+      .then(r => r.json())
+      .then(res => {
+        if (!res.success || !Array.isArray(res.data)) return;
+        const related = res.data.filter(
+          (t: RelatedTour) =>
+            t.hotel_id?.city?.toLowerCase() === city.toLowerCase() &&
+            t.slug !== currentSlug
+        ).slice(0, 8);
+        setTours(related);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [city, currentSlug]);
+
+  const scroll = (dir: "left" | "right") => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollBy({ left: dir === "left" ? -280 : 280, behavior: "smooth" });
+  };
+
+  if (loading) return (
+    <div className="bg-white mt-2 px-4 py-8 flex justify-center">
+      <div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+    </div>
+  );
+
+  if (tours.length === 0) return null;
+
+  return (
+    <div className="bg-white mt-2">
+      <div className="max-w-[1200px] mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🗺️</span>
+            <div>
+              <h2 className="text-base font-extrabold text-gray-900">Tour liên quan</h2>
+              <p className="text-xs text-gray-400">Các tour khác tại {city}</p>
+            </div>
+          </div>
+          <div className="hidden md:flex gap-2">
+            <button onClick={() => scroll("left")}
+              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white cursor-pointer text-lg">
+              ‹
+            </button>
+            <button onClick={() => scroll("right")}
+              className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white cursor-pointer text-lg">
+              ›
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile: horizontal scroll | Desktop: 4-col grid */}
+        <div ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-2 md:grid md:grid-cols-4 md:overflow-visible"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {tours.slice(0, 4).map(t => (
+            <RelatedTourCard key={t._id} tour={t} />
+          ))}
+        </div>
       </div>
     </div>
   );
