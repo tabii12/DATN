@@ -146,7 +146,7 @@ function HotelCard({ hotel }: { hotel: Hotel }) {
                     </span>
                 )}
                 {hotel.combo && (
-                    <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent px-3 pt-2.5 pb-4">
+                    <div className="absolute top-0 left-0 right-0 bg-linear-to-b from-black/60 to-transparent px-3 pt-2.5 pb-4">
                         <span className="text-white text-[11px] font-semibold drop-shadow line-clamp-1">{hotel.combo}</span>
                     </div>
                 )}
