@@ -144,7 +144,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     }
     return dates;
   })();
-  const [singleRoom, setSingleRoom] = useState(false);
+  const [singleRooms, setSingleRooms] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewRef = useRef<HTMLDivElement | null>(null);
 
@@ -164,10 +164,14 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const childFullPrice = Math.max(0, children - childQuota);
 
   // Phòng chỉ tính theo người lớn
-  const roomsNeeded = Math.ceil(adults / 2);
-  const isOddAdult = adults % 2 !== 0;
-  const singleSupplement =
-    singleRoom || isOddAdult ? Math.round(basePrice * 0.3) : 0;
+  const validSingleRooms = Math.min(singleRooms, adults);
+  const sharedAdults = adults - validSingleRooms;
+  const sharedRooms = Math.ceil(sharedAdults / 2);
+  // Nếu sharedAdults lẻ & không có ai chọn phòng đơn → tự động thêm 1 phòng đơn
+  const autoSingle = sharedAdults % 2 !== 0 && validSingleRooms === 0 ? 1 : 0;
+  const roomsNeeded = sharedRooms + validSingleRooms + autoSingle;
+  const isOddAdult = autoSingle === 1;
+  const singleSupplement = (validSingleRooms + autoSingle) * Math.round(basePrice * 0.3);
 
   const totalPrice =
     adults * basePrice +
@@ -189,6 +193,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
       adults: String(adults),
       children: String(children),
       departureDate: departureDate,
+      singleRooms: String(validSingleRooms),
       singleSupplement: String(singleSupplement),
       totalPrice: String(totalPrice),
       rooms: String(roomsNeeded),
@@ -665,11 +670,10 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                         <button
                           key={date}
                           onClick={() => setDepartureDate(date)}
-                          className={`flex flex-col items-center px-2.5 py-1.5 rounded-xl border-2 cursor-pointer transition-all text-center ${
-                            isSelected
-                              ? "border-orange-500 bg-orange-500 text-white"
-                              : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
-                          }`}
+                          className={`flex flex-col items-center px-2.5 py-1.5 rounded-xl border-2 cursor-pointer transition-all text-center ${isSelected
+                            ? "border-orange-500 bg-orange-500 text-white"
+                            : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
+                            }`}
                         >
                           <span
                             className={`text-[10px] font-bold ${isSelected ? "text-orange-100" : "text-gray-400"}`}
@@ -763,43 +767,38 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 {/* ── Số phòng tự tính ── */}
                 <div className="bg-blue-50 rounded-lg px-3 py-2 flex items-start gap-2">
                   <span className="text-sm mt-0.5">🏨</span>
-                  <div className="flex-1">
-                    <p className="text-xs text-blue-700 font-semibold">
-                      {roomsNeeded} phòng ({adults} người lớn, 2 NL/phòng)
+                  <div className="flex-1 text-xs text-blue-700">
+                    <p className="font-semibold">Tổng {roomsNeeded} phòng</p>
+                    <p className="text-[11px] text-blue-500 mt-0.5">
+                      {sharedRooms > 0 && `${sharedRooms} phòng đôi`}
+                      {sharedRooms > 0 && (validSingleRooms + autoSingle) > 0 && " · "}
+                      {(validSingleRooms + autoSingle) > 0 && `${validSingleRooms + autoSingle} phòng đơn`}
+                      {autoSingle > 0 && " (lẻ 1 NL → tự động)"}
                     </p>
-                    {isOddAdult && !singleRoom && (
-                      <p className="text-[11px] text-amber-600 mt-0.5">
-                        Lẻ 1 người lớn — sẽ ghép phòng hoặc chọn phòng đơn bên
-                        dưới
-                      </p>
-                    )}
-                    {singleRoom && (
-                      <p className="text-[11px] text-blue-500 mt-0.5">
-                        Phụ thu phòng đơn: +{formatVND(singleSupplement)}đ
-                      </p>
-                    )}
                   </div>
                 </div>
 
-                {/* ── Toggle phòng đơn ── */}
+                {/* ── Chọn số người muốn phòng đơn ── */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold text-gray-700">
                       Phòng đơn riêng
                     </p>
                     <p className="text-[11px] text-gray-400">
-                      +30% phụ thu (
-                      {formatVND(Math.round(hotel.price_per_night * 0.3))}đ)
+                      +{formatVND(Math.round(hotel.price_per_night * 0.3))}đ/người · tối đa {adults}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setSingleRoom((s) => !s)}
-                    className={`relative w-11 h-6 rounded-full transition-colors border-none cursor-pointer shrink-0 ${singleRoom ? "bg-orange-500" : "bg-gray-200"}`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${singleRoom ? "translate-x-5" : "translate-x-0"}`}
-                    />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSingleRooms((s) => Math.max(0, s - 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid"
+                    >−</button>
+                    <span className="w-5 text-center text-sm font-bold text-gray-800">{validSingleRooms}</span>
+                    <button
+                      onClick={() => setSingleRooms((s) => Math.min(adults, s + 1))}
+                      className="w-7 h-7 rounded-full border border-gray-200 text-gray-500 hover:border-orange-400 hover:text-orange-500 transition-colors bg-white flex items-center justify-center text-base font-bold cursor-pointer border-solid"
+                    >+</button>
+                  </div>
                 </div>
 
                 {/* Tổng tạm tính */}
@@ -843,7 +842,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   {/* Phụ thu phòng đơn */}
                   {singleSupplement > 0 && (
                     <div className="flex items-center justify-between text-[11px] text-amber-500">
-                      <span>Phụ thu phòng đơn</span>
+                      <span>Phụ thu phòng đơn × {validSingleRooms + autoSingle}</span>
                       <span>+{formatVND(singleSupplement)}đ</span>
                     </div>
                   )}
@@ -1346,11 +1345,10 @@ function ReviewSection({
           ) : canReview === "yes" ? (
             <button
               onClick={() => setShowForm((s) => !s)}
-              className={`flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl border-none cursor-pointer transition-all ${
-                showForm
-                  ? "bg-gray-100 text-gray-600"
-                  : "bg-orange-500 hover:bg-orange-600 text-white"
-              }`}
+              className={`flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl border-none cursor-pointer transition-all ${showForm
+                ? "bg-gray-100 text-gray-600"
+                : "bg-orange-500 hover:bg-orange-600 text-white"
+                }`}
             >
               {showForm ? "✕ Đóng" : "✍️ Viết đánh giá"}
             </button>
@@ -1497,11 +1495,10 @@ function ReviewSection({
                     key={tag}
                     type="button"
                     onClick={() => toggleTag(tag)}
-                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border-2 cursor-pointer transition-all ${
-                      form.tags.includes(tag)
-                        ? "border-orange-400 bg-orange-500 text-white"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-orange-300"
-                    }`}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border-2 cursor-pointer transition-all ${form.tags.includes(tag)
+                      ? "border-orange-400 bg-orange-500 text-white"
+                      : "border-gray-200 bg-white text-gray-600 hover:border-orange-300"
+                      }`}
                   >
                     {form.tags.includes(tag) ? "✓ " : ""}
                     {tag}
@@ -1606,11 +1603,10 @@ function ReviewSection({
             <button
               key={v}
               onClick={() => setSortBy(v)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full border cursor-pointer transition-all ${
-                sortBy === v
-                  ? "bg-orange-500 text-white border-orange-500"
-                  : "bg-white border-gray-200 text-gray-600 hover:border-orange-300"
-              }`}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full border cursor-pointer transition-all ${sortBy === v
+                ? "bg-orange-500 text-white border-orange-500"
+                : "bg-white border-gray-200 text-gray-600 hover:border-orange-300"
+                }`}
             >
               {l}
             </button>
@@ -1736,7 +1732,7 @@ function RelatedTours({
           .slice(0, 8);
         setTours(related);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [city, currentSlug]);
 

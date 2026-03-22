@@ -95,8 +95,8 @@ export default function AdminCategories() {
       const res = await fetch(`${API}/tours`);
       const data = await res.json();
       const tours: TourInCategory[] = (data.data ?? []).filter(
-        (t: { category_id?: { _id?: string } | null }) =>
-          t.category_id?._id === cat._id || t.category_id === cat._id
+        (t: { category_id?: { slug?: string } | null }) =>
+          t.category_id?.slug === cat.slug
       );
       setCatTours(tours);
     } catch {
@@ -524,7 +524,7 @@ export default function AdminCategories() {
                       </span>
                       {/* Link */}
                       <a
-                        href={`/admin/tours/${tour._id}`}
+                        href={`/admin/tours/${tour.slug}`}
                         className="text-xs text-blue-500 hover:underline shrink-0 no-underline"
                       >
                         Chi tiết →
