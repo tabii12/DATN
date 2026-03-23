@@ -435,7 +435,7 @@ function TourInfoContent() {
 
 export default function TourInfoPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div>Loading...</div>}>
       <TourInfoContent />
     </Suspense>
   );
