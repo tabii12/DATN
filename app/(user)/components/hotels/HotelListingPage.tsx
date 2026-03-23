@@ -89,6 +89,13 @@ const OTHER_DESTINATIONS = [
     "Sapa", "Côn Đảo", "Đà Lạt", "Quảng Bình", "Thanh Hóa", "Lagi",
 ];
 
+const REGION_MAP: Record<string, string[]> = {
+    "Miền Bắc":  ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình", "Hải Phòng"],
+    "Miền Trung": ["Đà Nẵng", "Hội An", "Huế", "Quảng Bình", "Thanh Hóa"],
+    "Miền Nam":  ["TP. HCM", "Vũng Tàu", "Cần Thơ", "Phú Quốc", "Hồ Chí Minh", "Lagi", "Hồ Tràm", "Phan Thiết", "Mũi Né"],
+    "Tây Nguyên": ["Đà Lạt", "Buôn Ma Thuột", "Pleiku"],
+};
+
 const DATE_FILTER_OPTIONS = [
     { value: "all",        label: "Tất cả" },
     { value: "weekend",    label: "Cuối tuần" },
@@ -146,7 +153,7 @@ function HotelCard({ hotel }: { hotel: Hotel }) {
                     </span>
                 )}
                 {hotel.combo && (
-                    <div className="absolute top-0 left-0 right-0 bg-linear-to-b from-black/60 to-transparent px-3 pt-2.5 pb-4">
+                    <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent px-3 pt-2.5 pb-4">
                         <span className="text-white text-[11px] font-semibold drop-shadow line-clamp-1">{hotel.combo}</span>
                     </div>
                 )}
@@ -199,6 +206,7 @@ function Sidebar({
                     <button onClick={onReset} className="text-xs text-orange-500 hover:underline bg-transparent border-none cursor-pointer">Xóa tất cả</button>
                 )}
             </div>
+
 
 
             {/* Ngày khởi hành */}
@@ -269,11 +277,7 @@ function Sidebar({
                 </div>
             </div>
 
-            {/* Hotline */}
-            <div className="bg-gray-50 px-4 py-3">
-                <p className="text-[10px] text-gray-400 mb-1.5">Cần tư vấn miễn phí?</p>
-                <a href="tel:19001870" className="block text-center bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-1.5 rounded-lg no-underline transition-colors">📞 1900 1870</a>
-            </div>
+            
         </div>
     );
 }
@@ -294,6 +298,8 @@ function HotelListingContent() {
     const [showAll, setShowAll] = useState(false);
     const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
     const [searchInput, setSearchInput] = useState(searchParams.get("q") ?? "");
+    const regionParam = searchParams.get("region") ?? "";
+    const regionCities = regionParam ? (REGION_MAP[regionParam] ?? []) : [];
 
     useEffect(() => {
         fetch("https://db-datn-six.vercel.app/api/tours")
@@ -323,7 +329,17 @@ function HotelListingContent() {
 
     const filtered = hotels.filter(h => {
         if (selectedStars.length > 0 && !selectedStars.includes(h.stars)) return false;
-        if (searchName && !h.name.toLowerCase().includes(searchName.toLowerCase()) && !h.city.toLowerCase().includes(searchName.toLowerCase())) return false;
+        if (searchName) {
+            const q = searchName.toLowerCase();
+            // Nếu q là tên vùng → filter theo cities của vùng đó
+            const regionCitiesForQ = Object.entries(REGION_MAP).find(([key]) => key.toLowerCase() === q)?.[1] ?? [];
+            if (regionCitiesForQ.length > 0) {
+                if (!regionCitiesForQ.some(c => h.city.toLowerCase().includes(c.toLowerCase()))) return false;
+            } else {
+                // Tìm bình thường theo tên tour hoặc thành phố
+                if (!h.name.toLowerCase().includes(q) && !h.city.toLowerCase().includes(q)) return false;
+            }
+        }
         // Lọc ngày khởi hành theo khoảng (vì tours không có departure_date thật, filter chỉ mang tính demo UI)
         // Logic thật cần departure_date từ API
         if (selectedDays !== 0) {
@@ -333,6 +349,7 @@ function HotelListingContent() {
             }
         }
         if (selectedRoute !== "Tất cả" && !h.route.toLowerCase().includes(selectedRoute.toLowerCase())) return false;
+
         return true;
     });
 
@@ -436,12 +453,13 @@ function HotelListingContent() {
                     <span>/</span>
                     <span className="text-gray-600 font-medium">Tour du lịch</span>
                     {searchName && <><span>/</span><span className="text-gray-600 font-medium">"{searchName}"</span></>}
+                    {regionParam && !searchName && <><span>/</span><span className="text-gray-600 font-medium">{regionParam}</span></>}
                 </div>
 
                 {/* TOOLBAR */}
                 <div className="flex items-center justify-between mb-4">
                     <p className="text-sm text-gray-500">
-                        {loading ? "Đang tải..." : <><span className="font-bold text-gray-800">{filtered.length}</span> tour{searchName ? ` cho "${searchName}"` : ""}</>}
+                        {loading ? "Đang tải..." : <><span className="font-bold text-gray-800">{filtered.length}</span> tour{regionParam && !searchName ? ` tại ${regionParam}` : searchName ? ` cho "${searchName}"` : ""}</>}
                     </p>
                     <div className="flex items-center gap-2">
                         {hasFilter && (

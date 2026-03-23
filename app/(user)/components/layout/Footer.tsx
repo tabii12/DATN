@@ -86,7 +86,7 @@ export default function Footer() {
         <div className="col-span-2 md:col-span-1">
           <h3 className="text-white font-semibold mb-4 text-sm">Liên hệ</h3>
           <ul className="space-y-3 text-sm text-gray-400">
-            <li>Hotline: <span className="text-white font-medium">1900 1870</span></li>
+            <li>Hotline: <span className="text-white font-medium">0336323498</span></li>
             <li>support@PickYourWay.vn</li>
             <li>TP. Hồ Chí Minh, Việt Nam</li>
           </ul>
