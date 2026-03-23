@@ -38,6 +38,7 @@ function LoginForm() {
     return !Object.values(newErrors).some(Boolean);
   };
 
+  // ===== LOGIN THƯỜNG =====
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateAll()) return;
@@ -46,13 +47,22 @@ function LoginForm() {
       const res = await fetch("https://db-datn-six.vercel.app/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, password: form.password }),
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+        }),
       });
 
       const data = await res.json();
-      if (!res.ok) { alert(data.message); return; }
+      if (!res.ok) {
+        alert(data.message);
+        return;
+      }
 
+      // ✅ FIX QUAN TRỌNG
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
       window.dispatchEvent(new Event("tokenChanged"));
       router.push(redirectTo);
     } catch {
@@ -68,66 +78,71 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block mb-1 font-medium text-gray-700">Email</label>
+          <label>Email</label>
           <input
-            type="text" name="email"
-            placeholder="email@gmail.com"
-            value={form.email} onChange={handleChange}
-            onBlur={e => setErrors(prev => ({ ...prev, [e.target.name]: validateField(e.target.name, e.target.value) }))}
-            className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500"
+            type="text"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            className="w-full border p-2 rounded"
           />
-          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+          {errors.email && <p className="text-red-500">{errors.email}</p>}
         </div>
 
         <div>
-          <label className="block mb-1 font-medium text-gray-700">Mật khẩu</label>
+          <label>Mật khẩu</label>
           <div className="relative">
             <input
-              type={showPassword ? "text" : "password"} name="password"
-              value={form.password} onChange={handleChange}
-              onBlur={e => setErrors(prev => ({ ...prev, [e.target.name]: validateField(e.target.name, e.target.value) }))}
-              className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
             />
-            <button type="button" onClick={() => setShowPassword(s => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-2"
+            >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
         </div>
 
-        <button type="submit"
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-md font-semibold transition">
+        <button className="w-full bg-orange-500 text-white py-2 rounded">
           Đăng nhập
         </button>
       </form>
 
-      <div className="flex items-center my-6">
-        <div className="flex-1 border-t" />
-        <span className="px-3 text-gray-500 text-sm">Hoặc</span>
-        <div className="flex-1 border-t" />
-      </div>
-
-      <div className="w-full flex justify-center">
+      {/* ===== GOOGLE LOGIN ===== */}
+      <div className="mt-6 flex justify-center">
         <GoogleLogin
-          onSuccess={async credentialResponse => {
-            const res = await axios.post(
-              "https://db-datn-six.vercel.app/api/users/google-auth",
-              { token: credentialResponse.credential },
-            );
-            localStorage.setItem("token", res.data.token);
-            window.dispatchEvent(new Event("tokenChanged"));
-            router.push(redirectTo);
+          onSuccess={async (credentialResponse) => {
+            try {
+              const res = await axios.post(
+                "https://db-datn-six.vercel.app/api/users/google-auth",
+                { token: credentialResponse.credential }
+              );
+
+              // ✅ FIX QUAN TRỌNG
+              localStorage.setItem("token", res.data.token);
+              localStorage.setItem("user", JSON.stringify(res.data.user));
+
+              window.dispatchEvent(new Event("tokenChanged"));
+              router.push(redirectTo);
+            } catch {
+              alert("Đăng nhập Google thất bại");
+            }
           }}
           onError={() => console.log("Login Failed")}
-          useOneTap={false} theme="outline" size="large"
-          text="continue_with" shape="rectangular" width="100%"
         />
       </div>
 
-      <p className="text-sm text-center mt-6 text-gray-500">
+      <p className="text-sm text-center mt-6">
         Chưa có tài khoản?{" "}
-        <Link href="/auth/register" className="text-blue-600 hover:underline">Đăng ký</Link>
+        <Link href="/auth/register" className="text-blue-600">
+          Đăng ký
+        </Link>
       </p>
     </div>
   );
