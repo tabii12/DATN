@@ -40,6 +40,7 @@ interface TourAPI {
   };
   category_id: { name: string } | null;
   isFavorite?: boolean;
+  trips?: { _id: string; start_date: string; end_date: string; price: number; max_people: number; booked_people: number; status: string }[];
 }
 
 function StarRating({ count }: { count: number }) {
@@ -129,21 +130,10 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const [departureDate, setDepartureDate] = useState("");
 
   // Tạo danh sách ngày khởi hành cố định: mỗi thứ 6 & thứ 2 trong 8 tuần tới
-  const departureDates = (() => {
-    const dates: string[] = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    for (let i = 3; i <= 60; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      if (d.getDay() === 1 || d.getDay() === 5) {
-        // Thứ 2 & Thứ 6
-        dates.push(d.toISOString().split("T")[0]);
-      }
-      if (dates.length >= 8) break;
-    }
-    return dates;
-  })();
+  // Ngày khởi hành từ API trips (chỉ lấy trip còn chỗ & status open)
+  const departureDates = (tour?.trips ?? [])
+    .filter(t => t.status === "open" && t.booked_people < t.max_people)
+    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
   const [singleRooms, setSingleRooms] = useState(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewRef = useRef<HTMLDivElement | null>(null);
@@ -192,8 +182,10 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
       pricePerChild: String(childHalf),
       adults: String(adults),
       children: String(children),
-      departureDate: departureDate,
-      singleRooms: String(validSingleRooms),
+      departureDate: (() => {
+        const trip = (tour?.trips ?? []).find(t => t._id === departureDate);
+        return trip ? new Date(trip.start_date).toLocaleDateString("vi-VN") : departureDate;
+      })(), singleRooms: String(validSingleRooms),
       singleSupplement: String(singleSupplement),
       totalPrice: String(totalPrice),
       rooms: String(roomsNeeded),
@@ -248,11 +240,13 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
         const detailData = detailRes?.success ? detailRes.data : null;
         const itineraries = detailData?.itineraries ?? [];
+        const trips = detailData?.trips ?? [];
 
-        // 🔥 QUAN TRỌNG: lấy isFavorite từ detail
+        // 🔥 QUAN TRỌNG: lấy isFavorite và trips từ detail
         setTour({
           ...found,
           itineraries,
+          trips,
           isFavorite: detailData?.isFavorite ?? false,
         });
 
@@ -656,53 +650,47 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   <p className="text-xs font-semibold text-gray-700 mb-2">
                     📅 Ngày khởi hành
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {departureDates.map((date) => {
-                      const d = new Date(date);
-                      const day = d.getDay();
-                      const dayLabel = day === 1 ? "T2" : "T6";
-                      const dateLabel = d.toLocaleDateString("vi-VN", {
-                        day: "2-digit",
-                        month: "2-digit",
-                      });
-                      const isSelected = departureDate === date;
-                      return (
-                        <button
-                          key={date}
-                          onClick={() => setDepartureDate(date)}
-                          className={`flex flex-col items-center px-2.5 py-1.5 rounded-xl border-2 cursor-pointer transition-all text-center ${isSelected
-                            ? "border-orange-500 bg-orange-500 text-white"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
-                            }`}
-                        >
-                          <span
-                            className={`text-[10px] font-bold ${isSelected ? "text-orange-100" : "text-gray-400"}`}
+                  {departureDates.length === 0 ? (
+                    <p className="text-[11px] text-gray-400 italic">Hiện chưa có lịch khởi hành</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {departureDates.map((trip) => {
+                        const d = new Date(trip.start_date);
+                        const dayLabel = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][d.getDay()];
+                        const dateLabel = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+                        const isSelected = departureDate === trip._id;
+                        const slotsLeft = trip.max_people - trip.booked_people;
+                        return (
+                          <button
+                            key={trip._id}
+                            onClick={() => setDepartureDate(trip._id)}
+                            className={`flex flex-col items-center px-2.5 py-1.5 rounded-xl border-2 cursor-pointer transition-all text-center ${isSelected
+                              ? "border-orange-500 bg-orange-500 text-white"
+                              : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
+                              }`}
                           >
-                            {dayLabel}
-                          </span>
-                          <span className="text-xs font-bold leading-tight">
-                            {dateLabel}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {!departureDate && (
+                            <span className={`text-[10px] font-bold ${isSelected ? "text-orange-100" : "text-gray-400"}`}>{dayLabel}</span>
+                            <span className="text-xs font-bold leading-tight">{dateLabel}</span>
+                            <span className={`text-[9px] mt-0.5 ${isSelected ? "text-orange-100" : "text-gray-400"}`}>còn {slotsLeft}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {!departureDate && departureDates.length > 0 && (
                     <p className="text-[11px] text-amber-500 mt-1.5">
                       ⚠️ Vui lòng chọn ngày khởi hành
                     </p>
                   )}
-                  {departureDate && (
-                    <p className="text-[11px] text-emerald-600 mt-1.5 font-semibold">
-                      ✓ Khởi hành:{" "}
-                      {new Date(departureDate).toLocaleDateString("vi-VN", {
-                        weekday: "long",
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
-                    </p>
-                  )}
+                  {departureDate && (() => {
+                    const trip = departureDates.find(t => t._id === departureDate);
+                    return trip ? (
+                      <p className="text-[11px] text-emerald-600 mt-1.5 font-semibold">
+                        ✓ Khởi hành: {new Date(trip.start_date).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
+                        {" · "}Kết thúc: {new Date(trip.end_date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
 
                 {/* ── Số lượng ── */}

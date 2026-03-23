@@ -34,6 +34,16 @@ type TourImage = {
   image_url: string;
   public_id: string;
 };
+type Trip = {
+  _id: string;
+  tour_id: string;
+  start_date: string;
+  end_date: string;
+  price: number;
+  max_people: number;
+  booked_people: number;
+  status: "open" | "closed" | "full";
+};
 type Tour = {
   _id: string;
   name: string;
@@ -95,12 +105,104 @@ export default function EditTourPage() {
   const [editDetailContent, setEditDetailContent] = useState("");
   const [editDetailType, setEditDetailType] = useState("visit");
 
+  // ── TRIPS ──
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [tripForm, setTripForm] = useState({ start_date: "", end_date: "", price: "", max_people: "15" });
+  const [editingTrip, setEditingTrip] = useState<string | null>(null);
+  const [editTripForm, setEditTripForm] = useState({ start_date: "", end_date: "", price: "", max_people: "" });
+  const [repeatMode, setRepeatMode] = useState(false);
+  const [repeatWeeks, setRepeatWeeks] = useState(4);
+  const [repeatDays, setRepeatDays] = useState<number[]>([1, 5]);
+  const [repeatDuration, setRepeatDuration] = useState(2);
   const fetchTour = async () => {
     if (!slug) return;
     const res = await fetch(`${API}/tours/detail/${slug}`);
     const data = await res.json();
     setTour(data.data);
   };
+
+  const fetchTrips = async () => {
+    if (!slug) return;
+    const res = await fetch(`${API}/trips/tour/${slug}`);
+    const data = await res.json();
+    setTrips(data.data || []);
+  };
+
+  const addTrip = async () => {
+    if (!tripForm.start_date || !tripForm.end_date || !tripForm.price) return;
+    const body = {
+      tour_id: tour?._id,
+      start_date: tripForm.start_date,
+      end_date: tripForm.end_date,
+      price: Number(tripForm.price),
+      max_people: Number(tripForm.max_people),
+      status: "open",
+    };
+    console.log("POST /trips/create body:", body);
+    const res = await fetch(`${API}/trips/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    console.log("response:", res.status, data);
+    if (!res.ok) { alert(`Lỗi ${res.status}: ${data.message || "Không rõ"}`); return; }
+    setTripForm({ start_date: "", end_date: "", price: "", max_people: "15" });
+    await fetchTrips();
+  };
+
+  const addRepeatTrips = async () => {
+    if (!tripForm.start_date || !tripForm.price || repeatDays.length === 0) return;
+    const base = new Date(tripForm.start_date);
+    const toCreate: { start: string; end: string }[] = [];
+    for (let w = 0; w < repeatWeeks; w++) {
+      for (const day of repeatDays) {
+        const start = new Date(base);
+        start.setDate(base.getDate() + ((day - base.getDay() + 7) % 7) + w * 7);
+        const end = new Date(start);
+        end.setDate(start.getDate() + repeatDuration - 1);
+        toCreate.push({ start: start.toISOString().split("T")[0], end: end.toISOString().split("T")[0] });
+      }
+    }
+    const unique = toCreate.filter((v, i, a) => a.findIndex(x => x.start === v.start) === i);
+    await Promise.all(unique.map(t =>
+      fetch(`${API}/trips/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tour_id: tour?._id, start_date: t.start, end_date: t.end, price: Number(tripForm.price), max_people: Number(tripForm.max_people), status: "open" }),
+      })
+    ));
+    await fetchTrips();
+    alert(`✅ Đã tạo ${unique.length} chuyến đi!`);
+  };
+
+  const updateTrip = async (id: string) => {
+    await fetch(`${API}/trips/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ start_date: editTripForm.start_date, end_date: editTripForm.end_date, price: Number(editTripForm.price), max_people: Number(editTripForm.max_people) }),
+    });
+    setEditingTrip(null);
+    await fetchTrips();
+  };
+
+  const deleteTrip = async (id: string) => {
+    if (!confirm("Xoá chuyến đi này?")) return;
+    await fetch(`${API}/trips/${id}`, { method: "DELETE" });
+    await fetchTrips();
+  };
+
+  const toggleTripStatus = async (trip: Trip) => {
+    if (trip.status === "full") return;
+    const newStatus = trip.status === "open" ? "closed" : "open";
+    await fetch(`${API}/trips/${trip._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    await fetchTrips();
+  };
+
 
   useEffect(() => {
     if (!slug) return;
@@ -111,6 +213,10 @@ export default function EditTourPage() {
     fetch(`${API}/categories`)
       .then((r) => r.json())
       .then((d) => setCategories(d.data || []));
+  }, [slug]);
+
+  useEffect(() => {
+    if (slug) fetchTrips();
   }, [slug]);
 
   if (!slug || !tour)
@@ -292,6 +398,20 @@ export default function EditTourPage() {
     await fetchTour();
   };
 
+  const repeatCount = (() => {
+    if (!tripForm.start_date || repeatDays.length === 0) return 0;
+    const base = new Date(tripForm.start_date);
+    const seen = new Set<string>();
+    for (let w = 0; w < repeatWeeks; w++) {
+      for (const day of repeatDays) {
+        const s = new Date(base);
+        s.setDate(base.getDate() + ((day - base.getDay() + 7) % 7) + w * 7);
+        seen.add(s.toISOString().split("T")[0]);
+      }
+    }
+    return seen.size;
+  })();
+
   const TABS = [
     { key: "info", icon: "📋", label: "Thông tin" },
     { key: "images", icon: "🖼️", label: `Ảnh (${tour.images.length})` },
@@ -304,6 +424,11 @@ export default function EditTourPage() {
       key: "itineraries",
       icon: "🗓️",
       label: `Lịch trình (${tour.itineraries.length}N)`,
+    },
+    {
+      key: "trips",
+      icon: "🚀",
+      label: `Chuyến đi (${trips.length})`,
     },
   ];
 
@@ -337,11 +462,10 @@ export default function EditTourPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all border-none cursor-pointer flex-1 justify-center ${
-                tab === t.key
-                  ? "bg-orange-500 text-white shadow-sm"
-                  : "text-gray-500 bg-transparent hover:bg-gray-50"
-              }`}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all border-none cursor-pointer flex-1 justify-center ${tab === t.key
+                ? "bg-orange-500 text-white shadow-sm"
+                : "text-gray-500 bg-transparent hover:bg-gray-50"
+                }`}
             >
               <span>{t.icon}</span>
               <span className="hidden sm:inline">{t.label}</span>
@@ -444,11 +568,10 @@ export default function EditTourPage() {
                     key={v}
                     type="button"
                     onClick={() => setTour({ ...tour, status: v })}
-                    className={`p-4 rounded-xl border-2 text-left cursor-pointer transition-all ${
-                      tour.status === v
-                        ? "border-orange-400 bg-orange-50"
-                        : "border-gray-100 bg-gray-50 hover:border-gray-200"
-                    }`}
+                    className={`p-4 rounded-xl border-2 text-left cursor-pointer transition-all ${tour.status === v
+                      ? "border-orange-400 bg-orange-50"
+                      : "border-gray-100 bg-gray-50 hover:border-gray-200"
+                      }`}
                   >
                     <span className="text-2xl">{icon}</span>
                     <p
@@ -719,11 +842,10 @@ export default function EditTourPage() {
                                       key={v}
                                       type="button"
                                       onClick={() => setEditDetailType(v)}
-                                      className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl border-2 cursor-pointer transition-all ${
-                                        editDetailType === v
-                                          ? "border-orange-400 bg-orange-50 text-orange-600"
-                                          : "border-gray-100 bg-white text-gray-500"
-                                      }`}
+                                      className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl border-2 cursor-pointer transition-all ${editDetailType === v
+                                        ? "border-orange-400 bg-orange-50 text-orange-600"
+                                        : "border-gray-100 bg-white text-gray-500"
+                                        }`}
                                     >
                                       {m.icon} {m.label}
                                     </button>
@@ -836,6 +958,178 @@ export default function EditTourPage() {
               ))}
           </div>
         )}
+        {/* TRIPS */}
+        {tab === "trips" && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <SectionTitle>Thêm chuyến đi</SectionTitle>
+                <button onClick={() => setRepeatMode(r => !r)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-colors ${repeatMode ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}>
+                  🔁 Lặp lịch
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">{repeatMode ? "Bắt đầu từ" : "Ngày đi"}</label>
+                  <input type="date" value={tripForm.start_date} onChange={e => setTripForm(f => ({ ...f, start_date: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
+                </div>
+                {!repeatMode && (
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày về</label>
+                    <input type="date" value={tripForm.end_date} min={tripForm.start_date} onChange={e => setTripForm(f => ({ ...f, end_date: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">Giá (đ/người)</label>
+                  <input type="number" value={tripForm.price} onChange={e => setTripForm(f => ({ ...f, price: e.target.value }))} placeholder=""
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">Tối đa (người)</label>
+                  <input type="number" value={tripForm.max_people} onChange={e => setTripForm(f => ({ ...f, max_people: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
+                </div>
+              </div>
+              {repeatMode && (
+                <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 mb-4 space-y-4">
+                  <p className="text-xs font-bold text-orange-700">⚙️ Cấu hình lặp lịch</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Số tuần lặp</label>
+                      <input type="number" min={1} max={52} value={repeatWeeks} onChange={e => setRepeatWeeks(Number(e.target.value))}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 bg-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Số ngày / chuyến</label>
+                      <input type="number" min={1} max={30} value={repeatDuration} onChange={e => setRepeatDuration(Number(e.target.value))}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 bg-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 block mb-2">Ngày khởi hành trong tuần</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((label, val) => (
+                        <button key={val} type="button"
+                          onClick={() => setRepeatDays(prev => prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val])}
+                          className={`w-10 h-10 rounded-xl text-xs font-bold border-2 cursor-pointer transition-all ${repeatDays.includes(val) ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl px-4 py-3 text-xs text-orange-700 font-semibold border border-orange-100">
+                    → Sẽ tạo <span className="text-orange-500 font-black">{repeatCount}</span> chuyến ·
+                    mỗi chuyến <span className="font-black">{repeatDuration} ngày</span> ·
+                    trong <span className="font-black">{repeatWeeks} tuần</span>
+                  </div>
+                </div>
+              )}
+              <button onClick={repeatMode ? addRepeatTrips : addTrip}
+                disabled={!tripForm.start_date || !tripForm.price || (!repeatMode && !tripForm.end_date) || (repeatMode && repeatDays.length === 0)}
+                className="bg-orange-500 hover:bg-orange-600  text-white px-5 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-colors">
+                {repeatMode ? `🔁 Tạo ${repeatCount} chuyến` : "+ Thêm chuyến"}
+              </button>
+            </div>
+
+            {trips.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center text-gray-400">
+                <p className="text-4xl mb-3">🚀</p>
+                <p className="font-semibold text-sm">Chưa có chuyến đi nào</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{trips.length} chuyến đi</span>
+                  <span className="text-xs text-gray-400">
+                    {trips.filter(t => t.status === "open").length} đang mở · {trips.filter(t => new Date(t.end_date) < new Date()).length} đã qua
+                  </span>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {[...trips].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()).map(trip => {
+                    const start = new Date(trip.start_date);
+                    const end = new Date(trip.end_date);
+                    const slotsLeft = trip.max_people - trip.booked_people;
+                    const isPast = end < new Date();
+                    const nights = Math.ceil((end.getTime() - start.getTime()) / 86400000);
+                    const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+                    return (
+                      <div key={trip._id} className={`px-5 py-3.5 ${isPast ? "opacity-40" : ""}`}>
+                        {editingTrip === trip._id ? (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-400 block mb-1">Ngày đi</label>
+                              <input type="date" value={editTripForm.start_date} onChange={e => setEditTripForm(f => ({ ...f, start_date: e.target.value }))}
+                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-400 block mb-1">Ngày về</label>
+                              <input type="date" value={editTripForm.end_date} onChange={e => setEditTripForm(f => ({ ...f, end_date: e.target.value }))}
+                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-400 block mb-1">Giá</label>
+                              <input type="number" value={editTripForm.price} onChange={e => setEditTripForm(f => ({ ...f, price: e.target.value }))}
+                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-400 block mb-1">Tối đa</label>
+                              <input type="number" value={editTripForm.max_people} onChange={e => setEditTripForm(f => ({ ...f, max_people: e.target.value }))}
+                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
+                            </div>
+                            <div className="col-span-2 md:col-span-4 flex gap-2">
+                              <button onClick={() => updateTrip(trip._id)} className="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer">Lưu</button>
+                              <button onClick={() => setEditingTrip(null)} className="text-gray-500 text-xs px-4 py-2 rounded-lg border border-gray-200 cursor-pointer bg-white">Huỷ</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-4">
+                            <div className="shrink-0 text-center bg-orange-50 rounded-xl px-3 py-2 min-w-[60px]">
+                              <p className="text-[10px] font-bold text-orange-400">{dayLabels[start.getDay()]}</p>
+                              <p className="text-lg font-black text-orange-600 leading-none">{String(start.getDate()).padStart(2, "0")}</p>
+                              <p className="text-[10px] text-orange-400 font-semibold">T{start.getMonth() + 1}</p>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-bold text-gray-800">{start.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                                <span className="text-gray-400 text-xs">→</span>
+                                <span className="text-sm font-bold text-gray-800">{end.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                                <span className="text-[11px] text-gray-400">({nights + 1} ngày {nights} đêm)</span>
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                <span className="text-[11px] font-bold text-orange-500">{trip.price.toLocaleString("vi-VN")}đ</span>
+                                <span className="text-[11px] text-gray-400">
+                                  {trip.booked_people}/{trip.max_people} · còn{" "}
+                                  <span className={slotsLeft <= 3 ? "text-red-500 font-bold" : "text-emerald-600 font-semibold"}>{slotsLeft} chỗ</span>
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button onClick={() => toggleTripStatus(trip)} disabled={trip.status === "full"}
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border cursor-pointer transition-colors disabled:cursor-not-allowed ${trip.status === "open" ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" :
+                                  trip.status === "full" ? "bg-red-50 text-red-400 border-red-200" :
+                                    "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"
+                                  }`}>
+                                {trip.status === "open" ? "Mở" : trip.status === "full" ? "Đầy" : "Đóng"}
+                              </button>
+                              <button onClick={() => { setEditingTrip(trip._id); setEditTripForm({ start_date: trip.start_date.split("T")[0], end_date: trip.end_date.split("T")[0], price: String(trip.price), max_people: String(trip.max_people) }); }}
+                                className="text-xs text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold">Sửa</button>
+                              <button onClick={() => deleteTrip(trip._id)}
+                                className="text-xs text-red-400 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold">Xoá</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );
