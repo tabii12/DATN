@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import TourInfoPage from "../components/Tourinfopage";
 
-export default function InfoPage() {
-  return <TourInfoPage />;
+export default function Page() {
+  return (
+    <Suspense>
+      <TourInfoPage />
+    </Suspense>
+  );
 }

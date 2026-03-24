@@ -1,5 +1,10 @@
-const page = () => {
-    return <div>admin blogs</div>;
+const blog = () => {
+    return (
+        <div>
+            <h1>Blog Page Admin</h1>
+            <p>This is the blog page.</p>
+        </div>
+    );
 }
 
-export default page;
+export default blog;

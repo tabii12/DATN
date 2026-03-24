@@ -19,12 +19,6 @@ interface TourAPI {
   descriptions: { title: string; content: string }[];
 }
 
-const HOLIDAYS = [
-  { label: "Tết Nguyên Đán", emoji: "🧧", date: "29 tháng 1" },
-  { label: "30/4 – 1/5", emoji: "🎉", date: "30 Tháng 4" },
-  { label: "Quốc Khánh 2/9", emoji: "🇻🇳", date: "2 Tháng 9" },
-  { label: "Giáng Sinh", emoji: "🎄", date: "25 Tháng 12" },
-];
 
 const REGIONS = [
   { label: "Miền Bắc", cities: ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình"], img: "https://images.unsplash.com/photo-1509030450996-dd1a26dda07a?w=600&q=80" },
@@ -127,7 +121,7 @@ export default function ToursLandingPage() {
       {/* ── HERO ── */}
       <HeroBanner
         title="Hành trình đáng nhớ bắt đầu từ đây"
-        subtitle="Hơn 500 tour du lịch trong nước, giá tốt nhất, dịch vụ chuyên nghiệp"
+        subtitle="Hơn 100 tour du lịch trong nước, giá tốt nhất, dịch vụ chuyên nghiệp"
         searchPlaceholder="Tìm điểm đến, tên tour..."
         searchRoute="/tours/search"
       />
@@ -161,7 +155,7 @@ export default function ToursLandingPage() {
         </section>
 
         {/* ── TOUR DỊP LỄ ── */}
-        <section>
+        {/* <section>
           <div className="flex items-center gap-3 mb-5">
             <div className="w-1 h-7 bg-orange-500 rounded-full" />
             <div>
@@ -182,7 +176,7 @@ export default function ToursLandingPage() {
               </a>
             ))}
           </div>
-        </section>
+        </section> */}
 
         {/* ── TOUR PHỔ BIẾN ── */}
         <section>
@@ -244,7 +238,7 @@ export default function ToursLandingPage() {
               ["🛡️", "An toàn tuyệt đối", "Bảo hiểm toàn hành trình"],
               ["💰", "Giá tốt nhất", "Cam kết hoàn tiền nếu rẻ hơn"],
               ["⭐", "Hướng dẫn viên 5 sao", "Đào tạo chuyên nghiệp"],
-              ["📞", "Hỗ trợ 24/7", "Hotline 1900 1870"],
+              ["📞", "Hỗ trợ 24/7", "Hotline 0336323498"],
             ].map(([icon, title, sub]) => (
               <div key={title as string}>
                 <div className="text-3xl mb-2">{icon}</div>

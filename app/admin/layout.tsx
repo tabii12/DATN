@@ -39,13 +39,25 @@ export default function AdminLayout({
             href="/admin/blogs"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >
-            📝 Blogs
+            📝 Tin tức
           </Link>
           <Link
-            href="/admin/services"
+            href="/admin/categories"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >
-            🛎 Services
+            🛎 Danh Mục
+          </Link>
+          <Link
+            href="/admin/users"
+            className="block px-3 py-2 rounded hover:bg-blue-700"
+          >
+            🛎 Tài khoản
+          </Link>
+          <Link
+            href="/admin/users"
+            className="block px-3 py-2 rounded hover:bg-blue-700"
+          >
+            🛎 Bình luận
           </Link>
         </nav>
       </aside>
@@ -53,7 +65,7 @@ export default function AdminLayout({
       {/* MAIN */}
       <main className="flex-1">
         <header className="h-14 bg-white border-b px-6 flex items-center justify-between">
-          <span className="font-semibold">Quản Lý Tour Du Lịch</span>
+          <span className="font-semibold text-gray-800">Quản Lý Tour Du Lịch</span>
           <span className="text-sm text-gray-500">Admin</span>
         </header>
 

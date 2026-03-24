@@ -1,0 +1,16 @@
+Trẻ em ≤ số người lớn  → mỗi trẻ tính 50%
+Trẻ em > số người lớn  → phần vượt tính 100% (như người lớn)
+
+Tức là mỗi người lớn "bảo lãnh" 1 trẻ. Vượt quá thì trẻ đó cần tính full vì phải có chỗ ngủ riêng. Ví dụ:
+2 NL + 1 trẻ → 1 trẻ × 50%  
+2 NL + 2 trẻ → 2 trẻ × 50%  
+2 NL + 3 trẻ → 2 trẻ × 50% + 1 trẻ × 100%
+2 NL + 5 trẻ → 2 trẻ × 50% + 3 trẻ × 100%
+
+Logic giờ chạy như này:
+Giá gốc: 1.800.000đ/người lớn
+
+2 NL + 1 trẻ  → 2×1.8tr + 1×900k             = 4.500.000đ  
+2 NL + 2 trẻ  → 2×1.8tr + 2×900k             = 5.400.000đ  
+2 NL + 3 trẻ  → 2×1.8tr + 2×900k + 1×1.8tr  = 7.200.000đ   (trẻ 3 tính full)
+1 NL + 3 trẻ  → 1×1.8tr + 1×900k + 2×1.8tr  = 6.300.000đ  (trẻ 2,3 tính full)
