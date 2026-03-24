@@ -66,6 +66,7 @@ export default function UserDropdown() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setToken(null);
     setUser(null);
     window.dispatchEvent(new Event("tokenChanged"));

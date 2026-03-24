@@ -54,18 +54,20 @@ function LoginForm() {
       });
 
       const data = await res.json();
+
       if (!res.ok) {
         alert(data.message);
         return;
       }
 
-      // ✅ FIX QUAN TRỌNG
+      // ✅ Lưu đầy đủ
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       window.dispatchEvent(new Event("tokenChanged"));
       router.push(redirectTo);
-    } catch {
+    } catch (error) {
+      console.log(error);
       alert("Lỗi server");
     }
   };
@@ -107,6 +109,9 @@ function LoginForm() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          {errors.password && (
+            <p className="text-red-500">{errors.password}</p>
+          )}
         </div>
 
         <button className="w-full bg-orange-500 text-white py-2 rounded">
@@ -124,13 +129,13 @@ function LoginForm() {
                 { token: credentialResponse.credential }
               );
 
-              // ✅ FIX QUAN TRỌNG
               localStorage.setItem("token", res.data.token);
               localStorage.setItem("user", JSON.stringify(res.data.user));
 
               window.dispatchEvent(new Event("tokenChanged"));
               router.push(redirectTo);
-            } catch {
+            } catch (error) {
+              console.log(error);
               alert("Đăng nhập Google thất bại");
             }
           }}

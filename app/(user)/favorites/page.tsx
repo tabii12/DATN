@@ -13,6 +13,7 @@ export default function FavoritePage() {
 
       if (!token) {
         alert("Bạn chưa đăng nhập!");
+        setLoading(false);
         return;
       }
 
@@ -20,7 +21,7 @@ export default function FavoritePage() {
         "https://db-datn-six.vercel.app/api/favorites/my-favorites",
         {
           headers: {
-            Authorization: `Bearer ${token}`, // 🔥 QUAN TRỌNG
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -54,8 +55,8 @@ export default function FavoritePage() {
         }
       );
 
-      // 🔥 reload lại list
-      fetchFavorites();
+      // 🔥 xoá trực tiếp khỏi UI (mượt hơn reload)
+      setTours((prev) => prev.filter((t) => t._id !== tourId));
     } catch (error) {
       alert("Xóa yêu thích thất bại");
     }
@@ -77,28 +78,37 @@ export default function FavoritePage() {
         {tours.map((tour) => (
           <div
             key={tour._id}
-            className="bg-white shadow rounded-lg overflow-hidden"
+            className="bg-white shadow rounded-lg overflow-hidden hover:shadow-lg transition"
           >
             <img
-              src={tour.image || "/no-image.jpg"}
+  src={
+    tour.images?.[0]?.secure_url &&
+    tour.images[0].secure_url.includes("cloudinary")
+      ? tour.images[0].secure_url
+      : "https://via.placeholder.com/400x300?text=No+Image"
+              }
               alt={tour.name}
               className="w-full h-48 object-cover"
             />
 
             <div className="p-4 space-y-2">
-              <h2 className="text-lg font-semibold">{tour.name}</h2>
+              <h2 className="text-lg font-semibold line-clamp-2">
+                {tour.name}
+              </h2>
 
               <p className="text-gray-500 text-sm">
                 {tour.category_id?.name}
               </p>
 
               <p className="text-red-500 font-bold">
-                {tour.price?.toLocaleString()} đ
+                {tour.price
+                  ? tour.price.toLocaleString() + " đ"
+                  : "Liên hệ"}
               </p>
 
               <button
                 onClick={() => handleRemoveFavorite(tour._id)}
-                className="mt-3 w-full bg-red-500 text-white py-2 rounded hover:bg-red-600"
+                className="mt-3 w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 transition"
               >
                 Bỏ yêu thích
               </button>

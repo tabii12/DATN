@@ -4,6 +4,16 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { JSX } from "react";
 
+interface BlogItem {
+  _id: string;
+  slug: string;
+  title: string;
+  excerpt?: string;
+  content?: string;
+  images?: { image_url: string }[];
+  createdAt?: string;
+}
+
 const SECTIONS = [
   {
     id: "gioi-thieu",
@@ -57,12 +67,6 @@ const SECTIONS = [
       { id: "ho-tro-lien-he", label: "Liên hệ hỗ trợ" },
       { id: "ho-tro-faq", label: "Câu hỏi thường gặp" },
     ],
-  },
-  {
-    id: "ve-chung-toi",
-    icon: "🏢",
-    label: "Về chúng tôi",
-    sub: null,
   },
 ];
 
@@ -374,8 +378,75 @@ const CONTENT: Record<string, JSX.Element> = {
         </div>
       </div>
     </div>
-  ),
-};
+  ),  "blog": <BlogSection />,};
+
+function BlogSection() {
+  const [blogs, setBlogs] = useState<BlogItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadBlogs() {
+      setLoading(true);
+      try {
+        const res = await fetch("https://db-datn-six.vercel.app/api/blogs/");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : data.data || data.blogs || [];
+        setBlogs(items);
+      } catch (err) {
+        setError("Không tải được blog. Vui lòng thử lại sau.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadBlogs();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center text-gray-500 py-10">Đang tải blog...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500 py-10">{error}</div>;
+  }
+
+  if (!blogs.length) {
+    return <div className="text-center text-gray-500 py-10">Chưa có bài viết nào.</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-3xl">📝</span>
+        <h2 className="text-2xl font-bold text-gray-900">Blog du lịch</h2>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {blogs.slice(0, 6).map((blog) => (
+          <div key={blog._id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+            {blog.images?.[0]?.image_url && (
+              <div className="relative h-40 w-full">
+                <img src={blog.images[0].image_url} alt={blog.title} className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="p-4">
+              <h3 className="font-bold text-lg text-gray-800 line-clamp-2">{blog.title}</h3>
+              <p className="text-gray-600 text-sm mt-2 line-clamp-3">{blog.excerpt ?? (blog.content ? `${blog.content.replace(/<[^>]*>/g, "").slice(0, 120)}...` : "")}</p>
+              <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+                <span>{blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('vi-VN') : ''}</span>
+                <a href={`/news/${blog.slug}`} className="text-orange-500 hover:text-orange-600 font-medium">Xem tiếp →</a>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="text-right">
+        <a href="/news" className="text-sm font-semibold text-orange-500 hover:text-orange-600">Xem tất cả tin tức</a>
+      </div>
+    </div>
+  );
+}
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);

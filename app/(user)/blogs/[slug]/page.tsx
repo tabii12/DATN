@@ -74,7 +74,7 @@ export default function BlogDetailPage() {
           <div className="bg-white rounded-xl shadow-lg p-8 text-center">
             <p className="text-4xl mb-3">❌</p>
             <p className="text-gray-600">{error || 'Blog không tồn tại'}</p>
-            <a href="/blogs" className="text-blue-500 hover:text-blue-600 mt-4 inline-block">
+            <a href="/blogs" className="text-orange-500 hover:text-orange-600 mt-4 inline-block">
               ← Quay lại blog
             </a>
           </div>
@@ -140,7 +140,7 @@ export default function BlogDetailPage() {
             <div className="flex justify-between items-center">
               <a
                 href="/blogs"
-                className="text-blue-500 hover:text-blue-600 font-medium flex items-center gap-2"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors duration-200"
               >
                 ← Quay lại blog
               </a>
