@@ -159,24 +159,33 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     };
   }, [slug]);
 
-  // ── Điều hướng sang checkout – truyền toàn bộ qua URL params ──
+  // ── Điều hướng sang checkout – check auth trước ──
   const handleBooking = () => {
     if (!tour) return;
+
+    // Nếu chưa đăng nhập → redirect sang login, lưu lại URL hiện tại để quay lại sau
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) {
+      const currentPath = window.location.pathname + window.location.search;
+      router.push(`/auth/login?redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
     const pricePerAdult = tour.hotel_id.price_per_night;
     const pricePerChild = Math.round(pricePerAdult * 0.75);
 
     const params = new URLSearchParams({
-      tourId:       tour._id,
-      tourSlug:     tour.slug,
-      tourName:     tour.name,
-      hotelName:    tour.hotel_id.name,
-      city:         tour.hotel_id.city,
-      address:      tour.hotel_id.address,
-      thumbnail:    tour.images?.[0]?.image_url ?? "",
+      tourId:        tour._id,
+      tourSlug:      tour.slug,
+      tourName:      tour.name,
+      hotelName:     tour.hotel_id.name,
+      city:          tour.hotel_id.city,
+      address:       tour.hotel_id.address,
+      thumbnail:     tour.images?.[0]?.image_url ?? "",
       pricePerAdult: String(pricePerAdult),
-      pricePerChild:  String(pricePerChild),
-      adults:       String(adults),
-      children:     String(children),
+      pricePerChild: String(pricePerChild),
+      adults:        String(adults),
+      children:      String(children),
     });
     router.push(`/checkout?${params.toString()}`);
   };
@@ -529,7 +538,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
         </div>
         <button
           onClick={handleBooking}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-full text-sm border-none cursor-pointer transition-colors"
+          className="bzg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-full text-sm border-none cursor-pointer transition-colors"
         >
           Đặt ngay
         </button>
