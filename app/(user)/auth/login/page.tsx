@@ -46,7 +46,9 @@ function LoginForm() {
     try {
       const res = await fetch("https://db-datn-six.vercel.app/api/users/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           email: form.email,
           password: form.password,
@@ -54,18 +56,32 @@ function LoginForm() {
       });
 
       const data = await res.json();
+      console.log("LOGIN RESPONSE:", data); // 🔥 debug
 
-      if (!res.ok) {
-        alert(data.message);
+      // ❌ fail
+      if (!res.ok || !data.success) {
+        alert(data.message || "Đăng nhập thất bại");
         return;
       }
 
-      // ✅ Lưu đầy đủ
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // ✅ FIX CHUẨN BACKEND
+      const token = data.data?.token;
+      const user = data.data?.user;
 
+      if (!token) {
+        alert("Không nhận được token");
+        return;
+      }
+
+      // ✅ lưu đúng
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      // trigger update
       window.dispatchEvent(new Event("tokenChanged"));
+
       router.push(redirectTo);
+
     } catch (error) {
       console.log(error);
       alert("Lỗi server");
@@ -129,11 +145,23 @@ function LoginForm() {
                 { token: credentialResponse.credential }
               );
 
-              localStorage.setItem("token", res.data.token);
-              localStorage.setItem("user", JSON.stringify(res.data.user));
+              console.log("GOOGLE RESPONSE:", res.data);
+
+              // ✅ FIX CHUẨN
+              const token = res.data.data?.token;
+              const user = res.data.data?.user;
+
+              if (!token) {
+                alert("Google login không có token");
+                return;
+              }
+
+              localStorage.setItem("token", token);
+              localStorage.setItem("user", JSON.stringify(user));
 
               window.dispatchEvent(new Event("tokenChanged"));
               router.push(redirectTo);
+
             } catch (error) {
               console.log(error);
               alert("Đăng nhập Google thất bại");
