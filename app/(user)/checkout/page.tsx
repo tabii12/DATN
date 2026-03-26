@@ -9,6 +9,8 @@ import {
   ChevronRight,
   AlertCircle,
   CheckCircle2,
+  Wallet,
+  CreditCard,
 } from "lucide-react";
 
 function formatVND(n: number) {
@@ -66,10 +68,15 @@ function SearchContent() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // Payment option: 50 = đặt cọc 50%, 100 = thanh toán đầy đủ
+  const [paymentPct, setPaymentPct] = useState<50 | 100>(50);
+
   const subtotalAdults = adults * pricePerAdult;
   const subtotalChildren = children * pricePerChild;
   const INSURANCE = 500_000;
   const total = subtotalAdults + subtotalChildren + INSURANCE;
+  const payNow = Math.round(total * paymentPct / 100);
+  const remaining = total - payNow;
 
   const orderItems = [
     {
@@ -78,11 +85,11 @@ function SearchContent() {
     },
     ...(children > 0
       ? [
-        {
-          label: `Giá tour (${children} trẻ em)`,
-          value: formatVND(subtotalChildren),
-        },
-      ]
+          {
+            label: `Giá tour (${children} trẻ em)`,
+            value: formatVND(subtotalChildren),
+          },
+        ]
       : []),
     { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
   ];
@@ -124,16 +131,20 @@ function SearchContent() {
       contactName: form.name,
       contactEmail: form.email,
       contactPhone: form.phone,
+      paymentPct: String(paymentPct),
+      payNow: String(payNow),
+      remaining: String(remaining),
     });
     router.push(`/checkout/payment?${params.toString()}`);
   };
 
   const inputClass = (name: string) =>
-    `w-full border rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 transition ${touched[name] && errors[name]
-      ? "border-red-300 focus:ring-red-200 focus:border-red-400 bg-red-50"
-      : touched[name] && !errors[name]
-        ? "border-green-300 focus:ring-green-200 focus:border-green-400 bg-green-50/30"
-        : "border-slate-200 focus:ring-indigo-300 focus:border-indigo-400"
+    `w-full border rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 transition ${
+      touched[name] && errors[name]
+        ? "border-red-300 focus:ring-red-200 focus:border-red-400 bg-red-50"
+        : touched[name] && !errors[name]
+          ? "border-green-300 focus:ring-green-200 focus:border-green-400 bg-green-50/30"
+          : "border-slate-200 focus:ring-indigo-300 focus:border-indigo-400"
     }`;
 
   const FieldIcon = ({ name }: { name: string }) => {
@@ -153,7 +164,6 @@ function SearchContent() {
       {/* Header */}
       <header className="bg-white border-b border-slate-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
-          {/* Step indicator */}
           <div className="ml-auto flex items-center gap-2 text-sm">
             <span className="bg-indigo-600 text-white px-3 py-1 rounded-full font-medium text-xs">
               1 Thông tin
@@ -339,6 +349,8 @@ function SearchContent() {
             <h2 className="font-semibold text-slate-700 text-lg mb-5">
               Tổng kết đơn hàng
             </h2>
+
+            {/* Chi tiết giá */}
             <div className="space-y-3 mb-5">
               {orderItems.map((item) => (
                 <div key={item.label} className="flex justify-between text-sm">
@@ -349,15 +361,124 @@ function SearchContent() {
                 </div>
               ))}
             </div>
-            <div className="border-t border-slate-100 pt-4 mb-6">
+
+            {/* Tổng cộng */}
+            <div className="border-t border-slate-100 pt-4 mb-5">
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-slate-700">Tổng cộng</span>
-                <span className="text-2xl font-bold text-indigo-600">
+                <span className="text-xl font-bold text-indigo-600">
                   {formatVND(total)}
                 </span>
               </div>
             </div>
 
+            {/* Hình thức thanh toán */}
+            <p className="text-sm font-semibold text-slate-700 mb-3">
+              Hình thức thanh toán
+            </p>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {/* Đặt cọc 50% */}
+              <button
+                onClick={() => setPaymentPct(50)}
+                className={`rounded-xl p-3.5 text-left border-2 transition-all ${
+                  paymentPct === 50
+                    ? "border-indigo-400 bg-indigo-50"
+                    : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Wallet
+                    size={13}
+                    className={
+                      paymentPct === 50 ? "text-indigo-500" : "text-slate-400"
+                    }
+                  />
+                  <span
+                    className={`text-xs font-semibold ${
+                      paymentPct === 50 ? "text-indigo-600" : "text-slate-500"
+                    }`}
+                  >
+                    Đặt cọc 50%
+                  </span>
+                </div>
+                <p
+                  className={`text-sm font-bold mb-1 ${
+                    paymentPct === 50 ? "text-indigo-700" : "text-slate-700"
+                  }`}
+                >
+                  {formatVND(total * 0.5)}
+                </p>
+                <p
+                  className={`text-[11px] leading-tight ${
+                    paymentPct === 50 ? "text-indigo-400" : "text-slate-400"
+                  }`}
+                >
+                  Còn lại thanh toán trước khởi hành
+                </p>
+              </button>
+
+              {/* Thanh toán 100% */}
+              <button
+                onClick={() => setPaymentPct(100)}
+                className={`rounded-xl p-3.5 text-left border-2 transition-all ${
+                  paymentPct === 100
+                    ? "border-indigo-400 bg-indigo-50"
+                    : "border-slate-100 bg-slate-50 hover:border-slate-200"
+                }`}
+              >
+                <div className="flex items-center gap-1.5 mb-2">
+                  <CreditCard
+                    size={13}
+                    className={
+                      paymentPct === 100 ? "text-indigo-500" : "text-slate-400"
+                    }
+                  />
+                  <span
+                    className={`text-xs font-semibold ${
+                      paymentPct === 100 ? "text-indigo-600" : "text-slate-500"
+                    }`}
+                  >
+                    Thanh toán 100%
+                  </span>
+                </div>
+                <p
+                  className={`text-sm font-bold mb-1 ${
+                    paymentPct === 100 ? "text-indigo-700" : "text-slate-700"
+                  }`}
+                >
+                  {formatVND(total)}
+                </p>
+                <p
+                  className={`text-[11px] leading-tight ${
+                    paymentPct === 100 ? "text-indigo-400" : "text-slate-400"
+                  }`}
+                >
+                  Thanh toán toàn bộ một lần
+                </p>
+              </button>
+            </div>
+
+            {/* Tóm tắt thanh toán */}
+            <div className="bg-slate-50 rounded-xl px-4 py-3 mb-5 border border-slate-100 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500">Thanh toán ngay</span>
+                <span className="text-base font-bold text-indigo-600">
+                  {formatVND(payNow)}
+                </span>
+              </div>
+              {paymentPct === 50 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-400">
+                    Còn lại (trước khởi hành)
+                  </span>
+                  <span className="text-xs font-medium text-slate-500">
+                    {formatVND(remaining)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Nút tiếp tục */}
             <button
               onClick={handleNext}
               className="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-200"
