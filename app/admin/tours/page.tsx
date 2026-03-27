@@ -52,7 +52,7 @@ export default function AdminTours() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`${API}/tours`)
+    fetch(`${API}/tours/admin`)
       .then((r) => r.json())
       .then((d) => setTours(d.data || []))
       .catch(() => {})
