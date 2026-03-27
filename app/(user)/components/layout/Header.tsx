@@ -9,7 +9,6 @@ const NAV_LINKS = [
   { href: "/tours", label: "Tours" },
   { href: "/info", label: "Giới thiệu" },
   { href: "/blogs", label: "Tin tức" },
-  { href: "/checkout", label: "Thanh Toán" },
 ];
 
 export default function Header() {
