@@ -249,10 +249,6 @@ export default function HomePage() {
             <h2 className="text-xl font-bold text-gray-900">Điểm đến yêu thích trong nước</h2>
             <p className="text-sm text-gray-500 mt-0.5">Lên rừng xuống biển. Trọn vẹn Việt Nam</p>
           </div>
-          <a href="/khach-san" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:underline">
-            Xem tất cả
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-          </a>
         </div>
 
         <div className="grid gap-2" style={{ gridTemplateColumns: "843fr 353fr", gridTemplateRows: "352px 352px 704px" }}>

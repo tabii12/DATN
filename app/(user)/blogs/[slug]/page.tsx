@@ -47,7 +47,7 @@ export default function BlogDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans">
+      <div className="min-h-screen bg-gray-50 font-sans">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="animate-pulse">
@@ -84,7 +84,7 @@ export default function BlogDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans">
+    <div className="min-h-screen font-sans">
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 pt-4">
         <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
