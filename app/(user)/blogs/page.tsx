@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { JSX } from "react";
+import Image from "next/image";
 
 interface BlogItem {
   _id: string;
@@ -14,22 +15,7 @@ interface BlogItem {
   createdAt?: string;
 }
 
-const SECTIONS = [
-  {
-    id: "ve-chung-toi",
-    icon: "🏢",
-    label: "Về chúng tôi",
-    sub: null,
-  },
-  {
-    id: "tin-moi-nhat",
-    icon: "📝",
-    label: "Tin mới nhất",
-    sub: null,
-  },
-];
-
-function LatestNewsSection() {
+export default function BlogsPage() {
   const [blogs, setBlogs] = useState<BlogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,22 +24,16 @@ function LatestNewsSection() {
     async function loadBlogs() {
       setLoading(true);
       try {
-        const res = await fetch("https://db-datn-six.vercel.app/api/blogs/");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const items = Array.isArray(data)
-          ? data
-          : data.data || data.blogs || [];
-        // Sort by createdAt descending to get latest
-        const sortedBlogs = items.sort(
-          (a: BlogItem, b: BlogItem) =>
-            new Date(b.createdAt || 0).getTime() -
-            new Date(a.createdAt || 0).getTime(),
-        );
-        setBlogs(sortedBlogs);
-      } catch (err) {
-        setError("Không tải được tin tức. Vui lòng thử lại sau.");
-        console.error(err);
+        const response = await fetch('https://db-datn-six.vercel.app/api/blogs/');
+        const data = await response.json();
+
+        console.log("API DATA:", data);
+
+        // ✅ đảm bảo luôn là array
+        setBlogs(Array.isArray(data) ? data : data.data || []);
+
+      } catch (error) {
+        console.error('Error fetching blogs:', error);
       } finally {
         setLoading(false);
       }
@@ -63,185 +43,271 @@ function LatestNewsSection() {
 
   if (loading) {
     return (
-      <div className="text-center text-gray-500 py-10">Đang tải tin tức...</div>
-    );
-  }
-
-  if (error) {
-    return <div className="text-center text-red-500 py-10">{error}</div>;
-  }
-
-  if (!blogs.length) {
-    return (
-      <div className="text-center text-gray-500 py-10">
-        Chưa có bài viết nào.
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">Đang tải...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-3xl">📝</span>
-        <h2 className="text-2xl font-bold text-gray-900">Tin mới nhất</h2>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {blogs.slice(0, 4).map((blog) => (
-          <div
-            key={blog._id}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-          >
-            {blog.images?.[0]?.image_url && (
-              <div className="relative h-40 w-full">
-                <img
-                  src={blog.images[0].image_url}
-                  alt={blog.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            <div className="p-4">
-              <h3 className="font-bold text-lg text-gray-800 line-clamp-2">
-                {blog.title}
-              </h3>
-              <p className="text-gray-600 text-sm mt-2 line-clamp-3">
-                {blog.excerpt ??
-                  (blog.content
-                    ? `${blog.content.replace(/<[^>]*>/g, "").slice(0, 60)}...`
-                    : "")}
-              </p>
-              <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-                <span>
-                  {blog.createdAt
-                    ? new Date(blog.createdAt).toLocaleDateString("vi-VN")
-                    : ""}
-                </span>
-                <a
-                  href={`/blogs/${blog.slug}`}
-                  className="text-orange-500 hover:text-orange-600 font-medium"
-                >
-                  Xem tiếp →
-                </a>
+    <>
+      {/* Hero Banner */}
+        <div className="container mx-auto px-4">
+         
+        </div>
+    
+
+      <div className="container mx-auto px-4 pb-12">
+        {/* Featured Article */}
+        {blogs.length > 0 && (
+          <div className="mb-16">
+            <div className="relative overflow-hidden rounded-2xl shadow-2xl group cursor-pointer">
+              {blogs[0].images && blogs[0].images.length > 0 && (
+                <div className="relative h-96 w-full overflow-hidden">
+                  <Image
+                    src={blogs[0].images[0].image_url}
+                    alt={blogs[0].title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                </div>
+              )}
+              <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                <div className="inline-block bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold mb-4">
+                  ⭐ Bài viết nổi bật
+                </div>
+                <h2 className="text-4xl font-bold mb-3 line-clamp-2">
+                  {blogs[0].title}
+                </h2>
+                <p className="text-gray-100 mb-4 line-clamp-2">
+                  {blogs[0].excerpt
+                    ? blogs[0].excerpt
+                    : blogs[0].content?.substring(0, 120) + '...'}
+                </p>
+                <div className="space-y-2 mb-4 text-sm text-gray-200 border-t border-white/20 pt-4">
+                  <p className="leading-relaxed">
+                    <strong>Khám phá những kinh nghiệm du lịch tuyệt vời</strong>
+                  </p>
+                  <p className="leading-relaxed">
+                    Chia sẻ tips, địa điểm hot và những câu chuyện thú vị từ khắp nơi
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-200 flex items-center gap-2">
+                    📅{' '}
+                    {blogs[0].createdAt
+                      ? new Date(blogs[0].createdAt).toLocaleDateString('vi-VN')
+                      : ''}
+                  </span>
+                  <a
+                    href={`/blogs/${blogs[0].slug}`}
+                    className="bg-white text-orange-600 hover:bg-orange-50 px-6 py-2 rounded-lg font-semibold transition-colors"
+                  >
+                    Đọc tiếp →
+                  </a>
+                </div>
               </div>
             </div>
           </div>
-        ))}
+        )}
+
+        {/* Articles Grid */}
+        <div>
+          <h3 className="text-3xl font-bold mb-8 text-gray-800 flex items-center gap-3">
+            <span>📰</span> Những bài viết khác
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {blogs.slice(1).map((blog, index) => (
+              <a
+                key={blog._id}
+                href={`/blogs/${blog.slug}`}
+                className="group overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-white flex flex-col h-full"
+              >
+                {/* Image Container */}
+                {blog.images && blog.images.length > 0 && (
+                  <div className="relative h-56 w-full overflow-hidden bg-gray-100">
+                    <Image
+                      src={blog.images[0].image_url}
+                      alt={blog.title}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                      unoptimized
+                    />
+                    <div className="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                      #{index + 2}
+                    </div>
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className="p-6 flex flex-col flex-grow">
+                  <h2 className="text-xl font-bold text-gray-800 mb-3 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                    {blog.title}
+                  </h2>
+
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">
+                    {blog.excerpt
+                      ? blog.excerpt
+                      : blog.content?.substring(0, 150) + '...'}
+                  </p>
+
+                  {/* Footer */}
+                  <div className="border-t border-gray-100 pt-4 mt-auto">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span>📅</span>
+                        {blog.createdAt
+                          ? new Date(blog.createdAt).toLocaleDateString('vi-VN')
+                          : 'Không xác định'}
+                      </div>
+                      <span className="text-orange-500 font-semibold group-hover:translate-x-1 transition-transform">
+                        →
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* Empty State */}
+        {blogs.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-2xl text-gray-400">📭 Chưa có bài viết nào</p>
+          </div>
+        )}
       </div>
-      <div className="text-right">
-        <a
-          href="/blogs"
-          className="text-sm font-semibold text-orange-500 hover:text-orange-600"
+    </>
+  );
+}
+
+// ✅ Components cho CONTENT
+function LatestNewsSection() {
+  const [activeTab, setActiveTab] = useState<"about" | "news">("about");
+
+  return (
+    <div>
+      {/* Tab Navigation */}
+      <div className="flex gap-3 mb-6 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab("about")}
+          className={`px-4 py-3 font-semibold transition-colors ${
+            activeTab === "about"
+              ? "text-orange-500 border-b-2 border-orange-500"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
         >
-          Xem tất cả tin tức
-        </a>
+          <span className="mr-2">🏢</span>Về chúng tôi
+        </button>
+        <button
+          onClick={() => setActiveTab("news")}
+          className={`px-4 py-3 font-semibold transition-colors ${
+            activeTab === "news"
+              ? "text-orange-500 border-b-2 border-orange-500"
+              : "text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          <span className="mr-2">📰</span>Tin mới nhất
+        </button>
       </div>
+
+      {/* Content */}
+      {activeTab === "about" ? (
+        <div>
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-3xl">🏢</span>
+            <h2 className="text-2xl font-bold text-gray-900">Về chúng tôi</h2>
+          </div>
+          <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
+            <p>
+              <strong>Công ty TNHH Du lịch Pick Your Way</strong> được thành lập
+              năm 2015, trụ sở tại TP. Hồ Chí Minh, chuyên cung cấp dịch vụ
+              tour du lịch nội địa cao cấp trên toàn Việt Nam.
+            </p>
+            <div className="space-y-2 text-sm">
+              {[
+                ["Tên công ty", "Công ty TNHH Du lịch Pick Your Way"],
+                ["Mã số thuế", "0312 345 678"],
+                ["Địa chỉ", "123 Nguyễn Huệ, Quận 1, TP. HCM"],
+                ["Giấy phép LHQT", "01-1234/2015/TCDL-GP LHQT"],
+              ].map(([label, value]) => (
+                <div
+                  key={label as string}
+                  className="flex gap-4 border-b border-gray-100 pb-2 last:border-0"
+                >
+                  <span className="w-36 text-gray-400 flex-shrink-0">
+                    {label}
+                  </span>
+                  <span className="text-gray-700 font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-3xl">📰</span>
+            <h2 className="text-2xl font-bold text-gray-900">Tin mới nhất</h2>
+          </div>
+          <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
+            <p>
+              Cập nhật những tin tức mới nhất về du lịch, các địa điểm hot nhất,
+              tips du lịch hay và những khuyến mãi đặc biệt cho khách hàng.
+            </p>
+            <div className="space-y-3 mt-4">
+              {[
+                ["🌟", "Loạt điểm đến mới tại Việt Nam năm 2026"],
+                ["✈️", "Ưu đãi đặc biệt cho tour hè này"],
+                ["🎉", "Chương trình khách hàng thân thiết"],
+                ["🏆", "Tour du lịch được đánh giá tốt nhất tháng 3"],
+              ].map(([icon, title], idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-gradient-to-r from-orange-50 to-transparent rounded-lg border border-orange-100 hover:bg-orange-50 transition-colors cursor-pointer"
+                >
+                  <p className="font-medium text-gray-800">
+                    <span className="mr-2">{icon}</span>
+                    {title}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function BlogSection() {
-  const [blogs, setBlogs] = useState<BlogItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadBlogs() {
-      setLoading(true);
-      try {
-        const res = await fetch("https://db-datn-six.vercel.app/api/blogs/");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const items = Array.isArray(data)
-          ? data
-          : data.data || data.blogs || [];
-        setBlogs(items);
-      } catch (err) {
-        setError("Không tải được blog. Vui lòng thử lại sau.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadBlogs();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="text-center text-gray-500 py-10">Đang tải blog...</div>
-    );
-  }
-
-  if (error) {
-    return <div className="text-center text-red-500 py-10">{error}</div>;
-  }
-
-  if (!blogs.length) {
-    return (
-      <div className="text-center text-gray-500 py-10">
-        Chưa có bài viết nào.
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 mb-4">
+    <div>
+      <div className="flex items-center gap-3 mb-6">
         <span className="text-3xl">📝</span>
-        <h2 className="text-2xl font-bold text-gray-900">Blog du lịch</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Blog Du Lịch</h2>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {blogs.slice(0, 6).map((blog) => (
-          <div
-            key={blog._id}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
-          >
-            {blog.images?.[0]?.image_url && (
-              <div className="relative h-40 w-full">
-                <img
-                  src={blog.images[0].image_url}
-                  alt={blog.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            <div className="p-4">
-              <h3 className="font-bold text-lg text-gray-800 line-clamp-2">
-                {blog.title}
-              </h3>
-              <p className="text-gray-600 text-sm mt-2 line-clamp-3">
-                {blog.excerpt ??
-                  (blog.content
-                    ? `${blog.content.replace(/<[^>]*>/g, "").slice(0, 120)}...`
-                    : "")}
-              </p>
-              <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-                <span>
-                  {blog.createdAt
-                    ? new Date(blog.createdAt).toLocaleDateString("vi-VN")
-                    : ""}
-                </span>
-                <a
-                  href={`/blogs/${blog.slug}`}
-                  className="text-orange-500 hover:text-orange-600 font-medium"
-                >
-                  Xem tiếp →
-                </a>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="text-right">
-        <a
-          href="/blogs"
-          className="text-sm font-semibold text-orange-500 hover:text-orange-600"
-        >
-          Xem tất cả tin tức
-        </a>
+      <div className="space-y-4 text-gray-700">
+        <p>Các bài blog du lịch hay nhất đang được cập nhật...</p>
       </div>
     </div>
   );
 }
+
+// ✅ Sections configuration
+const SECTIONS: Array<{
+  id: string;
+  label: string;
+  icon: string;
+  sub?: boolean;
+}> = [
+  { id: "ve-chung-toi", label: "Về chúng tôi", icon: "🏢", sub: false },
+  { id: "tin-moi-nhat", label: "Tin mới nhất", icon: "📰", sub: false },
+];
 
 const CONTENT: Record<string, JSX.Element> = {
   "ve-chung-toi": (
@@ -275,8 +341,38 @@ const CONTENT: Record<string, JSX.Element> = {
       </div>
     </div>
   ),
-  "tin-moi-nhat": <LatestNewsSection />,
-  blog: <BlogSection />,
+  "tin-moi-nhat": (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <span className="text-3xl">📰</span>
+        <h2 className="text-2xl font-bold text-gray-900">Tin mới nhất</h2>
+      </div>
+      <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
+        <p>
+          Cập nhật những tin tức mới nhất về du lịch, các địa điểm hot nhất,
+          tips du lịch hay và những khuyến mãi đặc biệt cho khách hàng.
+        </p>
+        <div className="space-y-3 mt-4">
+          {[
+            ["🌟", "Loạt điểm đến mới tại Việt Nam năm 2026"],
+            ["✈️", "Ưu đãi đặc biệt cho tour hè này"],
+            ["🎉", "Chương trình khách hàng thân thiết"],
+            ["🏆", "Tour du lịch được đánh giá tốt nhất tháng 3"],
+          ].map(([icon, title], idx) => (
+            <div
+              key={idx}
+              className="p-3 bg-gradient-to-r from-orange-50 to-transparent rounded-lg border border-orange-100 hover:bg-orange-50 transition-colors cursor-pointer"
+            >
+              <p className="font-medium text-gray-800">
+                <span className="mr-2">{icon}</span>
+                {title}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  ),
 };
 
 function FaqItem({ q, a }: { q: string; a: string }) {
@@ -430,13 +526,5 @@ function TourInfoContent() {
         </main>
       </div>
     </div>
-  );
-}
-
-export default function TourInfoPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <TourInfoContent />
-    </Suspense>
   );
 }
