@@ -31,7 +31,7 @@ function LoginForm() {
 
   const validateAll = () => {
     const newErrors = {
-      email: validateField("email", form.email),
+      email:    validateField("email",    form.email),
       password: validateField("password", form.password),
     };
     setErrors(newErrors);
@@ -54,7 +54,6 @@ function LoginForm() {
           password: form.password,
         }),
       });
-
       const data = await res.json();
       console.log("LOGIN RESPONSE:", data); // 🔥 debug
 
@@ -88,11 +87,18 @@ function LoginForm() {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+    const res = await axios.post(
+      "https://db-datn-six.vercel.app/api/users/google-auth",
+      { token: credentialResponse.credential }
+    );
+    localStorage.setItem("token", res.data.token);
+    window.location.href = redirectTo;
+  };
+
   return (
     <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-      <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">
-        Đăng nhập
-      </h1>
+      <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">Đăng nhập</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
