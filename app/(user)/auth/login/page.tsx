@@ -31,7 +31,7 @@ function LoginForm() {
 
   const validateAll = () => {
     const newErrors = {
-      email:    validateField("email",    form.email),
+      email: validateField("email", form.email),
       password: validateField("password", form.password),
     };
     setErrors(newErrors);
@@ -54,51 +54,43 @@ function LoginForm() {
           password: form.password,
         }),
       });
-      const data = await res.json();
-      console.log("LOGIN RESPONSE:", data); // 🔥 debug
 
-      // ❌ fail
+      const data = await res.json();
+      console.log("LOGIN RESPONSE:", data);
+
       if (!res.ok || !data.success) {
         alert(data.message || "Đăng nhập thất bại");
         return;
       }
 
-      // ✅ FIX CHUẨN BACKEND
-      const token = data.data?.token;
-      const user = data.data?.user;
+      // ✅ FIX CHUẨN
+      const token = data.token;
+      const user = data.user;
+
+      console.log("TOKEN:", token);
 
       if (!token) {
         alert("Không nhận được token");
         return;
       }
 
-      // ✅ lưu đúng
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
 
-      // trigger update
       window.dispatchEvent(new Event("tokenChanged"));
 
       router.push(redirectTo);
-
     } catch (error) {
       console.log(error);
       alert("Lỗi server");
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
-    const res = await axios.post(
-      "https://db-datn-six.vercel.app/api/users/google-auth",
-      { token: credentialResponse.credential }
-    );
-    localStorage.setItem("token", res.data.token);
-    window.location.href = redirectTo;
-  };
-
   return (
     <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-      <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">Đăng nhập</h1>
+      <h1 className="text-2xl font-semibold text-center text-blue-700 mb-6">
+        Đăng nhập
+      </h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -154,8 +146,8 @@ function LoginForm() {
               console.log("GOOGLE RESPONSE:", res.data);
 
               // ✅ FIX CHUẨN
-              const token = res.data.data?.token;
-              const user = res.data.data?.user;
+              const token = res.data.token;
+              const user = res.data.user;
 
               if (!token) {
                 alert("Google login không có token");
@@ -167,7 +159,6 @@ function LoginForm() {
 
               window.dispatchEvent(new Event("tokenChanged"));
               router.push(redirectTo);
-
             } catch (error) {
               console.log(error);
               alert("Đăng nhập Google thất bại");
