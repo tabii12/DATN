@@ -62,10 +62,14 @@ export default function HeroBanner({
   function handleSearch() {
     const q = destination.trim();
     if (!q) return;
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (checkIn) params.set("date", checkIn);
+    if (origin) params.set("from", origin);
     if (onSearch) {
       onSearch(q);
     } else {
-      router.push(`${searchRoute}?q=${encodeURIComponent(q)}`);
+      router.push(`${searchRoute}?${params.toString()}`);
     }
   }
 

@@ -47,8 +47,8 @@ export default function BlogDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gray-50 font-sans">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="bg-white rounded-xl shadow-lg p-8">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 rounded mb-4"></div>
@@ -70,12 +70,12 @@ export default function BlogDetailPage() {
   if (error || !blog) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="bg-white rounded-xl shadow-lg p-8 text-center">
             <p className="text-4xl mb-3">❌</p>
             <p className="text-gray-600">{error || 'Blog không tồn tại'}</p>
             <a href="/blogs" className="text-orange-500 hover:text-orange-600 mt-4 inline-block">
-              ← Quay lại blog
+              ← Quay lại 
             </a>
           </div>
         </div>
@@ -84,19 +84,19 @@ export default function BlogDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 font-sans">
+    <div className="min-h-screen font-sans">
       {/* Breadcrumb */}
-      <div className="max-w-4xl mx-auto px-4 pt-4">
+      <div className="max-w-7xl mx-auto px-4 pt-4">
         <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
           <a href="/" className="hover:text-blue-500 no-underline">Trang chủ</a>
           <span>/</span>
-          <a href="/blogs" className="hover:text-blue-500 no-underline">Blog</a>
+          <a href="/blogs" className="hover:text-blue-500 no-underline">Tin tức</a>
           <span>/</span>
           <span className="text-gray-600 font-medium">{blog.title}</span>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <article className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Header */}
           <header className="p-8 pb-6">
@@ -142,7 +142,7 @@ export default function BlogDetailPage() {
                 href="/blogs"
                 className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors duration-200"
               >
-                ← Quay lại blog
+                ← Quay lại 
               </a>
               <div className="flex gap-2">
                 {/* Share buttons can be added here */}
