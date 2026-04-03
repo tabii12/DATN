@@ -20,9 +20,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-14">
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-0.5 shrink-0">
-            <span className="text-blue-500 font-bold text-xl">Pick</span>
-            <span className="text-orange-400 font-bold text-xl">Your</span>
-            <span className="text-blue-500 font-bold text-xl">Way</span>
+            <img src="https://res.cloudinary.com/dmv7ymjxf/image/upload/v1775203365/logo-removebg-preview_iyvg9e.png" alt="" width={"200px"}/>
           </Link>
 
           {/* DESKTOP NAV */}

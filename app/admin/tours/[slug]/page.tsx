@@ -107,9 +107,9 @@ export default function EditTourPage() {
 
   // ── TRIPS ──
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [tripForm, setTripForm] = useState({ start_date: "", end_date: "", price: "", max_people: "" });
+  const [tripForm, setTripForm] = useState({ start_date: "", end_date: "", base_price: "", max_people: "" });
   const [editingTrip, setEditingTrip] = useState<string | null>(null);
-  const [editTripForm, setEditTripForm] = useState({ start_date: "", end_date: "", price: "", max_people: "" });
+  const [editTripForm, setEditTripForm] = useState({ start_date: "", end_date: "", base_price: "", max_people: "" });
   const [repeatMode, setRepeatMode] = useState(false);
   const [repeatWeeks, setRepeatWeeks] = useState(4);
   const [repeatDays, setRepeatDays] = useState<number[]>([1, 5]);
@@ -129,12 +129,12 @@ export default function EditTourPage() {
   };
 
   const addTrip = async () => {
-    if (!tripForm.start_date || !tripForm.end_date || !tripForm.price) return;
+    if (!tripForm.start_date || !tripForm.end_date || !tripForm.base_price) return;
     const body = {
       tour_id: tour?._id,
       start_date: tripForm.start_date,
       end_date: tripForm.end_date,
-      price: Number(tripForm.price),
+      price: Number(tripForm.base_price),
       max_people: Number(tripForm.max_people),
       status: "open",
     };
@@ -147,12 +147,12 @@ export default function EditTourPage() {
     const data = await res.json();
     console.log("response:", res.status, data);
     if (!res.ok) { alert(`Lỗi ${res.status}: ${data.message || "Không rõ"}`); return; }
-    setTripForm({ start_date: "", end_date: "", price: "", max_people: "" });
+    setTripForm({ start_date: "", end_date: "", base_price: "", max_people: "" });
     await fetchTrips();
   };
 
   const addRepeatTrips = async () => {
-    if (!tripForm.start_date || !tripForm.price || repeatDays.length === 0) return;
+    if (!tripForm.start_date || !tripForm.base_price || repeatDays.length === 0) return;
     const base = new Date(tripForm.start_date);
     const toCreate: { start: string; end: string }[] = [];
     for (let w = 0; w < repeatWeeks; w++) {
@@ -169,7 +169,7 @@ export default function EditTourPage() {
       fetch(`${API}/trips/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tour_id: tour?._id, start_date: t.start, end_date: t.end, price: Number(tripForm.price), max_people: Number(tripForm.max_people), status: "open" }),
+        body: JSON.stringify({ tour_id: tour?._id, start_date: t.start, end_date: t.end, price: Number(tripForm.base_price), max_people: Number(tripForm.max_people), status: "open" }),
       })
     ));
     await fetchTrips();
@@ -180,7 +180,7 @@ export default function EditTourPage() {
     await fetch(`${API}/trips/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ start_date: editTripForm.start_date, end_date: editTripForm.end_date, price: Number(editTripForm.price), max_people: Number(editTripForm.max_people) }),
+      body: JSON.stringify({tour_id: tour?._id, start_date: editTripForm.start_date, end_date: editTripForm.end_date, base_price: Number(editTripForm.base_price), max_people: Number(editTripForm.max_people) }),
     });
     setEditingTrip(null);
     await fetchTrips();
@@ -984,7 +984,7 @@ export default function EditTourPage() {
                 )}
                 <div>
                   <label className="text-xs font-semibold text-gray-500 block mb-1">Giá (đ/người)</label>
-                  <input type="number" value={tripForm.price} onChange={e => setTripForm(f => ({ ...f, price: e.target.value }))} placeholder=""
+                  <input type="number" value={tripForm.base_price} onChange={e => setTripForm(f => ({ ...f, base_price: e.target.value }))} placeholder=""
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
                 </div>
                 <div>
@@ -1028,7 +1028,7 @@ export default function EditTourPage() {
                 </div>
               )}
               <button onClick={repeatMode ? addRepeatTrips : addTrip}
-                disabled={!tripForm.start_date || !tripForm.price || (!repeatMode && !tripForm.end_date) || (repeatMode && repeatDays.length === 0)}
+                disabled={!tripForm.start_date || !tripForm.base_price || (!repeatMode && !tripForm.end_date) || (repeatMode && repeatDays.length === 0)}
                 className="bg-orange-500 hover:bg-orange-600  text-white px-5 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-colors">
                 {repeatMode ? `🔁 Tạo ${repeatCount} chuyến` : "+ Thêm chuyến"}
               </button>
@@ -1071,7 +1071,7 @@ export default function EditTourPage() {
                             </div>
                             <div>
                               <label className="text-[10px] font-semibold text-gray-400 block mb-1">Giá</label>
-                              <input type="number" value={editTripForm.price} onChange={e => setEditTripForm(f => ({ ...f, price: e.target.value }))}
+                              <input type="number" value={editTripForm.base_price} onChange={e => setEditTripForm(f => ({ ...f, base_price: e.target.value }))}
                                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" />
                             </div>
                             <div>
@@ -1086,7 +1086,7 @@ export default function EditTourPage() {
                           </div>
                         ) : (
                           <div className="flex items-center gap-4">
-                            <div className="shrink-0 text-center bg-orange-50 rounded-xl px-3 py-2 min-w-[60px]">
+                            <div className="shrink-0 text-center bg-orange-50 rounded-xl px-3 py-2 min-w-15">
                               <p className="text-[10px] font-bold text-orange-400">{dayLabels[start.getDay()]}</p>
                               <p className="text-lg font-black text-orange-600 leading-none">{String(start.getDate()).padStart(2, "0")}</p>
                               <p className="text-[10px] text-orange-400 font-semibold">T{start.getMonth() + 1}</p>
@@ -1114,7 +1114,7 @@ export default function EditTourPage() {
                                   }`}>
                                 {trip.status === "open" ? "Mở" : trip.status === "full" ? "Đầy" : "Đóng"}
                               </button>
-                              <button onClick={() => { setEditingTrip(trip._id); setEditTripForm({ start_date: trip.start_date.split("T")[0], end_date: trip.end_date.split("T")[0], price: String(trip.price), max_people: String(trip.max_people) }); }}
+                              <button onClick={() => { setEditingTrip(trip._id); setEditTripForm({ start_date: trip.start_date.split("T")[0], end_date: trip.end_date.split("T")[0], base_price: String(trip.price), max_people: String(trip.max_people) }); }}
                                 className="text-xs text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold">Sửa</button>
                               <button onClick={() => deleteTrip(trip._id)}
                                 className="text-xs text-red-400 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold">Xoá</button>
