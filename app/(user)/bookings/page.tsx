@@ -55,10 +55,10 @@ export default function BookingsPage() {
     500000;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex gap-6">
+    <div className=" min-h-screen bg-gray-100 p-6 flex gap-6">
 
       {/* ===== SIDEBAR ===== */}
-      <div className="w-72 bg-white rounded-2xl shadow-lg p-5">
+      <div className="bg-white rounded-2xl shadow-lg p-5">
 
         {/* User */}
         <div className="flex items-center gap-3 pb-5 border-b">

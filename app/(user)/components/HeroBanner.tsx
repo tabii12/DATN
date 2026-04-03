@@ -86,10 +86,10 @@ export default function HeroBanner({
         ))
       ) : (
         // Fallback gradient nếu không có ảnh
-        <div className={`${isAutoHeight ? "absolute" : "absolute"} inset-0 ${gradientBg ?? "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400"}`} />
+        <div className={`${isAutoHeight ? "absolute" : "absolute"} inset-0 ${gradientBg ?? " from-orange-500 via-amber-500 to-yellow-400"}`} />
       )}
 
-      {!isAutoHeight && <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/65" />}
+      {!isAutoHeight && <div className="absolute inset-0  from-black/40 via-black/30 to-black/65" />}
 
       {/* ── Content ── */}
       <div className={isAutoHeight

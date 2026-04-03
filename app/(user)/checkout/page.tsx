@@ -163,7 +163,7 @@ function SearchContent() {
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans">
       {/* Header */}
       <header className="bg-white border-b border-slate-100 shadow-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
           <div className="ml-auto flex items-center gap-2 text-sm">
             <span className="bg-indigo-600 text-white px-3 py-1 rounded-full font-medium text-xs">
               1 Thông tin
@@ -180,7 +180,7 @@ function SearchContent() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* ── LEFT ── */}
         <div className="lg:col-span-2 space-y-6">
           {/* Chi tiết chuyến đi */}
