@@ -38,6 +38,7 @@ interface Hotel {
     days: number;        // số ngày tour (từ itineraries)
     route: string;       // tuyến: "Hà Nội", "TP.HCM", v.v.
 }
+type TripMin = { _id: string; tour_id: string; price: number; start_date: string; end_date: string; status: string; booked_people: number; max_people: number };
 
 function mapTourToHotel(tour: TourAPI): Hotel {
     const hotel = tour.hotel_id;
@@ -276,6 +277,7 @@ function Sidebar({
 function HotelListingContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const [tripMap, setTripMap] = useState<Record<string, TripMin[]>>({});
     const [hotels, setHotels] = useState<Hotel[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -291,17 +293,35 @@ function HotelListingContent() {
     const regionCities = regionParam ? (REGION_MAP[regionParam] ?? []) : [];
     const dateParam = searchParams.get("date") ?? "";   // "2026-04-10"
     const fromParam = searchParams.get("from") ?? "";   // "TP.HCM"
-
+    const [searchDate, setSearchDate] = useState(dateParam);
+    const [searchFrom, setSearchFrom] = useState(fromParam || "TP.HCM");
     useEffect(() => {
         fetch("https://db-datn-six.vercel.app/api/tours")
             .then(r => r.json())
-            .then(res => {
+            .then(async res => {
                 if (res.success && Array.isArray(res.data)) {
-                    setHotels(res.data.map(mapTourToHotel));
-                } else setError(true);
+                    const tourList = res.data;
+                    setHotels(tourList.map(mapTourToHotel));
+                    setLoading(false);
+
+                    // Fetch trips song song
+                    const results = await Promise.allSettled(
+                        tourList.map((t: TourAPI) =>
+                            fetch(`https://db-datn-six.vercel.app/api/trips/tour/${t.slug}`)
+                                .then(r => r.json())
+                                .then(d => ({ tourId: t._id, trips: d.data || [] }))
+                        )
+                    );
+                    const map: Record<string, TripMin[]> = {};
+                    results.forEach(r => {
+                        if (r.status !== "fulfilled") return;
+                        const { tourId, trips } = r.value;
+                        map[tourId] = trips;
+                    });
+                    setTripMap(map);
+                } else { setError(true); setLoading(false); }
             })
-            .catch(() => setError(true))
-            .finally(() => setLoading(false));
+            .catch(() => { setError(true); setLoading(false); });
     }, []);
 
     const toggleStar = (s: number) =>
@@ -356,6 +376,19 @@ function HotelListingContent() {
         }
         if (selectedRoute !== "Tất cả" && !h.route.toLowerCase().includes(selectedRoute.toLowerCase())) return false;
         // Lọc theo "Khởi hành từ" từ HeroBanner
+        // ✅ Filter theo ngày khởi hành thật từ trips
+        if (dateParam) {
+            const targetDate = new Date(dateParam).toDateString();
+            const tourTrips = tripMap[h.id] || [];
+            const hasMatchingTrip = tourTrips.some(t =>
+                t.status === "open" &&
+                t.booked_people < t.max_people &&
+                new Date(t.start_date).toDateString() === targetDate
+            );
+            if (!hasMatchingTrip) return false;
+        }
+
+        // ✅ Filter theo from thật từ trips (nếu muốn, hoặc giữ filter route cũ)
         if (fromParam && fromParam !== "Tất cả" && !h.route.toLowerCase().includes(fromParam.toLowerCase())) return false;
         return true;
     });
@@ -364,9 +397,12 @@ function HotelListingContent() {
 
     const handleSearch = () => {
         const q = searchInput.trim();
-        if (!q) return;
+        const params = new URLSearchParams();
+        if (q) params.set("q", q);
+        if (searchDate) params.set("date", searchDate);
+        if (searchFrom && searchFrom !== "Tất cả") params.set("from", searchFrom);
         setSearchName(q);
-        router.push(`/tours/search?q=${encodeURIComponent(q)}`);
+        router.push(`/tours/search?${params.toString()}`);
     };
 
     const sidebarProps = {
@@ -416,12 +452,12 @@ function HotelListingContent() {
                                 <input
                                     type="date"
                                     min={new Date().toISOString().split("T")[0]}
+                                    value={searchDate}
+                                    onChange={e => setSearchDate(e.target.value)} // ✅ kết nối state
                                     className="text-sm font-medium outline-none bg-transparent text-gray-700 cursor-pointer w-28"
                                 />
                             </div>
                         </div>
-
-                        <div className="w-px h-8 bg-gray-200 shrink-0" />
 
                         {/* Khởi hành từ */}
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors shrink-0">
@@ -430,7 +466,11 @@ function HotelListingContent() {
                             </svg>
                             <div>
                                 <p className="text-[10px] text-gray-400 leading-none mb-0.5">Khởi hành từ</p>
-                                <select className="text-sm font-medium outline-none bg-transparent text-gray-700 cursor-pointer">
+                                <select
+                                    value={searchFrom}
+                                    onChange={e => setSearchFrom(e.target.value)} // ✅ kết nối state
+                                    className="text-sm font-medium outline-none bg-transparent text-gray-700 cursor-pointer"
+                                >
                                     {ROUTES.filter(r => r !== "Tất cả").map(r => (
                                         <option key={r}>{r}</option>
                                     ))}
