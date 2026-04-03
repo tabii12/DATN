@@ -17,12 +17,10 @@ export default function Header() {
   return (
     <header className="w-full bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-14 overflow-hidden">
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-0.5 shrink-0">
-            <span className="text-blue-500 font-bold text-xl">Pick</span>
-            <span className="text-orange-400 font-bold text-xl">Your</span>
-            <span className="text-blue-500 font-bold text-xl">Way</span>
+            <img src="https://res.cloudinary.com/dmv7ymjxf/image/upload/v1775203365/logo-removebg-preview_iyvg9e.png" alt="" width={"200px"}/>
           </Link>
 
           {/* DESKTOP NAV */}
