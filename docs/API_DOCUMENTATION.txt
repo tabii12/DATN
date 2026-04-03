@@ -11,7 +11,7 @@ Hệ thống Travel Booking System cung cấp API cho:
 - Quản lý tour
 - Quản lý khách sạn
 - Đặt tour
-- Review
+- comment
 - Blog
 - Lịch trình
 - Dịch vụ đi kèm
@@ -31,7 +31,7 @@ II. PHÂN QUYỀN HỆ THỐNG
 2. USER
    - Xem tour / hotel
    - Đặt tour
-   - Viết review
+   - Viết comment
    - Cập nhật thông tin cá nhân
 
 ==================================================
@@ -355,39 +355,88 @@ BASE URL: https://db-datn-six.vercel.app/api/blogs
 Method: POST
 Endpoint: /create
 Full URL: https://db-datn-six.vercel.app/api/blogs/create
-Mô tả: Tạo bài viết blog mới.
-Content-Type: application/json
+Content-Type: multipart/form-data
 
 2. Lấy Danh Sách Blog
 --------------------------------------------------
 Method: GET
 Endpoint: /
 Full URL: https://db-datn-six.vercel.app/api/blogs/
-Mô tả: Lấy danh sách tất cả bài viết blog.
 Content-Type: application/json
 
-3. Cập Nhật Nội Dung Blog Theo Slug
+3. Lấy Chi Tiết Blog Theo Slug
 --------------------------------------------------
-Method: PATCH
-Endpoint: /:slug/content
-Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}/content
-Mô tả: Cập nhật nội dung bài viết theo slug.
+Method: GET
+Endpoint: /:slug
+Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}
 Content-Type: application/json
 
-4. Cập Nhật Trạng Thái Blog
+4. Cập Nhật Blog (Content + Title + Upload ảnh)
+--------------------------------------------------
+Method: PUT
+Endpoint: /:slug
+Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}
+Content-Type: multipart/form-data
+
+5. Cập Nhật Trạng Thái Blog
 --------------------------------------------------
 Method: PATCH
 Endpoint: /:slug/status
 Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}/status
-Mô tả: Cập nhật trạng thái blog (ví dụ: draft / published).
 Content-Type: application/json
 
-5. Xoá Blog
+6. Xoá Blog
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:slug
 Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}
-Mô tả: Xoá bài viết blog theo slug.
+Content-Type: application/json
+
+7. Xoá Ảnh Blog
+--------------------------------------------------
+Method: DELETE
+Endpoint: /image/:imageId
+Full URL: https://db-datn-six.vercel.app/api/blogs/image/{imageId}
+Content-Type: application/json
+
+==================================================
+MODULE: SALE API
+BASE URL: https://db-datn-six.vercel.app/api/sales
+==================================================
+
+1. Tạo Sale
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-datn-six.vercel.app/api/sales/create
+Content-Type: application/json
+
+2. Lấy Danh Sách Sale
+--------------------------------------------------
+Method: GET
+Endpoint: /
+Full URL: https://db-datn-six.vercel.app/api/sales/
+Content-Type: application/json
+
+3. Lấy Chi Tiết Sale
+--------------------------------------------------
+Method: GET
+Endpoint: /:id
+Full URL: https://db-datn-six.vercel.app/api/sales/{id}
+Content-Type: application/json
+
+4. Cập Nhật Sale
+--------------------------------------------------
+Method: PUT
+Endpoint: /:id
+Full URL: https://db-datn-six.vercel.app/api/sales/{id}
+Content-Type: application/json
+
+5. Xoá Sale
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-datn-six.vercel.app/api/sales/{id}
 Content-Type: application/json
 
 ==================================================
