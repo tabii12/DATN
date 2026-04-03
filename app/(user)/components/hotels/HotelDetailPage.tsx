@@ -41,6 +41,7 @@ interface TourAPI {
   category_id: { name: string } | null;
   isFavorite?: boolean;
   trips?: { _id: string; start_date: string; end_date: string; price: number; max_people: number; booked_people: number; status: string }[];
+  sale?: { discount: number } | null;
 }
 
 function StarRating({ count }: { count: number }) {
@@ -149,7 +150,8 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const minPrice = departureDates.length > 0
     ? Math.min(...departureDates.map(t => t.price))
     : (tour?.hotel_id?.price_per_night ?? 0);
-  const basePrice = selectedTrip ? selectedTrip.price : 0;
+  const discountMultiplier = tour?.sale ? (1 - tour.sale.discount / 100) : 1;
+  const basePrice = selectedTrip ? Math.round(selectedTrip.price * discountMultiplier) : 0;
   const displayPrice = selectedTrip ? selectedTrip.price : minPrice; const childHalf = Math.round(basePrice * 0.5); // trẻ được 50%
   const childFull = basePrice; // trẻ vượt quota → 100%
 
@@ -221,16 +223,11 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     }
 
     Promise.all([
-      fetch(BASE_URL + "/api/tours", { headers }).then((r) => {
-        if (!r.ok) throw new Error("bad");
-        return r.json();
-      }),
-      fetch(BASE_URL + "/api/tours/detail/" + slug, { headers }).then((r) => {
-        if (!r.ok) throw new Error("bad");
-        return r.json();
-      }),
+      fetch(BASE_URL + "/api/tours", { headers }).then(r => { if (!r.ok) throw new Error("bad"); return r.json(); }),
+      fetch(BASE_URL + "/api/tours/detail/" + slug, { headers }).then(r => { if (!r.ok) throw new Error("bad"); return r.json(); }),
+      fetch(BASE_URL + "/api/sales/").then(r => r.json()).catch(() => ({ data: [] })), // ✅ thêm dòng này
     ])
-      .then(([listRes, detailRes]) => {
+      .then(([listRes, detailRes, salesRes]) => {
         if (!listRes.success) throw new Error("bad");
 
         const found: TourAPI | null = Array.isArray(listRes.data)
@@ -242,7 +239,9 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
           setLoading(false);
           return;
         }
-
+        // Tìm sale của tour này
+        const saleList: { tour_id: string; discount: number }[] = salesRes.data || [];
+        const sale = saleList.find(s => s.tour_id === found._id) ?? null;
         const detailData = detailRes?.success ? detailRes.data : null;
         const itineraries = detailData?.itineraries ?? [];
         const trips = detailData?.trips ?? [];
@@ -253,6 +252,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
           itineraries,
           trips,
           isFavorite: detailData?.isFavorite ?? false,
+          sale, // ✅ thêm dòng này
         });
 
         setLoading(false);
@@ -363,6 +363,11 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
             tour_id={tour._id}
             initialFavorite={tour.isFavorite ?? false}
           />
+          {tour.sale && (
+            <div className="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg animate-pulse">
+              🔥 GIẢM {tour.sale.discount}%
+            </div>
+          )}
           <div className="flex justify-between items-start py-4 gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
@@ -639,14 +644,34 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   </div>
                 </div>
                 <div className="h-px bg-gray-100" />
+                {/* Giá từ */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Giá từ</span>
-                  <span className="text-xl font-black text-orange-500">
-                    {selectedTrip
-                      ? formatVND(selectedTrip.price)
-                      : `Từ ${formatVND(minPrice)}`}
-                    <span className="text-xs font-normal text-gray-400">/người</span>
-                  </span>
+                  <div className="text-right">
+                    {tour.sale ? (
+                      <>
+                        {/* Giá gốc gạch ngang */}
+                        <p className="text-xs text-gray-400 line-through">
+                          {selectedTrip ? formatVND(selectedTrip.price) : `Từ ${formatVND(minPrice)}`}đ
+                        </p>
+                        {/* Giá sau giảm */}
+                        <p className="text-xl font-black text-red-500">
+                          {selectedTrip
+                            ? formatVND(Math.round(selectedTrip.price * (1 - tour.sale.discount / 100)))
+                            : `Từ ${formatVND(Math.round(minPrice * (1 - tour.sale.discount / 100)))}`}
+                          <span className="text-xs font-normal text-gray-400">/người</span>
+                        </p>
+                        <span className="text-[10px] bg-red-100 text-red-500 font-bold px-2 py-0.5 rounded-full">
+                          -{tour.sale.discount}%
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xl font-black text-orange-500">
+                        {selectedTrip ? formatVND(selectedTrip.price) : `Từ ${formatVND(minPrice)}`}
+                        <span className="text-xs font-normal text-gray-400">/người</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* ── Ngày khởi hành ── */}
@@ -735,8 +760,8 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                                     key={trip._id}
                                     onClick={() => { setDepartureDate(trip._id); setShowAllTrips(false); }}
                                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 cursor-pointer transition-all text-left ${isSelected
-                                        ? "border-orange-500 bg-orange-50"
-                                        : "border-gray-100 bg-white hover:border-orange-300 hover:bg-orange-50/40"
+                                      ? "border-orange-500 bg-orange-50"
+                                      : "border-gray-100 bg-white hover:border-orange-300 hover:bg-orange-50/40"
                                       }`}
                                   >
                                     <div className="flex items-center gap-3">

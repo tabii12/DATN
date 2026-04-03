@@ -18,6 +18,7 @@ interface TourAPI {
   images: { image_url: string }[];
   descriptions: { title: string; content: string }[];
 }
+type TripMin = { tour_id: string; price: number; start_date: string; status: string; booked_people: number; max_people: number };
 
 
 const REGIONS = [
@@ -31,10 +32,13 @@ function scoreFromRating(r: number) {
   return Math.min(9.9, parseFloat((r * 1.8 + 0.8).toFixed(1)));
 }
 
-function TourCard({ tour, badge }: { tour: TourAPI; badge?: string }) {
+function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?: TripMin }) {
   const score = scoreFromRating(tour.hotel_id.rating);
   const img = tour.images?.[0]?.image_url;
-  const price = tour.hotel_id.price_per_night;
+  const price = trip?.price ?? tour.hotel_id.price_per_night;
+  const startDate = trip?.start_date
+    ? new Date(trip.start_date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
+    : null;
 
   return (
     <a href={`/tours/${tour.slug}`} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col no-underline border border-gray-100">
@@ -69,7 +73,7 @@ function TourCard({ tour, badge }: { tour: TourAPI; badge?: string }) {
         </p>
         <div className="mt-auto pt-2 flex items-center justify-between border-t border-gray-50">
           <div>
-            <p className="text-[10px] text-gray-400">Giá từ</p>
+            <p className="text-[10px] text-gray-400">{startDate ? `Khởi hành ${startDate}` : "Giá từ"}</p>
             <p className="text-sm font-black text-orange-500">
               {price.toLocaleString("vi-VN")}
               <span className="text-[10px] font-normal text-gray-400">/người</span>
@@ -101,18 +105,47 @@ function SkeletonCard() {
 export default function ToursLandingPage() {
   const [tours, setTours] = useState<TourAPI[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tripMap, setTripMap] = useState<Record<string, TripMin>>({});
 
   useEffect(() => {
     fetch("https://db-datn-six.vercel.app/api/tours")
       .then(r => r.json())
-      .then(res => { if (res.success) setTours(res.data); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .then(async res => {
+        if (!res.success) return;
+        const tourList: TourAPI[] = res.data;
+        setTours(tourList);
+        setLoading(false); // ✅ show tours ngay, không chờ trips
+
+        // Fetch trips sau — không ảnh hưởng loading
+        try {
+          const results = await Promise.allSettled(
+            tourList.map(t =>
+              fetch(`https://db-datn-six.vercel.app/api/trips/tour/${t.slug}`)
+                .then(r => r.json())
+                .then(d => ({ tourId: t._id, trips: d.data || [] }))
+            )
+          );
+
+          const map: Record<string, TripMin> = {};
+          results.forEach(r => {
+            if (r.status !== "fulfilled") return;
+            const { tourId, trips } = r.value;
+            const now = new Date();
+            const upcoming = (trips as any[])
+              .filter(t => t.status === "open" && t.booked_people < t.max_people && new Date(t.start_date) >= now)
+              .sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+            if (upcoming.length > 0) map[tourId] = upcoming[0];
+          });
+          setTripMap(map);
+        } catch { /* trips fail thì thôi, tour vẫn hiện */ }
+      })
+      .catch(() => { })
+      .finally(() => setLoading(false)); // ✅ fallback nếu tours fetch fail
   }, []);
 
 
   // Nhóm tour
-  const dealTours    = tours.slice(0, 4);
+  const dealTours = tours.slice(0, 4);
   const popularTours = tours.slice(0, 8);
 
   return (
@@ -148,7 +181,7 @@ export default function ToursLandingPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {dealTours.map((t, i) => (
-                <TourCard key={t._id} tour={t} badge={i === 0 ? "🔥 Hot Deal" : i === 1 ? "⚡ Flash Sale" : undefined} />
+                <TourCard key={t._id} tour={t} trip={tripMap[t._id]} badge={i === 0 ? "🔥 Hot Deal" : i === 1 ? "⚡ Flash Sale" : undefined} />
               ))}
             </div>
           )}
@@ -197,7 +230,7 @@ export default function ToursLandingPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {popularTours.map(t => <TourCard key={t._id} tour={t} />)}
+              {popularTours.map(t => <TourCard key={t._id} tour={t} trip={tripMap[t._id]} />)}
             </div>
           )}
         </section>
