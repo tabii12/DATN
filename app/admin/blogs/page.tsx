@@ -11,7 +11,8 @@ type Blog = {
     content: string;
     status: "draft" | "published";
     createdAt: string;
-    images?: { image_url: string }[];
+    images?: { _id: string; image_url: string }[]; // ✅ thêm _id
+
 };
 
 type View = "list" | "create" | "edit";
@@ -73,6 +74,8 @@ export default function AdminBlogs() {
         setFormTitle(blog.title);
         setFormContent(blog.content);
         setFormStatus(blog.status);
+        setFormImageFile(null);
+        setFormImageUrl(blog.images?.[0]?.image_url || ""); // ✅ thêm dòng này
         setView("edit");
     };
 
@@ -80,11 +83,14 @@ export default function AdminBlogs() {
         if (!formTitle.trim() || !formContent.trim()) return;
         setSaving(true);
         try {
-            const res = await fetch(`${API}/create`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: formTitle, content: formContent, status: formStatus }),
-            });
+            const fd = new FormData();
+            fd.append("title", formTitle);
+            fd.append("content", formContent);
+            fd.append("status", formStatus);
+            fd.append("created_by", "65f123abc456def789012303"); // ✅ thêm dòng này
+            if (formImageFile) fd.append("images", formImageFile);
+
+            const res = await fetch(`${API}/create`, { method: "POST", body: fd });
             const data = await res.json();
             if (!res.ok) { alert(data.message || "Tạo thất bại"); return; }
             await fetchBlogs();
@@ -96,20 +102,33 @@ export default function AdminBlogs() {
         if (!editing || !formContent.trim()) return;
         setSaving(true);
         try {
+            // 1. Nếu có ảnh bìa mới → xoá TẤT CẢ ảnh cũ trước
+            if (formImageFile && editing.images && editing.images.length > 0) {
+                await Promise.all(
+                    editing.images.map(img =>
+                        fetch(`${API}/image/${img._id}`, { method: "DELETE" })
+                    )
+                );
+            }
+
+            // 2. Upload + update blog
             const fd = new FormData();
             fd.append("title", formTitle);
             fd.append("content", formContent);
             fd.append("status", formStatus);
-            if (formImageFile) fd.append("image", formImageFile);
+            if (formImageFile) fd.append("images", formImageFile);
 
             const res = await fetch(`${API}/${editing.slug}`, { method: "PUT", body: fd });
             const data = await res.json();
-
-            // 👇 THÊM DÒNG NÀY để xem lỗi thật sự
-            console.log("PUT response status:", res.status);
-            console.log("PUT response data:", JSON.stringify(data, null, 2));
-
             if (!res.ok) { alert(data.message || "Cập nhật thất bại"); return; }
+
+            // 3. Fetch lại để cập nhật UI
+            const detail = await fetch(`${API}/${editing.slug}`).then(r => r.json());
+            const updatedBlog = detail.data || detail;
+            setEditing(updatedBlog);
+            setFormImageFile(null);
+            setFormImageUrl(updatedBlog.images?.[0]?.image_url || "");
+
             await fetchBlogs();
             setView("list");
         } finally { setSaving(false); }
@@ -171,7 +190,7 @@ export default function AdminBlogs() {
                 </button>
             </div>
 
-            <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
                 {/* Search */}
                 <div className="bg-white rounded-xl border border-gray-100 px-4 py-2.5 flex items-center gap-2">
                     <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,7 +323,7 @@ export default function AdminBlogs() {
                 )}
             </div>
 
-            <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
 
                 {/* Title */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -318,7 +337,7 @@ export default function AdminBlogs() {
                 <div className="bg-white rounded-2xl border border-gray-100 p-5">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3">Ảnh bìa</label>
                     {(formImageFile || formImageUrl) ? (
-                        <div className="relative h-48 rounded-xl overflow-hidden border border-gray-100 mb-3 group">
+                        <div className="relative h-full rounded-xl overflow-hidden border border-gray-100 mb-3 group">
                             <img
                                 src={formImageFile ? URL.createObjectURL(formImageFile) : formImageUrl}
                                 alt="preview" className="w-full h-full object-cover" />
@@ -394,24 +413,25 @@ export default function AdminBlogs() {
                                 e.target.value = "";
                                 setInsertingImg(true);
                                 try {
-                                    // Upload ảnh qua PUT /:slug — gửi content hiện tại + file ảnh mới
                                     const fd = new FormData();
                                     fd.append("title", formTitle);
                                     fd.append("content", formContent);
                                     fd.append("status", formStatus);
-                                    fd.append("image", file);
+                                    fd.append("images", file);
 
                                     const res = await fetch(`${API}/${editing.slug}`, { method: "PUT", body: fd });
-                                    const data = await res.json();
                                     if (!res.ok) { alert("Upload ảnh thất bại"); return; }
 
-                                    // Lấy URL ảnh vừa upload từ response
-                                    const uploadedUrl =
-                                        data.images?.[data.images.length - 1]?.image_url ||
-                                        data.image_url ||
-                                        data.data?.images?.[data.data.images.length - 1]?.image_url;
+                                    // ✅ Fetch lại để lấy URL ảnh mới nhất (server không trả images trong PUT response)
+                                    const detail = await fetch(`${API}/${editing.slug}`).then(r => r.json());
+                                    const updatedBlog = detail.data || detail;
+                                    const imgs = updatedBlog.images || [];
+                                    const uploadedUrl = imgs[imgs.length - 1]?.image_url; // ✅ đúng với cấu trúc thật
 
                                     if (!uploadedUrl) { alert("Không lấy được URL ảnh"); return; }
+
+                                    // Cập nhật editing để lần sau không mất ảnh
+                                    setEditing(updatedBlog);
 
                                     // Chèn tag img vào vị trí con trỏ
                                     const ta = textareaRef.current;
