@@ -42,7 +42,7 @@ function TourCard({ tour, badge }: { tour: TourAPI; badge?: string }) {
         {img ? (
           <img src={img} alt={tour.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center">
+          <div className="w-full h-full  from-orange-100 to-amber-50 flex items-center justify-center">
             <span className="text-4xl">🏖️</span>
           </div>
         )}
@@ -72,7 +72,7 @@ function TourCard({ tour, badge }: { tour: TourAPI; badge?: string }) {
             <p className="text-[10px] text-gray-400">Giá từ</p>
             <p className="text-sm font-black text-orange-500">
               {price.toLocaleString("vi-VN")}
-              <span className="text-[10px] font-normal text-gray-400">/đêm</span>
+              <span className="text-[10px] font-normal text-gray-400">/người</span>
             </p>
           </div>
           <span className="text-[11px] bg-orange-500 text-white font-semibold px-3 py-1 rounded-full">
@@ -216,7 +216,7 @@ export default function ToursLandingPage() {
               <a key={r.label} href={`/tours/search?q=${encodeURIComponent(r.label)}`}
                 className="group relative rounded-2xl overflow-hidden h-40 no-underline shadow-sm hover:shadow-lg transition-all duration-300">
                 <img src={r.img} alt={r.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute inset-0  from-black/70 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white font-black text-sm">{r.label}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
