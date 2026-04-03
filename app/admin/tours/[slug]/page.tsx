@@ -180,7 +180,7 @@ export default function EditTourPage() {
     await fetch(`${API}/trips/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ start_date: editTripForm.start_date, end_date: editTripForm.end_date, price: Number(editTripForm.base_price), max_people: Number(editTripForm.max_people) }),
+      body: JSON.stringify({ start_date: editTripForm.start_date, end_date: editTripForm.end_date, base_price: Number(editTripForm.base_price), max_people: Number(editTripForm.max_people) }),
     });
     setEditingTrip(null);
     await fetchTrips();
