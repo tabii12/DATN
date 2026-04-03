@@ -189,6 +189,14 @@ Body mẫu:
   "status": "blocked"
 }
 
+8. Phân quyền người dùng
+--------------------------------------------------
+Method: PUT 
+Endpont: /role/:id
+Full URL: https://db-datn-six.vercel.app/api/users/role/{id}
+Giá trị hợp lệ: user | admin
+Content-Type: application/json
+
 ==================================================
 MODULE: BOOKING API
 BASE URL: https://db-datn-six.vercel.app/api/bookings
