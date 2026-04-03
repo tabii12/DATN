@@ -30,6 +30,12 @@ export default function AdminLayout({
             🧳 Tours
           </Link>
           <Link
+            href="/admin/sale"
+            className="block px-3 py-2 rounded hover:bg-blue-700"
+          >
+            🧳 Sale
+          </Link>
+          <Link
             href="/admin/bookings"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >

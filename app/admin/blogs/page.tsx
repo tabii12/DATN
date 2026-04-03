@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const API = "https://db-datn-six.vercel.app/api/blogs";
 
@@ -11,7 +11,8 @@ type Blog = {
     content: string;
     status: "draft" | "published";
     createdAt: string;
-    images?: { image_url: string }[];
+    images?: { _id: string; image_url: string }[]; // ✅ thêm _id
+
 };
 
 type View = "list" | "create" | "edit";
@@ -40,6 +41,14 @@ export default function AdminBlogs() {
     const [formContent, setFormContent] = useState("");
     const [formStatus, setFormStatus] = useState<"draft" | "published">("draft");
     const [formImageUrl, setFormImageUrl] = useState("");
+    const [formImageFile, setFormImageFile] = useState<File | null>(null);
+    const [showInsertImg, setShowInsertImg] = useState(false);
+    const [insertImgUrl, setInsertImgUrl] = useState("");
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const insertImgFileRef = useRef<HTMLInputElement>(null);
+    const [insertingImg, setInsertingImg] = useState(false);
+
+
     const fetchBlogs = async () => {
         setLoading(true);
         try {
@@ -57,7 +66,6 @@ export default function AdminBlogs() {
         setFormTitle("");
         setFormContent("");
         setFormStatus("draft");
-        setFormImageUrl("");
         setView("create");
     };
 
@@ -66,7 +74,8 @@ export default function AdminBlogs() {
         setFormTitle(blog.title);
         setFormContent(blog.content);
         setFormStatus(blog.status);
-        setFormImageUrl(blog.images?.[0]?.image_url ?? "");
+        setFormImageFile(null);
+        setFormImageUrl(blog.images?.[0]?.image_url || ""); // ✅ thêm dòng này
         setView("edit");
     };
 
@@ -74,11 +83,14 @@ export default function AdminBlogs() {
         if (!formTitle.trim() || !formContent.trim()) return;
         setSaving(true);
         try {
-            const res = await fetch(`${API}/create`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: formTitle, content: formContent, status: formStatus, image_url: formImageUrl || undefined }),
-            });
+            const fd = new FormData();
+            fd.append("title", formTitle);
+            fd.append("content", formContent);
+            fd.append("status", formStatus);
+            fd.append("created_by", "65f123abc456def789012303"); // ✅ thêm dòng này
+            if (formImageFile) fd.append("images", formImageFile);
+
+            const res = await fetch(`${API}/create`, { method: "POST", body: fd });
             const data = await res.json();
             if (!res.ok) { alert(data.message || "Tạo thất bại"); return; }
             await fetchBlogs();
@@ -90,25 +102,58 @@ export default function AdminBlogs() {
         if (!editing || !formContent.trim()) return;
         setSaving(true);
         try {
-            const res = await fetch(`${API}/${editing.slug}/content`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: formTitle, content: formContent, image_url: formImageUrl || undefined }),
-            });
+            // 1. Nếu có ảnh bìa mới → xoá TẤT CẢ ảnh cũ trước
+            if (formImageFile && editing.images && editing.images.length > 0) {
+                await Promise.all(
+                    editing.images.map(img =>
+                        fetch(`${API}/image/${img._id}`, { method: "DELETE" })
+                    )
+                );
+            }
+
+            // 2. Upload + update blog
+            const fd = new FormData();
+            fd.append("title", formTitle);
+            fd.append("content", formContent);
+            fd.append("status", formStatus);
+            if (formImageFile) fd.append("images", formImageFile);
+
+            const res = await fetch(`${API}/${editing.slug}`, { method: "PUT", body: fd });
             const data = await res.json();
             if (!res.ok) { alert(data.message || "Cập nhật thất bại"); return; }
 
-            // update status nếu thay đổi
-            if (formStatus !== editing.status) {
-                await fetch(`${API}/${editing.slug}/status`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ status: formStatus }),
-                });
-            }
+            // 3. Fetch lại để cập nhật UI
+            const detail = await fetch(`${API}/${editing.slug}`).then(r => r.json());
+            const updatedBlog = detail.data || detail;
+            setEditing(updatedBlog);
+            setFormImageFile(null);
+            setFormImageUrl(updatedBlog.images?.[0]?.image_url || "");
+
             await fetchBlogs();
             setView("list");
         } finally { setSaving(false); }
+    };
+
+    const insertImageAtCursor = () => {
+        const url = insertImgUrl.trim();
+        if (!url) return;
+        const ta = textareaRef.current;
+        const tag = `<img src="${url}" alt="" style="max-width:100%;margin:8px 0;" />`;
+        if (ta) {
+            const start = ta.selectionStart;
+            const end = ta.selectionEnd;
+            const newContent = formContent.slice(0, start) + tag + formContent.slice(end);
+            setFormContent(newContent);
+            // Đặt lại cursor sau tag
+            setTimeout(() => {
+                ta.selectionStart = ta.selectionEnd = start + tag.length;
+                ta.focus();
+            }, 0);
+        } else {
+            setFormContent(prev => prev + tag);
+        }
+        setInsertImgUrl("");
+        setShowInsertImg(false);
     };
 
     const handleToggleStatus = async (blog: Blog) => {
@@ -131,11 +176,6 @@ export default function AdminBlogs() {
         b.title.toLowerCase().includes(search.toLowerCase())
     );
 
-    const PAGE_SIZE = 10;
-    const [page, setPage] = useState(1);
-    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-    const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
     // ── LIST VIEW ──
     if (view === "list") return (
         <div className="min-h-screen bg-gray-50 font-sans">
@@ -156,7 +196,7 @@ export default function AdminBlogs() {
                     <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+                    <input value={search} onChange={e => setSearch(e.target.value)}
                         placeholder="Tìm bài viết..."
                         className="text-sm bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 w-full" />
                 </div>
@@ -198,7 +238,7 @@ export default function AdminBlogs() {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {paginated.map(blog => (
+                        {filtered.map(blog => (
                             <div key={blog._id} className="bg-white rounded-xl border border-gray-100 p-4 group hover:shadow-sm transition-shadow">
                                 <div className="flex gap-4 items-start">
                                     {/* Thumbnail */}
@@ -255,52 +295,6 @@ export default function AdminBlogs() {
                         ))}
                     </div>
                 )}
-                {totalPages > 1 && (
-                    <div className="flex items-center justify-between bg-white rounded-xl border border-gray-100 px-4 py-3">
-                        <p className="text-xs text-gray-400">
-                            Trang <span className="font-bold text-gray-700">{page}</span> / {totalPages} ·{" "}
-                            <span className="font-bold text-gray-700">{filtered.length}</span> bài viết
-                        </p>
-                        <div className="flex items-center gap-1">
-                            <button onClick={() => setPage(1)} disabled={page === 1}
-                                className="w-8 h-8 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-30 bg-white cursor-pointer transition-colors">
-                                «
-                            </button>
-                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                                className="w-8 h-8 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-30 bg-white cursor-pointer transition-colors">
-                                ‹
-                            </button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-                                .reduce<(number | "...")[]>((acc, p, i, arr) => {
-                                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
-                                    acc.push(p);
-                                    return acc;
-                                }, [])
-                                .map((p, i) =>
-                                    p === "..." ? (
-                                        <span key={`dot-${i}`} className="w-8 h-8 flex items-center justify-center text-xs text-gray-400">…</span>
-                                    ) : (
-                                        <button key={p} onClick={() => setPage(p as number)}
-                                            className={`w-8 h-8 rounded-lg text-xs font-bold border cursor-pointer transition-colors ${page === p
-                                                ? "bg-orange-500 text-white border-orange-500"
-                                                : "bg-white text-gray-600 border-gray-200 hover:border-orange-400 hover:text-orange-500"
-                                                }`}>
-                                            {p}
-                                        </button>
-                                    )
-                                )}
-                            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                                className="w-8 h-8 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-30 bg-white cursor-pointer transition-colors">
-                                ›
-                            </button>
-                            <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
-                                className="w-8 h-8 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-30 bg-white cursor-pointer transition-colors">
-                                »
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -339,31 +333,51 @@ export default function AdminBlogs() {
                         className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all font-semibold" />
                 </div>
 
-                {/* Content */}
-                {/* Image URL */}
+                {/* Ảnh bìa */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-5">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3">Ảnh bìa</label>
-                    <div className="flex gap-3">
-                        <input value={formImageUrl} onChange={e => setFormImageUrl(e.target.value)}
-                            placeholder="Nhập URL ảnh (https://res.cloudinary.com/...)"
-                            className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" />
-                        {formImageUrl && (
-                            <button onClick={() => setFormImageUrl("")}
-                                className="px-3 py-2 border border-gray-200 rounded-xl text-xs text-gray-400 hover:text-red-400 hover:border-red-200 bg-white cursor-pointer transition-colors shrink-0">
-                                Xoá
-                            </button>
-                        )}
-                    </div>
-                    {formImageUrl && (
-                        <div className="mt-3 relative h-40 rounded-xl overflow-hidden border border-gray-100">
-                            <img src={formImageUrl} alt="preview"
-                                className="w-full h-full object-cover"
-                                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    {(formImageFile || formImageUrl) ? (
+                        <div className="relative h-full rounded-xl overflow-hidden border border-gray-100 mb-3 group">
+                            <img
+                                src={formImageFile ? URL.createObjectURL(formImageFile) : formImageUrl}
+                                alt="preview" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                                <label className="bg-white text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    Đổi ảnh
+                                    <input type="file" accept="image/*" className="hidden"
+                                        onChange={e => {
+                                            const f = e.target.files?.[0];
+                                            if (f) { setFormImageFile(f); setFormImageUrl(""); }
+                                            e.target.value = "";
+                                        }} />
+                                </label>
+                                <button onClick={() => { setFormImageFile(null); setFormImageUrl(""); }}
+                                    className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer hover:bg-red-600 transition-colors">
+                                    Xoá ảnh
+                                </button>
+                            </div>
                         </div>
+                    ) : (
+                        <label className="flex flex-col items-center justify-center h-36 border-2 border-dashed border-gray-200 hover:border-orange-400 rounded-xl cursor-pointer transition-colors hover:bg-orange-50/30 group mb-3">
+                            <span className="text-3xl text-gray-300 group-hover:text-orange-400 transition-colors mb-2">🖼️</span>
+                            <span className="text-sm font-semibold text-gray-400 group-hover:text-orange-500 transition-colors">Chọn ảnh từ máy tính</span>
+                            <span className="text-[11px] text-gray-300 mt-1">JPG, PNG, WEBP</span>
+                            <input type="file" accept="image/*" className="hidden"
+                                onChange={e => {
+                                    const f = e.target.files?.[0];
+                                    if (f) { setFormImageFile(f); setFormImageUrl(""); }
+                                    e.target.value = "";
+                                }} />
+                        </label>
                     )}
-                    {!formImageUrl && (
-                        <p className="text-[11px] text-gray-400 mt-2">Để trống nếu không có ảnh bìa</p>
-                    )}
+                    <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 h-px bg-gray-100" />
+                        <span className="text-[11px] text-gray-300 shrink-0">hoặc nhập URL</span>
+                        <div className="flex-1 h-px bg-gray-100" />
+                    </div>
+                    <input value={formImageUrl} onChange={e => { setFormImageUrl(e.target.value); setFormImageFile(null); }}
+                        placeholder="https://res.cloudinary.com/..."
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all mt-2" />
                 </div>
 
                 {/* Content */}
@@ -372,11 +386,88 @@ export default function AdminBlogs() {
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nội dung</label>
                         <span className="text-[11px] text-gray-400">{formContent.length} ký tự</span>
                     </div>
-                    <textarea value={formContent} onChange={e => setFormContent(e.target.value)}
-                        placeholder="Nhập nội dung bài viết... (hỗ trợ HTML)"
-                        rows={16}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all resize-y font-mono leading-relaxed" />
-                    <p className="text-[11px] text-gray-400 mt-2">Hỗ trợ HTML. VD: &lt;b&gt;in đậm&lt;/b&gt;, &lt;i&gt;in nghiêng&lt;/i&gt;, &lt;br&gt;</p>
+                    <div className="relative">
+                        <textarea ref={textareaRef} value={formContent} onChange={e => setFormContent(e.target.value)}
+                            placeholder="Nhập nội dung bài viết... (hỗ trợ HTML)"
+                            rows={16}
+                            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all resize-y font-mono leading-relaxed" />
+                        {/* Nút thêm ảnh vào nội dung */}
+                        {/* Nút chèn ảnh */}
+                        <button type="button"
+                            onClick={() => insertImgFileRef.current?.click()}
+                            disabled={insertingImg}
+                            title="Chèn ảnh vào nội dung"
+                            className="absolute bottom-3 right-3 w-8 h-8 rounded-lg bg-gray-100 hover:bg-orange-100 hover:text-orange-500 text-gray-400 flex items-center justify-center text-base border-none cursor-pointer transition-colors disabled:opacity-50">
+                            {insertingImg ? <span className="w-4 h-4 border-2 border-gray-300 border-t-orange-400 rounded-full animate-spin" /> : "🖼️"}
+                        </button>
+
+                        {/* Input file ẩn */}
+                        <input
+                            ref={insertImgFileRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file || !editing) { e.target.value = ""; return; }
+                                e.target.value = "";
+                                setInsertingImg(true);
+                                try {
+                                    const fd = new FormData();
+                                    fd.append("title", formTitle);
+                                    fd.append("content", formContent);
+                                    fd.append("status", formStatus);
+                                    fd.append("images", file);
+
+                                    const res = await fetch(`${API}/${editing.slug}`, { method: "PUT", body: fd });
+                                    if (!res.ok) { alert("Upload ảnh thất bại"); return; }
+
+                                    // ✅ Fetch lại để lấy URL ảnh mới nhất (server không trả images trong PUT response)
+                                    const detail = await fetch(`${API}/${editing.slug}`).then(r => r.json());
+                                    const updatedBlog = detail.data || detail;
+                                    const imgs = updatedBlog.images || [];
+                                    const uploadedUrl = imgs[imgs.length - 1]?.image_url; // ✅ đúng với cấu trúc thật
+
+                                    if (!uploadedUrl) { alert("Không lấy được URL ảnh"); return; }
+
+                                    // Cập nhật editing để lần sau không mất ảnh
+                                    setEditing(updatedBlog);
+
+                                    // Chèn tag img vào vị trí con trỏ
+                                    const ta = textareaRef.current;
+                                    const tag = `<img src="${uploadedUrl}" alt="" style="max-width:100%;margin:8px 0;" />`;
+                                    if (ta) {
+                                        const start = ta.selectionStart;
+                                        const end = ta.selectionEnd;
+                                        setFormContent(prev => prev.slice(0, start) + tag + prev.slice(end));
+                                        setTimeout(() => {
+                                            ta.selectionStart = ta.selectionEnd = start + tag.length;
+                                            ta.focus();
+                                        }, 0);
+                                    } else {
+                                        setFormContent(prev => prev + tag);
+                                    }
+                                } catch { alert("Lỗi upload ảnh"); }
+                                finally { setInsertingImg(false); }
+                            }}
+                        />
+                    </div>
+                    {/* Insert image popup */}
+                    {showInsertImg && (
+                        <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex gap-2 items-center">
+                            <input value={insertImgUrl} onChange={e => setInsertImgUrl(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && insertImageAtCursor()}
+                                placeholder="Nhập URL ảnh rồi nhấn Enter hoặc bấm Chèn..."
+                                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-orange-400 bg-white" />
+                            <button onClick={insertImageAtCursor}
+                                className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-2 rounded-lg border-none cursor-pointer transition-colors shrink-0">
+                                Chèn ảnh
+                            </button>
+                            <button onClick={() => { setShowInsertImg(false); setInsertImgUrl(""); }}
+                                className="text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer text-lg leading-none shrink-0">✕</button>
+                        </div>
+                    )}
+                    <p className="text-[11px] text-gray-400 mt-2">Hỗ trợ HTML. VD: &lt;b&gt;in đậm&lt;/b&gt;, &lt;i&gt;in nghiêng&lt;/i&gt;, &lt;br&gt; · Bấm 🖼️ để chèn ảnh</p>
                 </div>
 
                 {/* Status */}
@@ -413,7 +504,6 @@ export default function AdminBlogs() {
                         )}
                     </button>
                 </div>
-
             </div>
         </div>
     );

@@ -41,6 +41,7 @@ interface TourAPI {
   category_id: { name: string } | null;
   isFavorite?: boolean;
   trips?: { _id: string; start_date: string; end_date: string; price: number; max_people: number; booked_people: number; status: string }[];
+  sale?: { discount: number } | null;
 }
 
 function StarRating({ count }: { count: number }) {
@@ -135,6 +136,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     .filter(t => t.status === "open" && t.booked_people < t.max_people)
     .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
   const [singleRooms, setSingleRooms] = useState(0);
+  const [showAllTrips, setShowAllTrips] = useState(false); // ← thêm dòng này
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewRef = useRef<HTMLDivElement | null>(null);
 
@@ -144,8 +146,13 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
   const router = useRouter();
 
-  const basePrice = tour?.hotel_id?.price_per_night ?? 0;
-  const childHalf = Math.round(basePrice * 0.5); // trẻ được 50%
+  const selectedTrip = departureDates.find(t => t._id === departureDate);
+  const minPrice = departureDates.length > 0
+    ? Math.min(...departureDates.map(t => t.price))
+    : (tour?.hotel_id?.price_per_night ?? 0);
+  const discountMultiplier = tour?.sale ? (1 - tour.sale.discount / 100) : 1;
+  const basePrice = selectedTrip ? Math.round(selectedTrip.price * discountMultiplier) : 0;
+  const displayPrice = selectedTrip ? selectedTrip.price : minPrice; const childHalf = Math.round(basePrice * 0.5); // trẻ được 50%
   const childFull = basePrice; // trẻ vượt quota → 100%
 
   // Mỗi người lớn "bảo lãnh" 1 trẻ → trẻ trong quota tính 50%, vượt tính 100%
@@ -216,16 +223,11 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     }
 
     Promise.all([
-      fetch(BASE_URL + "/api/tours", { headers }).then((r) => {
-        if (!r.ok) throw new Error("bad");
-        return r.json();
-      }),
-      fetch(BASE_URL + "/api/tours/detail/" + slug, { headers }).then((r) => {
-        if (!r.ok) throw new Error("bad");
-        return r.json();
-      }),
+      fetch(BASE_URL + "/api/tours", { headers }).then(r => { if (!r.ok) throw new Error("bad"); return r.json(); }),
+      fetch(BASE_URL + "/api/tours/detail/" + slug, { headers }).then(r => { if (!r.ok) throw new Error("bad"); return r.json(); }),
+      fetch(BASE_URL + "/api/sales/").then(r => r.json()).catch(() => ({ data: [] })), // ✅ thêm dòng này
     ])
-      .then(([listRes, detailRes]) => {
+      .then(([listRes, detailRes, salesRes]) => {
         if (!listRes.success) throw new Error("bad");
 
         const found: TourAPI | null = Array.isArray(listRes.data)
@@ -237,7 +239,9 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
           setLoading(false);
           return;
         }
-
+        // Tìm sale của tour này
+        const saleList: { tour_id: string; discount: number }[] = salesRes.data || [];
+        const sale = saleList.find(s => s.tour_id === found._id) ?? null;
         const detailData = detailRes?.success ? detailRes.data : null;
         const itineraries = detailData?.itineraries ?? [];
         const trips = detailData?.trips ?? [];
@@ -248,6 +252,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
           itineraries,
           trips,
           isFavorite: detailData?.isFavorite ?? false,
+          sale, // ✅ thêm dòng này
         });
 
         setLoading(false);
@@ -358,6 +363,11 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
             tour_id={tour._id}
             initialFavorite={tour.isFavorite ?? false}
           />
+          {tour.sale && (
+            <div className="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg animate-pulse">
+              🔥 GIẢM {tour.sale.discount}%
+            </div>
+          )}
           <div className="flex justify-between items-start py-4 gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
@@ -634,14 +644,34 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   </div>
                 </div>
                 <div className="h-px bg-gray-100" />
+                {/* Giá từ */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Giá từ</span>
-                  <span className="text-xl font-black text-orange-500">
-                    {formatVND(hotel.price_per_night)}
-                    <span className="text-xs font-normal text-gray-400">
-                      /người
-                    </span>
-                  </span>
+                  <div className="text-right">
+                    {tour.sale ? (
+                      <>
+                        {/* Giá gốc gạch ngang */}
+                        <p className="text-xs text-gray-400 line-through">
+                          {selectedTrip ? formatVND(selectedTrip.price) : `Từ ${formatVND(minPrice)}`}đ
+                        </p>
+                        {/* Giá sau giảm */}
+                        <p className="text-xl font-black text-red-500">
+                          {selectedTrip
+                            ? formatVND(Math.round(selectedTrip.price * (1 - tour.sale.discount / 100)))
+                            : `Từ ${formatVND(Math.round(minPrice * (1 - tour.sale.discount / 100)))}`}
+                          <span className="text-xs font-normal text-gray-400">/người</span>
+                        </p>
+                        <span className="text-[10px] bg-red-100 text-red-500 font-bold px-2 py-0.5 rounded-full">
+                          -{tour.sale.discount}%
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xl font-black text-orange-500">
+                        {selectedTrip ? formatVND(selectedTrip.price) : `Từ ${formatVND(minPrice)}`}
+                        <span className="text-xs font-normal text-gray-400">/người</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* ── Ngày khởi hành ── */}
@@ -654,7 +684,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                     <p className="text-[11px] text-gray-400 italic">Hiện chưa có lịch khởi hành</p>
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
-                      {departureDates.map((trip) => {
+                      {(departureDates.slice(0, 7)).map((trip) => {
                         const d = new Date(trip.start_date);
                         const dayLabel = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][d.getDay()];
                         const dateLabel = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
@@ -675,6 +705,95 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                           </button>
                         );
                       })}
+
+                      {/* Nút xem tất cả — chỉ hiện khi có hơn 7 chuyến */}
+                      {departureDates.length > 7 && (
+                        <button
+                          onClick={() => setShowAllTrips(true)}
+                          className="flex flex-col items-center px-2.5 py-1.5 rounded-xl border-2 border-dashed border-orange-300 bg-orange-50 text-orange-500 cursor-pointer transition-all text-center hover:bg-orange-100"
+                        >
+                          <span className="text-[10px] font-bold text-orange-400">+{departureDates.length - 7}</span>
+                          <span className="text-xs font-bold leading-tight">Tất cả</span>
+                          <span className="text-[9px] mt-0.5 text-orange-300">chuyến</span>
+                        </button>
+                      )}
+
+                      {/* Nút thu gọn */}
+                      {/* Modal tất cả chuyến đi */}
+                      {showAllTrips && (
+                        <div
+                          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+                          onClick={() => setShowAllTrips(false)}
+                        >
+                          {/* Backdrop */}
+                          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+                          {/* Panel */}
+                          <div
+                            className="relative bg-white rounded-2xl w-full max-w-sm max-h-[70vh] flex flex-col overflow-hidden shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                              <div>
+                                <p className="text-sm font-black text-gray-900">📅 Tất cả chuyến đi</p>
+                                <p className="text-[11px] text-gray-400 mt-0.5">{departureDates.length} chuyến đang mở</p>
+                              </div>
+                              <button
+                                onClick={() => setShowAllTrips(false)}
+                                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 border-none cursor-pointer text-base font-bold transition-colors"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* List */}
+                            <div className="overflow-y-auto flex-1 p-4 space-y-2">
+                              {departureDates.map((trip) => {
+                                const d = new Date(trip.start_date);
+                                const e = new Date(trip.end_date);
+                                const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+                                const slotsLeft = trip.max_people - trip.booked_people;
+                                const isSelected = departureDate === trip._id;
+                                return (
+                                  <button
+                                    key={trip._id}
+                                    onClick={() => { setDepartureDate(trip._id); setShowAllTrips(false); }}
+                                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 cursor-pointer transition-all text-left ${isSelected
+                                      ? "border-orange-500 bg-orange-50"
+                                      : "border-gray-100 bg-white hover:border-orange-300 hover:bg-orange-50/40"
+                                      }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className={`text-center shrink-0 w-10 ${isSelected ? "text-orange-600" : "text-gray-700"}`}>
+                                        <p className="text-[10px] font-bold text-gray-400">{dayLabels[d.getDay()]}</p>
+                                        <p className="text-base font-black leading-none">{String(d.getDate()).padStart(2, "0")}</p>
+                                        <p className="text-[10px] text-gray-400">T{d.getMonth() + 1}</p>
+                                      </div>
+                                      <div>
+                                        <p className={`text-xs font-bold ${isSelected ? "text-orange-600" : "text-gray-800"}`}>
+                                          {d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                          {" → "}
+                                          {e.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                        </p>
+                                        <p className="text-[11px] text-orange-500 font-semibold mt-0.5">
+                                          {trip.price.toLocaleString("vi-VN")}đ/người
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <p className={`text-[11px] font-bold ${slotsLeft <= 3 ? "text-red-500" : "text-emerald-600"}`}>
+                                        còn {slotsLeft}
+                                      </p>
+                                      <p className="text-[10px] text-gray-400">chỗ</p>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {!departureDate && departureDates.length > 0 && (
@@ -791,58 +910,62 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
                 {/* Tổng tạm tính */}
                 <div className="h-px bg-gray-100" />
-                <div className="space-y-1">
-                  {/* Người lớn */}
-                  <div className="flex items-center justify-between text-[11px] text-gray-400">
-                    <span>Người lớn × {adults}</span>
-                    <span>{formatVND(adults * basePrice)}đ</span>
-                  </div>
-                  {/* Trẻ em được giảm 50% */}
-                  {childDiscounted > 0 && (
+                {/* Tổng tạm tính */}
+                <div className="h-px bg-gray-100" />
+                {selectedTrip ? (
+                  <div className="space-y-1">
+                    {/* Người lớn */}
                     <div className="flex items-center justify-between text-[11px] text-gray-400">
-                      <span>
-                        Trẻ em × {childDiscounted}{" "}
-                        <span className="text-emerald-500">(50%)</span>
-                      </span>
-                      <span>{formatVND(childDiscounted * childHalf)}đ</span>
+                      <span>Người lớn × {adults}</span>
+                      <span>{formatVND(adults * basePrice)}đ</span>
                     </div>
-                  )}
-                  {/* Trẻ em vượt quota → tính 100% */}
-                  {childFullPrice > 0 && (
-                    <div className="flex items-center justify-between text-[11px] text-amber-500">
-                      <span>
-                        Trẻ em × {childFullPrice}{" "}
-                        <span className="font-semibold">
-                          (100% — vượt quota)
+                    {/* Trẻ em được giảm 50% */}
+                    {childDiscounted > 0 && (
+                      <div className="flex items-center justify-between text-[11px] text-gray-400">
+                        <span>
+                          Trẻ em × {childDiscounted}{" "}
+                          <span className="text-emerald-500">(50%)</span>
                         </span>
+                        <span>{formatVND(childDiscounted * childHalf)}đ</span>
+                      </div>
+                    )}
+                    {/* Trẻ em vượt quota → tính 100% */}
+                    {childFullPrice > 0 && (
+                      <div className="flex items-center justify-between text-[11px] text-amber-500">
+                        <span>
+                          Trẻ em × {childFullPrice}{" "}
+                          <span className="font-semibold">(100% — vượt quota)</span>
+                        </span>
+                        <span>{formatVND(childFullPrice * childFull)}đ</span>
+                      </div>
+                    )}
+                    {/* Ghi chú quota */}
+                    {children > 0 && (
+                      <p className="text-[10px] text-gray-400 bg-gray-50 rounded-lg px-2 py-1 leading-relaxed">
+                        {childFullPrice > 0
+                          ? `⚠️ ${adults} người lớn chỉ bảo lãnh được ${childQuota} trẻ giảm giá. ${childFullPrice} trẻ còn lại tính giá người lớn.`
+                          : `✓ ${childDiscounted}/${children} trẻ trong quota giảm giá (1 NL bảo lãnh 1 trẻ)`}
+                      </p>
+                    )}
+                    {/* Phụ thu phòng đơn */}
+                    {singleSupplement > 0 && (
+                      <div className="flex items-center justify-between text-[11px] text-amber-500">
+                        <span>Phụ thu phòng đơn × {validSingleRooms + autoSingle}</span>
+                        <span>+{formatVND(singleSupplement)}đ</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-1.5 border-t border-gray-100 mt-1">
+                      <span className="text-xs font-semibold text-gray-600">Tổng cộng</span>
+                      <span className="text-base font-black text-orange-500">
+                        {formatVND(totalPrice)}đ
                       </span>
-                      <span>{formatVND(childFullPrice * childFull)}đ</span>
                     </div>
-                  )}
-                  {/* Ghi chú quota */}
-                  {children > 0 && (
-                    <p className="text-[10px] text-gray-400 bg-gray-50 rounded-lg px-2 py-1 leading-relaxed">
-                      {childFullPrice > 0
-                        ? `⚠️ ${adults} người lớn chỉ bảo lãnh được ${childQuota} trẻ giảm giá. ${childFullPrice} trẻ còn lại tính giá người lớn.`
-                        : `✓ ${childDiscounted}/${children} trẻ trong quota giảm giá (1 NL bảo lãnh 1 trẻ)`}
-                    </p>
-                  )}
-                  {/* Phụ thu phòng đơn */}
-                  {singleSupplement > 0 && (
-                    <div className="flex items-center justify-between text-[11px] text-amber-500">
-                      <span>Phụ thu phòng đơn × {validSingleRooms + autoSingle}</span>
-                      <span>+{formatVND(singleSupplement)}đ</span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-1.5 border-t border-gray-100 mt-1">
-                    <span className="text-xs font-semibold text-gray-600">
-                      Tổng cộng
-                    </span>
-                    <span className="text-base font-black text-orange-500">
-                      {formatVND(totalPrice)}đ
-                    </span>
                   </div>
-                </div>
+                ) : (
+                  <p className="text-[11px] text-amber-500 text-center py-2">
+                    ⚠️ Chọn ngày khởi hành để xem giá chi tiết
+                  </p>
+                )}
 
                 <div className="text-[11px] text-gray-400">
                   {hotel.address}, {hotel.city}
@@ -991,13 +1114,20 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
         <div>
           <p className="text-[11px] text-gray-400">Giá từ</p>
           <p className="text-lg font-black text-orange-500">
-            {formatVND(hotel.price_per_night)}
+            {selectedTrip ? formatVND(selectedTrip.price) : `Từ ${formatVND(minPrice)}`}
             <span className="text-[10px] font-normal text-gray-400">/đêm</span>
           </p>
         </div>
         <button
-          onClick={handleBook}
-          className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2.5 rounded-full text-sm border-none cursor-pointer transition-colors"
+          onClick={() => {
+            if (!departureDate) return;
+            handleBook();
+          }}
+          disabled={!departureDate}
+          className={`w-full font-bold py-3 rounded-lg text-sm transition-colors border-none ${departureDate
+            ? "bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
+            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+            }`}
         >
           Đặt ngay
         </button>

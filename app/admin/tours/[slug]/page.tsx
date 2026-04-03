@@ -107,7 +107,7 @@ export default function EditTourPage() {
 
   // ── TRIPS ──
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [tripForm, setTripForm] = useState({ start_date: "", end_date: "", price: "", max_people: "15" });
+  const [tripForm, setTripForm] = useState({ start_date: "", end_date: "", price: "", max_people: "" });
   const [editingTrip, setEditingTrip] = useState<string | null>(null);
   const [editTripForm, setEditTripForm] = useState({ start_date: "", end_date: "", price: "", max_people: "" });
   const [repeatMode, setRepeatMode] = useState(false);
@@ -147,7 +147,7 @@ export default function EditTourPage() {
     const data = await res.json();
     console.log("response:", res.status, data);
     if (!res.ok) { alert(`Lỗi ${res.status}: ${data.message || "Không rõ"}`); return; }
-    setTripForm({ start_date: "", end_date: "", price: "", max_people: "15" });
+    setTripForm({ start_date: "", end_date: "", price: "", max_people: "" });
     await fetchTrips();
   };
 
