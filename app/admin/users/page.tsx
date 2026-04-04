@@ -166,7 +166,7 @@ export default function AdminUsers() {
     setSaving(true);
     try {
       const res = await fetch(`${API}/users/update/${editingUser._id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
