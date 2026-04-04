@@ -21,10 +21,9 @@ interface TourAPI {
     descriptions: { title: string; content: string }[];
     itineraries?: { day_number: number }[];
 }
-
 interface TripAPI {
     _id: string;
-    tour_id: string;
+    tour_id: string | { _id: string; name: string; slug: string };
     start_date: string;
     end_date: string;
     price: number;
@@ -64,8 +63,11 @@ function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[]): Hotel {
     }
     const routeMatch = tour.name.match(/từ\s+([A-ZÀ-Ỹa-zà-ỹ\s.]+?)(?:\s*[-–]|$)/i);
     const route = routeMatch ? routeMatch[1].trim() : "TP.HCM";
-    const trips = allTrips.filter((t) => t.tour_id === tour._id);
-
+    const tourId = tour._id;
+    const trips = allTrips.filter((t) => {
+        const tid = typeof t.tour_id === "object" ? t.tour_id?._id : t.tour_id;
+        return tid === tourId;
+    });
     return {
         id: tour._id,
         slug: tour.slug,
@@ -297,11 +299,10 @@ function Sidebar({
                         <button
                             key={opt.value}
                             onClick={() => setSelectedDate(opt.value === "all" ? "" : opt.value)}
-                            className={`text-left text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${
-                                (opt.value === "all" && !selectedDate) || selectedDate === opt.value
-                                    ? "bg-orange-500 text-white border-orange-500 font-semibold"
-                                    : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
-                            }`}
+                            className={`text-left text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${(opt.value === "all" && !selectedDate) || selectedDate === opt.value
+                                ? "bg-orange-500 text-white border-orange-500 font-semibold"
+                                : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
+                                }`}
                         >
                             {opt.label}
                         </button>
@@ -317,11 +318,10 @@ function Sidebar({
                         <button
                             key={opt.value}
                             onClick={() => setSelectedDays(opt.value)}
-                            className={`text-left text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${
-                                selectedDays === opt.value
-                                    ? "bg-orange-500 text-white border-orange-500 font-semibold"
-                                    : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
-                            }`}
+                            className={`text-left text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${selectedDays === opt.value
+                                ? "bg-orange-500 text-white border-orange-500 font-semibold"
+                                : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
+                                }`}
                         >
                             {opt.label}
                         </button>
@@ -337,11 +337,10 @@ function Sidebar({
                         <button
                             key={route}
                             onClick={() => setSelectedRoute(route)}
-                            className={`text-left text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${
-                                selectedRoute === route
-                                    ? "bg-orange-500 text-white border-orange-500 font-semibold"
-                                    : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
-                            }`}
+                            className={`text-left text-xs px-3 py-1.5 rounded-lg border cursor-pointer transition-colors ${selectedRoute === route
+                                ? "bg-orange-500 text-white border-orange-500 font-semibold"
+                                : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
+                                }`}
                         >
                             {route === "Tất cả" ? "Tất cả tuyến" : `Từ ${route}`}
                         </button>

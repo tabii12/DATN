@@ -359,10 +359,6 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     <div className="min-h-screen bg-gray-100 font-sans">
       <div className="bg-white">
         <div className="max-w-300 mx-auto px-4">
-          <FavoriteButton
-            tour_id={tour._id}
-            initialFavorite={tour.isFavorite ?? false}
-          />
           {tour.sale && (
             <div className="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg animate-pulse">
               🔥 GIẢM {tour.sale.discount}%
@@ -371,24 +367,18 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
           <div className="flex justify-between items-start py-4 gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
-                <h1 className="text-xl font-black text-gray-900 leading-snug">
-                  {hotel.name}
+                <h1 className="text-xl font-black text-gray-800 leading-snug">
+                  {tour.name}
                 </h1>
-                <StarRating count={hotel.rating} />
                 {tour.category_id && (
                   <span className="text-[11px] bg-orange-100 text-orange-600 font-semibold px-2 py-0.5 rounded-full">
                     {tour.category_id.name}
                   </span>
                 )}
-              </div>
-              <p className="text-sm text-gray-700 font-medium mb-0.5">
-                {tour.name}
-              </p>
-              <div className="flex items-center gap-1">
-                <span className="text-orange-500">📍</span>
-                <span className="text-[13px] text-gray-500">
-                  {hotel.address}, {hotel.city}
-                </span>
+                <FavoriteButton
+                  tour_id={tour._id}
+                  initialFavorite={tour.isFavorite ?? false}
+                />
               </div>
             </div>
           </div>
