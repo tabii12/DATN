@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import FavoriteButton from "./FavoriteButton";
+import CommentForm from "../CommentForm";
+import CommentsDisplay from "../CommentsDisplay";
 
 interface PlaceDetail {
   title: string;
@@ -129,6 +131,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [departureDate, setDepartureDate] = useState("");
+  const [commentRefresh, setCommentRefresh] = useState(0);
 
   // Tạo danh sách ngày khởi hành cố định: mỗi thứ 6 & thứ 2 trong 8 tuần tới
   // Ngày khởi hành từ API trips (chỉ lấy trip còn chỗ & status open)
@@ -1095,6 +1098,27 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
       {/* ── REVIEW SECTION ── */}
       <div ref={reviewRef}>
         <ReviewSection hotelName={hotel.name} tourId={tour._id} />
+      </div>
+
+      {/* ── COMMENTS SECTION ── */}
+      <div className="bg-white mt-2">
+        <div className="max-w-300 mx-auto px-4 py-5">
+          {/* Comments Display */}
+          <CommentsDisplay 
+            tourId={tour._id} 
+            tourName={tour.name}
+            refreshTrigger={commentRefresh}
+          />
+          
+          {/* Comment Form */}
+          <div className="mt-8">
+            <CommentForm 
+              tourId={tour._id}
+              tourName={tour.name}
+              onCommentAdded={() => setCommentRefresh(prev => prev + 1)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── RELATED TOURS ── */}

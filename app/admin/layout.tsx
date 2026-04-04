@@ -57,13 +57,13 @@ export default function AdminLayout({
             href="/admin/users"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >
-            🛎 Tài khoản
+            � Tài khoản
           </Link>
           <Link
-            href="/admin/users"
+            href="/admin/comments"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >
-            🛎 Bình luận
+            💬 Bình luận
           </Link>
         </nav>
       </aside>
