@@ -41,6 +41,7 @@ export default function CreateTourPage() {
     status: "active",
     hotel_id: "",
     category_id: "",
+    start_location: "",
   });
 
   useEffect(() => {
@@ -127,6 +128,17 @@ export default function CreateTourPage() {
                   onChange={handleChange}
                   required
                   placeholder="VD: Tour Đà Nẵng 3 Ngày 2 Đêm – Khám Phá Bà Nà Hills"
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                />
+                <label className="text-sm font-semibold text-gray-700 block mb-1.5">
+                  Vị trí khởi hành <span className="text-red-400">*</span>
+                </label>
+                <input
+                  name="start_location"
+                  value={form.start_location}
+                  onChange={handleChange}
+                  required
+                  placeholder="VD: TP. Hồ Chí Minh"
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 />
               </div>
