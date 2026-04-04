@@ -210,7 +210,7 @@ export default function AdminCategories() {
     const newStatus = cat.status === "active" ? "inactive" : "active";
     try {
       const res = await fetch(`${API}/categories/${cat.slug}/toggle`, {
-        method: "PUT",
+        method: "patch",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
