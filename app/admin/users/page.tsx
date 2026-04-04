@@ -10,7 +10,7 @@ interface User {
   name: string;
   email: string;
   role: "user" | "admin";
-  status: "active" | "inactive" | "banned";
+  status: "active" | "inactive" | "blocked";
   isVerified: boolean;
   createdAt: string;
   updatedAt: string;
@@ -103,7 +103,7 @@ export default function AdminUsers() {
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState<"user" | "admin">("user");
   const [editStatus, setEditStatus] = useState<
-    "active" | "inactive" | "banned"
+    "active" | "inactive" | "blocked"
   >("active");
   const [saving, setSaving] = useState(false);
 
@@ -165,8 +165,8 @@ export default function AdminUsers() {
     if (!editingUser) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API}/users/${editingUser._id}`, {
-        method: "PUT",
+      const res = await fetch(`${API}/users/update/${editingUser._id}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -218,7 +218,7 @@ export default function AdminUsers() {
   // Stats
   const totalActive = users.filter((u) => u.status === "active").length;
   const totalAdmin = users.filter((u) => u.role === "admin").length;
-  const totalBanned = users.filter((u) => u.status === "banned").length;
+  const totalBlocked = users.filter((u) => u.status === "blocked").length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans">
@@ -267,7 +267,7 @@ export default function AdminUsers() {
           },
           {
             label: "Bị khóa",
-            value: totalBanned,
+            value: totalBlocked,
             icon: "🚫",
             color: "text-red-600 bg-red-50",
           },
@@ -548,8 +548,8 @@ export default function AdminUsers() {
                   }
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
+                  <option value="user">user</option>
+                  <option value="admin">admin</option>
                 </select>
               </div>
               <div>
@@ -560,7 +560,7 @@ export default function AdminUsers() {
                   value={editStatus}
                   onChange={(e) =>
                     setEditStatus(
-                      e.target.value as "active" | "inactive" | "banned",
+                      e.target.value as "active" | "inactive" | "blocked",
                     )
                   }
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"

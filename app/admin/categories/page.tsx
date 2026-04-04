@@ -29,7 +29,9 @@ function StatusBadge({ status }: { status: string }) {
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("vi-VN", {
-    day: "2-digit", month: "2-digit", year: "numeric",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 }
 
@@ -61,7 +63,9 @@ export default function AdminCategories() {
   const [catToursLoading, setCatToursLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [filterStatus, setFilterStatus] = useState<
+    "all" | "active" | "inactive"
+  >("all");
 
   // Add modal
   const [showAdd, setShowAdd] = useState(false);
@@ -80,7 +84,10 @@ export default function AdminCategories() {
   const [deleting, setDeleting] = useState(false);
 
   // Toast
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    msg: string;
+    type: "success" | "error";
+  } | null>(null);
 
   function showToast(msg: string, type: "success" | "error" = "success") {
     setToast({ msg, type });
@@ -96,7 +103,7 @@ export default function AdminCategories() {
       const data = await res.json();
       const tours: TourInCategory[] = (data.data ?? []).filter(
         (t: { category_id?: { slug?: string } | null }) =>
-          t.category_id?.slug === cat.slug
+          t.category_id?.slug === cat.slug,
       );
       setCatTours(tours);
     } catch {
@@ -108,15 +115,16 @@ export default function AdminCategories() {
 
   useEffect(() => {
     fetch(`${API}/categories`)
-      .then(r => r.json())
-      .then(d => setCategories(d.data || []))
+      .then((r) => r.json())
+      .then((d) => setCategories(d.data || []))
       .catch(() => showToast("Không tải được danh mục", "error"))
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = categories.filter(c => {
+  const filtered = categories.filter((c) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || c.name.toLowerCase().includes(q) || c.slug.includes(q);
+    const matchSearch =
+      !q || c.name.toLowerCase().includes(q) || c.slug.includes(q);
     const matchStatus = filterStatus === "all" || c.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -144,7 +152,7 @@ export default function AdminCategories() {
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setCategories(prev => [data.data, ...prev]);
+      setCategories((prev) => [data.data, ...prev]);
       setShowAdd(false);
       showToast("Thêm danh mục thành công!");
     } catch {
@@ -158,15 +166,18 @@ export default function AdminCategories() {
     if (!editingCat) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API}/categories/${editingCat._id}`, {
-        method: "PUT",
+      const res = await fetch(`${API}/categories/${editingCat.slug}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editName, status: editStatus }),
       });
       if (!res.ok) throw new Error();
-      setCategories(prev => prev.map(c =>
-        c._id === editingCat._id ? { ...c, name: editName, status: editStatus } : c
-      ));
+
+      const data = await res.json();
+
+      setCategories((prev) =>
+        prev.map((c) => (c._id === data.data._id ? data.data : c)),
+      );
       setEditingCat(null);
       showToast("Cập nhật thành công!");
     } catch {
@@ -176,49 +187,55 @@ export default function AdminCategories() {
     }
   }
 
-  async function handleDelete() {
-    if (!deletingCat) return;
-    setDeleting(true);
-    try {
-      const res = await fetch(`${API}/categories/${deletingCat._id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-      setCategories(prev => prev.filter(c => c._id !== deletingCat._id));
-      setDeletingCat(null);
-      showToast("Đã xóa danh mục!");
-    } catch {
-      showToast("Xóa thất bại, thử lại sau", "error");
-    } finally {
-      setDeleting(false);
-    }
-  }
+  // async function handleDelete() {
+  //   if (!deletingCat) return;
+  //   setDeleting(true);
+  //   try {
+  //     const res = await fetch(`${API}/categories/${deletingCat._id}`, {
+  //       method: "DELETE",
+  //     });
+  //     if (!res.ok) throw new Error();
+  //     setCategories((prev) => prev.filter((c) => c._id !== deletingCat._id));
+  //     setDeletingCat(null);
+  //     showToast("Đã xóa danh mục!");
+  //   } catch {
+  //     showToast("Xóa thất bại, thử lại sau", "error");
+  //   } finally {
+  //     setDeleting(false);
+  //   }
+  // }
 
   async function toggleStatus(cat: Category) {
     const newStatus = cat.status === "active" ? "inactive" : "active";
     try {
-      const res = await fetch(`${API}/categories/${cat._id}`, {
+      const res = await fetch(`${API}/categories/${cat.slug}/toggle`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error();
-      setCategories(prev => prev.map(c =>
-        c._id === cat._id ? { ...c, status: newStatus } : c
-      ));
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.slug === cat.slug ? { ...c, status: newStatus } : c,
+        ),
+      );
       showToast(newStatus === "active" ? "Đã bật danh mục" : "Đã tắt danh mục");
     } catch {
       showToast("Cập nhật thất bại", "error");
     }
   }
 
-  const totalActive = categories.filter(c => c.status === "active").length;
+  const totalActive = categories.filter((c) => c.status === "active").length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans">
-
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white transition-all ${toast.type === "success" ? "bg-emerald-500" : "bg-red-500"}`}>
-          {toast.type === "success" ? "✓ " : "✕ "}{toast.msg}
+        <div
+          className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white transition-all ${toast.type === "success" ? "bg-emerald-500" : "bg-red-500"}`}
+        >
+          {toast.type === "success" ? "✓ " : "✕ "}
+          {toast.msg}
         </div>
       )}
 
@@ -226,7 +243,9 @@ export default function AdminCategories() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý danh mục</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Tổng {categories.length} danh mục</p>
+          <p className="text-sm text-gray-400 mt-0.5">
+            Tổng {categories.length} danh mục
+          </p>
         </div>
         <button
           onClick={openAdd}
@@ -239,12 +258,34 @@ export default function AdminCategories() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         {[
-          { label: "Tổng danh mục", value: categories.length, icon: "🗂️", color: "text-blue-600 bg-blue-50" },
-          { label: "Đang hoạt động", value: totalActive, icon: "✅", color: "text-emerald-600 bg-emerald-50" },
-          { label: "Tạm ẩn", value: categories.length - totalActive, icon: "🔒", color: "text-gray-500 bg-gray-100" },
+          {
+            label: "Tổng danh mục",
+            value: categories.length,
+            icon: "🗂️",
+            color: "text-blue-600 bg-blue-50",
+          },
+          {
+            label: "Đang hoạt động",
+            value: totalActive,
+            icon: "✅",
+            color: "text-emerald-600 bg-emerald-50",
+          },
+          {
+            label: "Tạm ẩn",
+            value: categories.length - totalActive,
+            icon: "🔒",
+            color: "text-gray-500 bg-gray-100",
+          },
         ].map(({ label, value, icon, color }) => (
-          <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl ${color}`}>{icon}</div>
+          <div
+            key={label}
+            className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm"
+          >
+            <div
+              className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl ${color}`}
+            >
+              {icon}
+            </div>
             <div>
               <p className="text-2xl font-black text-gray-900">{value}</p>
               <p className="text-xs text-gray-400">{label}</p>
@@ -259,12 +300,14 @@ export default function AdminCategories() {
           type="text"
           placeholder="Tìm tên danh mục..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-200 rounded-xl px-4 py-2 text-sm w-60 focus:outline-none focus:ring-2 focus:ring-orange-300"
         />
         <select
           value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
+          onChange={(e) =>
+            setFilterStatus(e.target.value as typeof filterStatus)
+          }
           className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
         >
           <option value="all">Tất cả trạng thái</option>
@@ -273,21 +316,37 @@ export default function AdminCategories() {
         </select>
         {(search || filterStatus !== "all") && (
           <button
-            onClick={() => { setSearch(""); setFilterStatus("all"); }}
+            onClick={() => {
+              setSearch("");
+              setFilterStatus("all");
+            }}
             className="text-xs text-gray-400 hover:text-gray-600 underline"
           >
             Xóa bộ lọc
           </button>
         )}
-        <span className="ml-auto text-xs text-gray-400">{filtered.length} kết quả</span>
+        <span className="ml-auto text-xs text-gray-400">
+          {filtered.length} kết quả
+        </span>
       </div>
 
       {/* Grid cards */}
       {loading ? (
         <div className="flex items-center justify-center py-24 text-gray-400 gap-3">
           <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8z"
+            />
           </svg>
           Đang tải...
         </div>
@@ -298,20 +357,27 @@ export default function AdminCategories() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map(cat => (
+          {filtered.map((cat) => (
             <div
               key={cat._id}
               className={`bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-3 transition-all hover:shadow-md ${cat.status === "inactive" ? "opacity-60 border-gray-100" : "border-gray-100"}`}
             >
               {/* Icon + name — click để xem tours */}
-              <div className="flex items-start justify-between gap-2 cursor-pointer" onClick={() => openCatTours(cat)}>
+              <div
+                className="flex items-start justify-between gap-2 cursor-pointer"
+                onClick={() => openCatTours(cat)}
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center text-2xl flex-shrink-0">
                     {CATEGORY_ICONS[cat.slug] ?? "🏷️"}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 text-sm leading-tight hover:text-orange-500 transition-colors">{cat.name}</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5 font-mono">{cat.slug}</p>
+                    <p className="font-bold text-gray-900 text-sm leading-tight hover:text-orange-500 transition-colors">
+                      {cat.name}
+                    </p>
+                    <p className="text-[11px] text-gray-400 mt-0.5 font-mono">
+                      {cat.slug}
+                    </p>
                   </div>
                 </div>
                 <span className="text-gray-300 text-sm">›</span>
@@ -320,7 +386,9 @@ export default function AdminCategories() {
               {/* Status + date */}
               <div className="flex items-center justify-between">
                 <StatusBadge status={cat.status} />
-                <span className="text-[11px] text-gray-400">{formatDate(cat.createdAt)}</span>
+                <span className="text-[11px] text-gray-400">
+                  {formatDate(cat.createdAt)}
+                </span>
               </div>
 
               {/* Actions */}
@@ -328,7 +396,9 @@ export default function AdminCategories() {
                 {/* Toggle status */}
                 <button
                   onClick={() => toggleStatus(cat)}
-                  title={cat.status === "active" ? "Tắt danh mục" : "Bật danh mục"}
+                  title={
+                    cat.status === "active" ? "Tắt danh mục" : "Bật danh mục"
+                  }
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     cat.status === "active"
                       ? "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -360,24 +430,37 @@ export default function AdminCategories() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-900">Thêm danh mục mới</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+              <h2 className="text-lg font-bold text-gray-900">
+                Thêm danh mục mới
+              </h2>
+              <button
+                onClick={() => setShowAdd(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Tên danh mục <span className="text-red-400">*</span></label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                  Tên danh mục <span className="text-red-400">*</span>
+                </label>
                 <input
                   value={addName}
-                  onChange={e => setAddName(e.target.value)}
+                  onChange={(e) => setAddName(e.target.value)}
                   placeholder="VD: Tour Mạo Hiểm"
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Trạng thái</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                  Trạng thái
+                </label>
                 <select
                   value={addStatus}
-                  onChange={e => setAddStatus(e.target.value as "active" | "inactive")}
+                  onChange={(e) =>
+                    setAddStatus(e.target.value as "active" | "inactive")
+                  }
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
                   <option value="active">Hoạt động</option>
@@ -409,8 +492,15 @@ export default function AdminCategories() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-900">Chỉnh sửa danh mục</h2>
-              <button onClick={() => setEditingCat(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+              <h2 className="text-lg font-bold text-gray-900">
+                Chỉnh sửa danh mục
+              </h2>
+              <button
+                onClick={() => setEditingCat(null)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
             </div>
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-5">
               <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-xl">
@@ -418,23 +508,31 @@ export default function AdminCategories() {
               </div>
               <div>
                 <p className="text-xs text-gray-400">Slug (tự động)</p>
-                <p className="text-sm font-mono text-gray-600">{editingCat.slug}</p>
+                <p className="text-sm font-mono text-gray-600">
+                  {editingCat.slug}
+                </p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Tên danh mục</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                  Tên danh mục
+                </label>
                 <input
                   value={editName}
-                  onChange={e => setEditName(e.target.value)}
+                  onChange={(e) => setEditName(e.target.value)}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Trạng thái</label>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                  Trạng thái
+                </label>
                 <select
                   value={editStatus}
-                  onChange={e => setEditStatus(e.target.value as "active" | "inactive")}
+                  onChange={(e) =>
+                    setEditStatus(e.target.value as "active" | "inactive")
+                  }
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
                   <option value="active">Hoạt động</option>
@@ -472,19 +570,43 @@ export default function AdminCategories() {
                   {CATEGORY_ICONS[viewingCat.slug] ?? "🏷️"}
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-gray-900">{viewingCat.name}</h2>
-                  <p className="text-xs text-gray-400">Danh sách tour thuộc danh mục này</p>
+                  <h2 className="text-base font-bold text-gray-900">
+                    {viewingCat.name}
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    Danh sách tour thuộc danh mục này
+                  </p>
                 </div>
               </div>
-              <button onClick={() => setViewingCat(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none bg-transparent border-none cursor-pointer">×</button>
+              <button
+                onClick={() => setViewingCat(null)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none bg-transparent border-none cursor-pointer"
+              >
+                ×
+              </button>
             </div>
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-5">
               {catToursLoading ? (
                 <div className="flex items-center justify-center py-12 text-gray-400 gap-3">
-                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  <svg
+                    className="animate-spin w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
                   </svg>
                   Đang tải...
                 </div>
@@ -495,31 +617,48 @@ export default function AdminCategories() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <p className="text-xs text-gray-400 mb-1">{catTours.length} tour</p>
-                  {catTours.map(tour => (
-                    <div key={tour._id} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                  <p className="text-xs text-gray-400 mb-1">
+                    {catTours.length} tour
+                  </p>
+                  {catTours.map((tour) => (
+                    <div
+                      key={tour._id}
+                      className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
                       {/* Thumbnail */}
                       <div className="w-16 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                         {tour.images?.[0]?.image_url ? (
-                          <img src={tour.images[0].image_url} alt={tour.name} className="w-full h-full object-cover" />
+                          <img
+                            src={tour.images[0].image_url}
+                            alt={tour.name}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">No img</div>
+                          <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">
+                            No img
+                          </div>
                         )}
                       </div>
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{tour.name}</p>
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {tour.name}
+                        </p>
                         <p className="text-[11px] text-gray-400 truncate">
                           {tour.hotel_id?.name} · {tour.hotel_id?.city}
-                          {tour.hotel_id?.price_per_night ? ` · ${tour.hotel_id.price_per_night.toLocaleString("vi-VN")}đ` : ""}
+                          {tour.hotel_id?.price_per_night
+                            ? ` · ${tour.hotel_id.price_per_night.toLocaleString("vi-VN")}đ`
+                            : ""}
                         </p>
                       </div>
                       {/* Status */}
-                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${
-                        tour.status === "active"
-                          ? "bg-emerald-50 text-emerald-600"
-                          : "bg-gray-100 text-gray-400"
-                      }`}>
+                      <span
+                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${
+                          tour.status === "active"
+                            ? "bg-emerald-50 text-emerald-600"
+                            : "bg-gray-100 text-gray-400"
+                        }`}
+                      >
                         {tour.status === "active" ? "Hoạt động" : "Tạm ẩn"}
                       </span>
                       {/* Link */}
@@ -552,10 +691,18 @@ export default function AdminCategories() {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
             <div className="text-5xl mb-3">🗑️</div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Xóa danh mục?</h2>
-            <p className="text-sm text-gray-500 mb-1">Bạn có chắc muốn xóa danh mục</p>
-            <p className="font-semibold text-gray-800 mb-2">"{deletingCat.name}"?</p>
-            <p className="text-xs text-red-400 mb-6">Các tour thuộc danh mục này có thể bị ảnh hưởng.</p>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">
+              Xóa danh mục?
+            </h2>
+            <p className="text-sm text-gray-500 mb-1">
+              Bạn có chắc muốn xóa danh mục
+            </p>
+            <p className="font-semibold text-gray-800 mb-2">
+              "{deletingCat.name}"?
+            </p>
+            <p className="text-xs text-red-400 mb-6">
+              Các tour thuộc danh mục này có thể bị ảnh hưởng.
+            </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeletingCat(null)}
@@ -563,13 +710,13 @@ export default function AdminCategories() {
               >
                 Hủy
               </button>
-              <button
+              {/* <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold disabled:opacity-60"
               >
                 {deleting ? "Đang xóa..." : "Xóa"}
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
