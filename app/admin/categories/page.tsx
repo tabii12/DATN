@@ -172,12 +172,11 @@ export default function AdminCategories() {
         body: JSON.stringify({ name: editName, status: editStatus }),
       });
       if (!res.ok) throw new Error();
+
+      const data = await res.json();
+
       setCategories((prev) =>
-        prev.map((c) =>
-          c.slug === editingCat.slug
-            ? { ...c, name: editName, status: editStatus }
-            : c,
-        ),
+        prev.map((c) => (c._id === data.data._id ? data.data : c)),
       );
       setEditingCat(null);
       showToast("Cập nhật thành công!");
@@ -216,7 +215,9 @@ export default function AdminCategories() {
       });
       if (!res.ok) throw new Error();
       setCategories((prev) =>
-        prev.map((c) => (c.slug === cat.slug ? { ...c, status: newStatus } : c)),
+        prev.map((c) =>
+          c.slug === cat.slug ? { ...c, status: newStatus } : c,
+        ),
       );
       showToast(newStatus === "active" ? "Đã bật danh mục" : "Đã tắt danh mục");
     } catch {
