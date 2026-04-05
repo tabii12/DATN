@@ -95,9 +95,7 @@ interface PriceBreakdown {
   childTotal: number;
   // Trẻ nhỏ
   infantCount: number;
-  infantFree: number;        // số bé miễn phí
-  infantPaid: number;        // số bé phải trả
-  infantPrice: number;       // giá bé phải trả
+  infantPrice: number;       // giá mỗi bé (0 nếu tất cả free)
   infantTotal: number;
   quota: number;             // = NL - 1
   // Phòng
@@ -116,41 +114,40 @@ function calcPrice(
   infants: number,
   singleRooms: number
 ): PriceBreakdown {
-  // ── Quota TN miễn phí — verified 18/18 cases từ số thực ivivu:
+  // ── Quota TN miễn phí — verified từ số thực ivivu:
   //    quota = floor((NL+TE)/2) + (NL lẻ >= 3 AND TE=0 ? 1 : 0)
-  const quota  = Math.floor((adults + children) / 2)
-               + (adults % 2 === 1 && children === 0 && adults >= 3 ? 1 : 0);
-  const tnFree = Math.min(infants, quota);
-  const tnPaid = Math.max(0, infants - quota);
+  const quota = Math.floor((adults + children) / 2)
+    + (adults % 2 === 1 && children === 0 && adults >= 3 ? 1 : 0);
+
+  // ── Giá trẻ nhỏ (TN) — công thức thống nhất, 12/12 cases verified:
+  //    TN <= quota → tất cả FREE (0đ)
+  //    TN > quota  → tất cả trả = (TN - quota) × base / TN
+  //    (không có đứa nào "free riêng" — tất cả chia đều phần vượt quota)
+  const infantPrice = infants === 0 ? 0
+    : infants <= quota ? 0
+      : (infants - quota) * basePrice / infants;
+  const infantTotal2 = infants * infantPrice;
 
   // ── Giá trẻ em (5–9t):
-  //    tnFree > 0  → 100% (TN free chiếm slot)
-  //    NL = 1      → 100% (1 NL không đủ bảo lãnh)
-  //    NL >= 2     → base × (1 − 1/((2×NL+1)×TE))
+  //    TN > 0  → 100% (bất kể free hay paid)
+  //    NL = 1  → 100%
+  //    NL >= 2 và không có TN → base × (1 − 1/((2×NL+1)×TE))
   const childPrice = children === 0 ? 0
-    : (tnFree > 0 || adults === 1)
+    : (infants > 0 || adults === 1)
       ? basePrice
       : basePrice * (1 - 1 / ((2 * adults + 1) * children));
 
-  // ── Giá trẻ nhỏ vượt quota:
-  //    tnFree > 0  → base × TN_paid / (TN_paid + TN_free)
-  //    tnFree = 0  → base / TN_total  (chia đều BASE cho tất cả TN)
-  const infantPrice = tnPaid === 0 ? 0
-    : tnFree === 0
-      ? basePrice / infants
-      : basePrice * tnPaid / (tnPaid + tnFree);
-
   // ── Phòng (chỉ tính NL, bỏ auto single room)
-  const validSingle  = Math.min(singleRooms, adults);
+  const validSingle = Math.min(singleRooms, adults);
   const sharedAdults = adults - validSingle;
-  const sharedRooms  = Math.floor(sharedAdults / 2);
-  const totalRooms   = sharedRooms + validSingle;
-  const singleSupp   = validSingle * Math.round(basePrice * 0.3);
+  const sharedRooms = Math.floor(sharedAdults / 2);
+  const totalRooms = sharedRooms + validSingle;
+  const singleSupp = validSingle * Math.round(basePrice * 0.3);
 
-  const adultTotal  = adults * basePrice;
-  const childTotal  = children * childPrice;
-  const infantTotal = tnPaid * infantPrice;
-  const grandTotal  = adultTotal + childTotal + infantTotal + singleSupp;
+  const adultTotal = adults * basePrice;
+  const childTotal = children * childPrice;
+  const infantTotal = infantTotal2;
+  const grandTotal = adultTotal + childTotal + infantTotal + singleSupp;
 
   return {
     adultCount: adults,
@@ -161,8 +158,6 @@ function calcPrice(
     childPct: children > 0 ? Math.round(childPrice / basePrice * 100) : 0,
     childTotal,
     infantCount: infants,
-    infantFree: tnFree,
-    infantPaid: tnPaid,
     infantPrice,
     infantTotal,
     quota,
@@ -278,24 +273,24 @@ const RETRY_DELAY = 8000;
 // ─────────────────────────── MAIN COMPONENT ───────────────────────────
 
 export default function HotelDetailPage({ slug }: { slug: string }) {
-  const [tour, setTour]         = useState<TourAPI | null>(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState<"notfound" | "network" | null>(null);
-  const [attempt, setAttempt]   = useState(0);
+  const [tour, setTour] = useState<TourAPI | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<"notfound" | "network" | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [activeImg, setActiveImg] = useState(0);
-  const [openDay, setOpenDay]   = useState<number | null>(0);
+  const [openDay, setOpenDay] = useState<number | null>(0);
   const [showAllTrips, setShowAllTrips] = useState(false);
 
   // ── Booking state ──
-  const [adults, setAdults]       = useState(2);
-  const [children, setChildren]   = useState(0); // 5–9 tuổi
-  const [infants, setInfants]     = useState(0); // < 5 tuổi
+  const [adults, setAdults] = useState(2);
+  const [children, setChildren] = useState(0); // 5–9 tuổi
+  const [infants, setInfants] = useState(0); // < 5 tuổi
   const [singleRooms, setSingleRooms] = useState(0);
   const [selectedTripId, setSelectedTripId] = useState("");
 
-  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewRef = useRef<HTMLDivElement | null>(null);
-  const router    = useRouter();
+  const router = useRouter();
 
   const scrollToReview = () => reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -441,15 +436,14 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const allImgs = [...images];
   while (allImgs.length < 7) allImgs.push({ image_url: FAKE_IMGS[allImgs.length % FAKE_IMGS.length] });
   const mainImgs = allImgs.slice(0, 3);
-  const subImgs  = allImgs.slice(3, 7);
-  const thumbs   = allImgs.slice(0, 10);
+  const subImgs = allImgs.slice(3, 7);
+  const thumbs = allImgs.slice(0, 10);
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
       {/* ── Header ── */}
       <div className="bg-white">
         <div className="max-w-300 mx-auto px-4">
-          <FavoriteButton tour_id={tour._id} initialFavorite={tour.isFavorite ?? false} />
           {tour.sale && (
             <div className="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg animate-pulse">
               🔥 GIẢM {tour.sale.discount}%
@@ -458,18 +452,13 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
           <div className="flex justify-between items-start py-4 gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1">
-                <h1 className="text-xl font-black text-gray-900 leading-snug">{hotel.name}</h1>
-                <StarRating count={hotel.rating} />
+                <h1 className="text-xl font-black text-gray-900 leading-snug">{tour.name}</h1>
                 {tour.category_id && (
                   <span className="text-[11px] bg-orange-100 text-orange-600 font-semibold px-2 py-0.5 rounded-full">
                     {tour.category_id.name}
                   </span>
                 )}
-              </div>
-              <p className="text-sm text-gray-700 font-medium mb-0.5">{tour.name}</p>
-              <div className="flex items-center gap-1">
-                <span className="text-orange-500">📍</span>
-                <span className="text-[13px] text-gray-500">{hotel.address}, {hotel.city}</span>
+                <FavoriteButton tour_id={tour._id} initialFavorite={tour.isFavorite ?? false} />
               </div>
             </div>
           </div>
@@ -529,9 +518,9 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                       <div className="flex items-center justify-between mt-2">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[10px] font-bold text-orange-500 shrink-0">TD</div>
-                          <span className="text-xs font-semibold text-gray-700">Trinh Dương</span>
+                          <span className="text-xs font-semibold text-gray-700">Chu Kha</span>
                         </div>
-                        <span className="text-[11px] text-gray-400">13-04-2025</span>
+                        <span className="text-[11px] text-gray-400">05-04-2026</span>
                       </div>
                     </div>
                     <div className="h-px bg-gray-100" />
@@ -648,7 +637,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                     <div className="flex flex-wrap gap-1.5">
                       {departureDates.slice(0, 7).map((trip) => {
                         const d = new Date(trip.start_date);
-                        const dayLabel = ["CN","T2","T3","T4","T5","T6","T7"][d.getDay()];
+                        const dayLabel = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][d.getDay()];
                         const dateLabel = d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
                         const isSelected = selectedTripId === trip._id;
                         const slotsLeft = trip.max_people - trip.booked_people;
@@ -716,14 +705,11 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   <div>
                     <p className="text-xs font-semibold text-gray-700">Trẻ nhỏ</p>
                     <p className="text-[11px] text-gray-400">
-                      Dưới 5 tuổi · quota miễn phí: {pricing.quota} bé
-                      <span className="text-gray-300"> (ceil(NL/2)+floor(TE/2))</span>
+                      Dưới 5 tuổi · quota free: {pricing.quota} bé
                     </p>
                   </div>
                   <CounterBtn value={infants} onDec={() => setInfants((v) => Math.max(0, v - 1))} onInc={() => setInfants((v) => Math.min(20, v + 1))} />
                 </div>
-
-              
 
                 {/* ── Phòng đơn ── */}
                 <div className="h-px bg-gray-100" />
@@ -765,20 +751,15 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                       </div>
                     )}
 
-                    {/* Trẻ nhỏ miễn phí */}
-                    {pricing.infantFree > 0 && (
-                      <div className="flex items-center justify-between text-[11px] text-emerald-600">
-                        <span>Trẻ nhỏ × {pricing.infantFree} <span className="font-semibold">(miễn phí)</span></span>
-                        <span>0đ</span>
-                      </div>
-                    )}
-
-                    {/* Trẻ nhỏ vượt quota */}
-                    {pricing.infantPaid > 0 && (
-                      <div className="flex items-center justify-between text-[11px] text-amber-600">
+                    {/* Trẻ nhỏ */}
+                    {infants > 0 && (
+                      <div className="flex items-center justify-between text-[11px] text-gray-500">
                         <span>
-                          Trẻ nhỏ × {pricing.infantPaid}
-                          <span className="font-semibold"> (vượt quota = {formatVND(Math.round(pricing.infantPrice))}đ/bé)</span>
+                          Trẻ nhỏ × {infants}
+                          {pricing.infantPrice === 0
+                            ? <span className="text-emerald-500 font-semibold"> (miễn phí)</span>
+                            : <span className="text-amber-500"> ({Math.round(pricing.infantPrice / basePrice * 100)}% = {formatVND(Math.round(pricing.infantPrice))}đ/bé)</span>
+                          }
                         </span>
                         <span>{formatVND(Math.round(pricing.infantTotal))}đ</span>
                       </div>
@@ -801,8 +782,6 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 ) : (
                   <p className="text-[11px] text-amber-500 text-center py-2">⚠️ Chọn ngày khởi hành để xem giá chi tiết</p>
                 )}
-
-                <div className="text-[11px] text-gray-400">{hotel.address}, {hotel.city}</div>
               </div>
 
               <div className="border-t border-gray-100 bg-gray-50 p-4 flex flex-col gap-2">
@@ -810,11 +789,6 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-sm transition-colors border-none cursor-pointer">
                   Yêu cầu đặt {adults + children + infants > 0 ? `(${adults + children + infants} người)` : ""}
                 </button>
-                <p className="text-center text-xs text-gray-400">Cần hỗ trợ? Gọi ngay</p>
-                <a href="tel:19001870" className="flex items-center justify-center gap-1 no-underline">
-                  <span>📞</span>
-                  <span className="font-bold text-orange-500 text-sm">1900 1870</span>
-                </a>
               </div>
             </div>
           </div>
@@ -922,7 +896,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
               {departureDates.map((trip) => {
                 const d = new Date(trip.start_date);
                 const e = new Date(trip.end_date);
-                const dayLabels = ["CN","T2","T3","T4","T5","T6","T7"];
+                const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
                 const slotsLeft = trip.max_people - trip.booked_people;
                 const isSelected = selectedTripId === trip._id;
                 return (
@@ -1037,9 +1011,9 @@ function ReviewCard({ review, onHelpful }: { review: Review; onHelpful: (id: str
 }
 
 function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: string }) {
-  const [reviews, setReviews]   = useState<Review[]>(FAKE_REVIEWS);
+  const [reviews, setReviews] = useState<Review[]>(FAKE_REVIEWS);
   const [showForm, setShowForm] = useState(false);
-  const [sortBy, setSortBy]     = useState<"newest" | "oldest">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
   const [submitted, setSubmitted] = useState(false);
   const [canReview, setCanReview] = useState<"loading" | "yes" | "no" | "notlogged">("loading");
   const [form, setForm] = useState({ name: "", score: 8, text: "", tags: [] as string[], images: [] as string[] });
@@ -1227,7 +1201,7 @@ function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: strin
 
         <div className="flex items-center gap-2 mb-4">
           <span className="text-xs text-gray-400 font-semibold">Sắp xếp:</span>
-          {([ ["newest", "Mới nhất"], ["oldest", "Cũ nhất"] ] as const).map(([v, l]) => (
+          {([["newest", "Mới nhất"], ["oldest", "Cũ nhất"]] as const).map(([v, l]) => (
             <button key={v} onClick={() => setSortBy(v)}
               className={`text-xs font-semibold px-3 py-1.5 rounded-full border cursor-pointer transition-all ${sortBy === v ? "bg-orange-500 text-white border-orange-500" : "bg-white border-gray-200 text-gray-600 hover:border-orange-300"}`}>
               {l}
@@ -1294,9 +1268,9 @@ function RelatedTourCard({ tour }: { tour: RelatedTour }) {
 }
 
 function RelatedTours({ city, currentSlug }: { city: string; currentSlug: string }) {
-  const [tours, setTours]     = useState<RelatedTour[]>([]);
+  const [tours, setTours] = useState<RelatedTour[]>([]);
   const [loading, setLoading] = useState(true);
-  const scrollRef             = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("https://db-datn-six.vercel.app/api/tours")
@@ -1305,7 +1279,7 @@ function RelatedTours({ city, currentSlug }: { city: string; currentSlug: string
         if (!res.success || !Array.isArray(res.data)) return;
         setTours(res.data.filter((t: RelatedTour) => t.hotel_id?.city?.toLowerCase() === city.toLowerCase() && t.slug !== currentSlug).slice(0, 8));
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, [city, currentSlug]);
 
