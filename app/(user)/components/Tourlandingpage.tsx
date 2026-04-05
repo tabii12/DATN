@@ -106,15 +106,20 @@ export default function ToursLandingPage() {
   const [tours, setTours] = useState<TourAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [tripMap, setTripMap] = useState<Record<string, TripMin>>({});
+  const [saleIds, setSaleIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetch("https://db-datn-six.vercel.app/api/tours")
-      .then(r => r.json())
-      .then(async res => {
+    Promise.all([
+      fetch("https://db-datn-six.vercel.app/api/tours").then(r => r.json()),
+      fetch("https://db-datn-six.vercel.app/api/sales").then(r => r.json()).catch(() => ({ data: [] })),
+    ])
+      .then(async ([res, salesRes]) => {
         if (!res.success) return;
         const tourList: TourAPI[] = res.data;
+        const ids = new Set<string>((salesRes.data ?? []).map((s: any) => s.tour_id as string));
+        setSaleIds(ids);
         setTours(tourList);
-        setLoading(false); // ✅ show tours ngay, không chờ trips
+        setLoading(false);
 
         // Fetch trips sau — không ảnh hưởng loading
         try {
@@ -145,7 +150,8 @@ export default function ToursLandingPage() {
 
 
   // Nhóm tour
-  const dealTours = tours.slice(0, 4);
+  const saleTours = tours.filter(t => saleIds.has(t._id));
+  const dealTours = saleTours.length > 0 ? saleTours.slice(0, 4) : tours.slice(0, 4);
   const popularTours = tours.slice(0, 8);
 
   return (
@@ -171,7 +177,7 @@ export default function ToursLandingPage() {
                 <p className="text-xs text-gray-400 mt-0.5">Giá đặc biệt, số lượng có hạn</p>
               </div>
             </div>
-            <a href="/tours/search?q=" className="text-sm text-orange-500 font-semibold hover:underline no-underline">Xem tất cả →</a>
+            <a href="/tours/search?sale=1" className="text-sm text-orange-500 font-semibold hover:underline no-underline">Xem tất cả →</a>
           </div>
 
           {loading ? (

@@ -1,16 +1,154 @@
-Trẻ em ≤ số người lớn  → mỗi trẻ tính 50%
-Trẻ em > số người lớn  → phần vượt tính 100% (như người lớn)
+2NL+2TN: quota=1, free=1, paid=1, TN_paid = 2.195.000 = 4.39M/2 = base/22NL+3TN: quota=1, free=1, paid=2, TN_paid = 2.926.667 = 4.39M×2/33NL+3TN: quota=1, free=1, paid=2, TN_paid = 1.463.333 = 4.39M/3Pattern TN_paid:
 
-Tức là mỗi người lớn "bảo lãnh" 1 trẻ. Vượt quá thì trẻ đó cần tính full vì phải có chỗ ngủ riêng. Ví dụ:
-2 NL + 1 trẻ → 1 trẻ × 50%  
-2 NL + 2 trẻ → 2 trẻ × 50%  
-2 NL + 3 trẻ → 2 trẻ × 50% + 1 trẻ × 100%
-2 NL + 5 trẻ → 2 trẻ × 50% + 3 trẻ × 100%
+2NL, 1 paid: base/2 = base×1/(1+1)
+2NL, 2 paid: base×2/3 = base×2/(2+1)
+3NL, 2 paid: base/3 = base×1/(2+1)
+→ TN_price = base × NL / (TN_paid + NL)?
 
-Logic giờ chạy như này:
-Giá gốc: 1.800.000đ/người lớn
+2NL,1paid: 4.39×2/3=2.927 ✗
+2NL,1paid: 4.39×1/(1+1)=2.195 ✓
+2NL,2paid: 4.39×2/(2+1)=2.927 ✓
+3NL,2paid: 4.39×2/(2+1)... nhưng 3NL+3TN: quota=1,paid=2 → 4.39×2/3=2.927 ✗ phải 1.463
+3NL+3TN (quota=1,paid=2): 1.463 = 4.39/3 = base×TN_paid/(TN_paid×NL)?Thử: TN_price = base × TN_paid / (NL × TN_paid)... circular.Thử: TN_price = base / NL khi paid=2:
 
-2 NL + 1 trẻ  → 2×1.8tr + 1×900k             = 4.500.000đ  
-2 NL + 2 trẻ  → 2×1.8tr + 2×900k             = 5.400.000đ  
-2 NL + 3 trẻ  → 2×1.8tr + 2×900k + 1×1.8tr  = 7.200.000đ   (trẻ 3 tính full)
-1 NL + 3 trẻ  → 1×1.8tr + 1×900k + 2×1.8tr  = 6.300.000đ  (trẻ 2,3 tính full)
+2NL: 4.39/2=2.195 ✗ (phải 2.927 khi 2paid)
+Hmm. Thử tiếp:
+
+2NL,1paid: 2.195 = 4.39 × 1/2
+2NL,2paid: 2.927 = 4.39 × 2/3
+3NL,2paid: 1.463 = 4.39 × 1/3
+Tỉ lệ: 1/2, 2/3, 1/3 → numerator = TN_paid/(NL), denominator = TN_paid/(NL)+1?
+
+2NL,1paid: (1/2)/(1/2+1) = 0.5/1.5 = 1/3 ✗
+TN_price = base × TN_paid / (TN_paid + NL):
+
+2NL,1paid: 4.39×1/3=1.463 ✗
+2NL,2paid: 4.39×2/4=2.195 ✗
+3NL,2paid: 4.39×2/5=1.756 ✗
+TN_price = base / (NL/TN_paid + 1):
+
+2NL,1paid: 4.39/(2+1)=1.463 ✗
+Nhìn khác hoàn toàn — tổng TN_paid trả:
+
+2NL,1paid: 1×2.195=2.195 = base×1/2 = base×TN_paid/NL... =4.39×1/2 ✓
+2NL,2paid: 2×2.927=5.854 = base×4/3? ✗. = base×2×2/3=5.854... = base×TN_paid²/(TN_paid+1)?=4.39×4/3=5.853 ✓!
+3NL,2paid: 2×1.463=2.926 = base×2/3. = base×TN_paid²/(TN_paid+1)=4.39×4/3=5.853 ✗
+Tổng TN_paid = base × TN_paid / NL:
+
+2NL,1paid: 4.39×1/2=2.195 ✓
+2NL,2paid: 4.39×2/2=4.39 ✗ (thực=5.854)
+TN_price = base × TN_paid / (NL + TN_free):
+
+2NL,1paid,1free: 4.39×1/(2+1)=1.463 ✗
+TN_price = base / (NL - TN_free + 1):
+
+2NL,1free,1paid: 4.39/(2-1+1)=2.195 ✓
+2NL,1free,2paid: 4.39/(2-1+1)=2.195 ✗ (phải 2.927)
+NHÌN LẠI pattern:
+
+1paid: ×1/2 → 2=1+1
+2paid: ×2/3 → 3=2+1
+So: TN_price = base × TN_paid/(TN_paid+1) ??
+2NL,1paid: 4.39×1/2=2.195 ✓
+2NL,2paid: 4.39×2/3=2.927 ✓
+3NL,2paid: 4.39×2/3=2.927 ✗ phải 1.463!
+3NL+3TN: quota=floor(3/2)=1, free=1, paid=2. TN=1.463=4.39/3...Thử quota khác: quota=floor(NL/1)=NL=3 → free=3, paid=0? TN=0? Không phải.Hay quota = NL (không phải floor((NL+TE)/2)):
+
+2NL: quota=2. 2TN→2free=0đ. 3TN→2free+1paid.
+3NL+3TN: quota=3→3free=0đ... nhưng TN=1.463≠0
+Hay quota=floor(NL/2):
+
+2NL: quota=1. 3NL: quota=1.
+3NL+3TN: 1free,2paid. TN=base×TN_paid/(TN_paid+1)=4.39×2/3=2.927 ✗
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tóm tắt công thức ivivu đã giải mã chính xác qua 9 case verify:
+Quota trẻ nhỏ miễn phí = NL − 1 (không phải floor(NL/2) như trước)
+Giá trẻ em (5–9t) — động theo số lượng:
+Nếu TN_free ≥ TE  → 100% (TN đã chiếm hết slot của NL)
+Nếu TN_free < TE  → base × (1 − 1 / ((2×NL + 1) × TE))
+Với 2NL: 1TE→80%, 2TE→90%, 3TE→93.3%...
+Giá trẻ nhỏ vượt quota:
+TN_price = base × TN_paid / (TN_paid + TN_free)
+Tức là tổng tiền TN_paid chia đều cho TẤT CẢ TN (kể cả bé free), còn bé free thì NL bù hộ phần đó.
+
+
+
+
+
+
+
+
+
+
+Bây giờ tôi hiểu rõ pattern rồi! Để phân tích:
+
+2NL+2TE+1TN → TN=0, TE=4.39M (tăng lên 100%)
+2NL+2TE+2TN → TN=0, TE=4.39M (vẫn free)
+2NL+2TE+3TN → TN=1.463.333, TE=4.39M
+3NL+3TE+3TN → TN=0, TE=4.39M
+
+Quota TN_free = NL + TE (tổng NL và TE tạo slot cho TN)!
+
+2NL+2TE: quota=4 → 4TN free... nhưng 3TN vẫn có paid?
+
+Thử quota = NL + TE - 1:
+
+2NL+2TE: quota=3 → 3TN free → 2TN free ✓, 3TN=0 ✓, 4TN→1paid
+3NL+3TE: quota=5 → 5TN free → 3TN=0 ✓
+2NL+1TE: quota=2 → 2NL+1TE+1TN=free ✓, 2NL+1TE+2TN=free ✓, 2NL+1TE+3TN→1paid?
+
+Verify 2NL+2TE+3TN: quota=3, free=3, paid=0 → TN=0... nhưng thực tế TN=1.463.333≠0!
+Thử quota = NL:
+
+2NL: quota=2 → 2NL+2TE+2TN: free=2, paid=0 ✓; 2NL+2TE+3TN: free=2,paid=1
+paid=1: TN_price=1.463.333=base/3...
+3NL+3TE+3TN: quota=3,free=3,paid=0 ✓!
+2NL+0TE+1TN: quota=2,free=1... nhưng thực free=1 ✓ (chỉ 1 bé)
+2NL+0TE+2TN: quota=2,free=2→paid=0→TN=0... nhưng thực TN=2.195.000!
+Find exact quota formula with new data pointsFind exact quota formula with new data points13/13 ✅ Công thức hoàn toàn chính xác! Giờ update code:
+Công thức đúng:
+
+quota = ceil(NL/2) + floor(TE/2)
+TE = base khi có bất kỳ TN nào free (tnFree > 0)
+TE = base × (1 − 1/((2×NL+1)×TE)) khi không có TN nào
+Fix calcPrice with exact verified formulaFix calcPrice with exact verified formulaCũng fix phần hiển thị quota trong UI cho đúng:Fix quota display in UIFix quota display in UIVà fix info box quota cho gọn:Edited a file, read a fileEdited a file, read a file
+Công thức cuối cùng đã verify 13/13 case:
+quota_TN_free = ceil(NL/2) + floor(TE/2)
+NLTEQuota201211222302333
+Giá trẻ em — thay đổi theo TN:
+
+Khi tnFree > 0 (có bất kỳ TN nào miễn phí) → TE = 100% base
+Khi tnFree = 0 (không có TN) → TE = base × (1 − 1/((2×NL+1)×TE_count))
+
+Giá TN vượt quota = base × TN_paid / (TN_paid + TN_free)
+
+Công thức TE hoàn chỉnh giờ là:
+TE = 100%   khi:  tnFree > 0  (có TN nào đó miễn phí)
+TE = 100%   khi:  NL = 1      (chỉ 1 NL không đủ để giảm giá)
+TE = base × (1 − 1/((2×NL+1)×TE_count))   khi: NL ≥ 2 và không có TN free
+
+
+Quota TN miễn phí:
+quota = floor((NL+TE)/2)
+      + 1  nếu (NL lẻ ≥ 3 AND TE = 0)
+      − 1  nếu (NL = 1   AND TE lẻ)
+Giá trẻ em (TE):
+= 100%                           nếu tnFree > 0 hoặc NL = 1
+= base × (1 − 1/((2×NL+1)×TE)) nếu NL ≥ 2 và không có TN free
+Giá trẻ nhỏ vượt quota (TN_paid):
+= base / TN_total              nếu tnFree = 0 (không có bé nào free)
+= base × paid / (paid + free)  nếu tnFree > 0

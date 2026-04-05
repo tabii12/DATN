@@ -171,7 +171,7 @@ export default function HomePage() {
             <p className="text-sm text-gray-500 mt-0.5">Nhanh tay đặt ngay. Để mai sẽ lỡ</p>
           </div>
           <div className="flex items-center gap-3">
-            <a href="/combo" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:underline">
+            <a href="/tours/search?sale=1" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:underline">
               Xem tất cả
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
             </a>
@@ -189,9 +189,9 @@ export default function HomePage() {
         <div className="relative overflow-hidden rounded-2xl shadow-md cursor-pointer group">
           <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${slideIdx * 100}%)` }}>
             {combos.map(deal => (
-              <a key={deal.id} href={`/khach-san/${deal.slug}`} className="relative w-full shrink-0 h-56 md:h-72 block">
+              <a key={deal.id} href="/tours/search?sale=1" className="relative w-full shrink-0 h-56 md:h-72 block">
                 <img src={deal.image} alt={deal.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-linear-to-l from-black/80 via-black/40 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-l from-black/80 via-black/40 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-end justify-center pr-8 md:pr-14 text-right gap-1">
                   {deal.discount_percent > 0 && (
                     <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-1">
@@ -229,7 +229,7 @@ export default function HomePage() {
           {styles.map(style => (
             <a key={style.id} href={style.href} className="group relative rounded-2xl overflow-hidden h-48 block cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
               <img src={style.image} alt={style.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-              <div className={`absolute inset-0 bg-linear-to-t ${style.color} to-transparent`} />
+              <div className={`absolute inset-0 bg-gradient-to-t ${style.color} to-transparent`} />
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <h3 className="text-white font-bold text-base leading-tight">{style.title}</h3>
                 <p className="text-white/80 text-xs mt-0.5 line-clamp-2">{style.subtitle}</p>
@@ -249,51 +249,50 @@ export default function HomePage() {
             <h2 className="text-xl font-bold text-gray-900">Điểm đến yêu thích trong nước</h2>
             <p className="text-sm text-gray-500 mt-0.5">Lên rừng xuống biển. Trọn vẹn Việt Nam</p>
           </div>
+          <a href="/tours/search" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:underline">
+            Xem tất cả
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+          </a>
         </div>
 
         <div className="grid gap-2" style={{ gridTemplateColumns: "843fr 353fr", gridTemplateRows: "352px 352px 704px" }}>
           <a onClick={() => domestic[3] && handleRandomTourByCity(domestic[3].name)} className="relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm">
             <img src={domestic[3]?.image} alt={domestic[3]?.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-3 left-4">
               <p className="text-white font-bold text-lg">{domestic[3]?.name}</p>
-              <p className="text-white/70 text-xs">{domestic[3]?.hotel_count} khách sạn</p>
             </div>
           </a>
 
           <a onClick={() => domestic[2] && handleRandomTourByCity(domestic[2].name)} className="row-span-2 relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm">
             <img src={domestic[2]?.image} alt={domestic[2]?.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-3 left-4">
               <p className="text-white font-bold text-lg">{domestic[2]?.name}</p>
-              <p className="text-white/70 text-xs">{domestic[2]?.hotel_count} khách sạn</p>
             </div>
           </a>
 
           <a onClick={() => domestic[1] && handleRandomTourByCity(domestic[1].name)} className="relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm">
             <img src={domestic[1]?.image} alt={domestic[1]?.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-3 left-4">
               <p className="text-white font-bold text-lg">{domestic[1]?.name}</p>
-              <p className="text-white/70 text-xs">{domestic[1]?.hotel_count} khách sạn</p>
             </div>
           </a>
 
           <div className="col-span-2 grid grid-cols-2 gap-2">
             <a onClick={() => domestic[4] && handleRandomTourByCity(domestic[4].name)} className="relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm">
               <img src={domestic[4]?.image} alt={domestic[4]?.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-4">
                 <p className="text-white font-bold text-lg">{domestic[4]?.name}</p>
-                <p className="text-white/70 text-xs">{domestic[4]?.hotel_count} khách sạn</p>
               </div>
             </a>
             <a onClick={() => domestic[0] && handleRandomTourByCity(domestic[0].name)} className="relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm">
               <img src={domestic[0]?.image} alt={domestic[0]?.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-4">
                 <p className="text-white font-bold text-lg">{domestic[0]?.name}</p>
-                <p className="text-white/70 text-xs">{domestic[0]?.hotel_count} khách sạn</p>
               </div>
             </a>
           </div>
