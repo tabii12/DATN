@@ -1,77 +1,115 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface Booking {
-  _id: string;
-  payment_status: string;
-  user?: {
-    name: string;
-  };
-  tour?: {
-    name: string;
-  };
+  id: string;
+  customerName: string;
+  email: string;
+  phone: string;
+  tourName: string;
+  departureDate: string;
+  adults: number; // người lớn
+  children: number; // trẻ em
+  price: number; // giá mỗi người lớn
+  childPrice: number; // giá trẻ em
+  paymentStatus: "paid" | "deposit";
 }
 
-export default function AdminBookings() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+const mockData: Booking[] = [
+  {
+    id: "1",
+    customerName: "Phạm Trung Dương",
+    email: "duong@gmail.com",
+    phone: "0901234567",
+    tourName: "Tour Đà Nẵng 3N2Đ",
+    departureDate: "2026-05-10",
+    adults: 2,
+    children: 1,
+    price: 3500000,
+    childPrice: 2000000,
+    paymentStatus: "paid",
+  },
+  {
+    id: "2",
+    customerName: "Nguyễn Thị Phương Thảo",
+    email: "thithao@gmail.com",
+    phone: "0912345678",
+    tourName: "Tour Phú Quốc 4N3Đ",
+    departureDate: "2026-06-15",
+    adults: 3,
+    children: 1,
+    price: 5200000,
+    childPrice: 3000000,
+    paymentStatus: "deposit",
+  },
+];
 
-  useEffect(() => {
-    fetch("https://db-datn-six.vercel.app/api/bookings/admin/all", {
-      headers: {
-        Authorization: "Bearer TOKEN_ADMIN",
-      },
-    })
-      .then(res => res.json())
-      .then(data => setBookings(data.data || []));
-  }, []);
+const formatCurrency = (value: number) =>
+  value.toLocaleString("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  });
 
-  const confirmPayment = async (id: string) => {
-    await fetch(
-      `https://db-datn-six.vercel.app/api/bookings/admin/${id}/confirm-payment`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: "Bearer TOKEN_ADMIN",
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    alert("Đã xác nhận thanh toán");
-  };
+export default function BookingPage() {
+  const [bookings] = useState<Booking[]>(mockData);
 
   return (
-    <div>
-      <h1 className="text-xl font-bold mb-4">📄 Quản lý Booking</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">📄 Danh sách Booking Tour</h1>
 
-      <table className="w-full bg-white rounded shadow">
-        <thead className="bg-gray-100 text-left">
-          <tr>
-            <th className="p-3">Khách</th>
-            <th>Tour</th>
-            <th>Trạng thái</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {bookings.map((b) => (
-            <tr key={b._id} className="border-t">
-              <td className="p-3">{b.user?.name}</td>
-              <td>{b.tour?.name}</td>
-              <td>{b.payment_status}</td>
-              <td>
-                {b.payment_status !== "paid" && (
-                  <button
-                    onClick={() => confirmPayment(b._id)}
-                    className="bg-green-600 text-white px-3 py-1 rounded"
-                  >
-                    Xác nhận
-                  </button>
-                )}
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full bg-white rounded-2xl shadow">
+          <thead className="bg-gray-100 text-left">
+            <tr>
+              <th className="p-3">Khách hàng</th>
+              <th>Email</th>
+              <th>SĐT</th>
+              <th>Tour</th>
+              <th>Ngày đi</th>
+              <th>Số người</th>
+              <th>Tổng tiền</th>
+              <th>Trạng thái</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {bookings.map((b) => {
+              const total = b.adults * b.price + b.children * b.childPrice;
+              return (
+                <tr key={b.id} className="border-t hover:bg-gray-50">
+                  <td className="p-3 font-medium">{b.customerName}</td>
+                  <td>{b.email}</td>
+                  <td>{b.phone}</td>
+                  <td>{b.tourName}</td>
+                  <td>{b.departureDate}</td>
+
+                  {/* số người chi tiết */}
+                  <td>
+                    <div className="text-sm">
+                      <div>👨‍🦰 Người lớn: {b.adults}</div>
+                      <div>🧒 Trẻ em: {b.children}</div>
+                    </div>
+                  </td>
+
+                  <td className="font-semibold">{formatCurrency(total)}</td>
+
+                  <td>
+                    {b.paymentStatus === "paid" ? (
+                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                        Đã thanh toán 100%
+                      </span>
+                    ) : (
+                      <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">
+                        Đã cọc 50%
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
