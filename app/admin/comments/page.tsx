@@ -26,6 +26,23 @@ interface Tour {
   name: string;
 }
 
+const testComments: Comment[] = [
+  {
+    _id: "test-comment-1",
+    tour_id: "tour-demo",
+    user_id: "user-test-1",
+    user_name: "Nguyễn Văn A",
+    user_email: "nguyenvana@example.com",
+    rating: 4,
+    title: "Tour rất thú vị",
+    content: "Tôi rất hài lòng với dịch vụ và hướng dẫn viên nhiệt tình. Khung cảnh đẹp và lịch trình phù hợp.",
+    likes: 12,
+    status: "pending",
+    createdAt: "2026-04-04T10:30:00.000Z",
+    updatedAt: "2026-04-04T10:30:00.000Z",
+  },
+];
+
 function StarRating({ count }: { count: number }) {
   return (
     <div className="flex gap-0.5">
@@ -74,8 +91,11 @@ function StatCard({
 }
 
 export default function AdminComments() {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [tours, setTours] = useState<Map<string, string>>(new Map());
+  const [comments, setComments] = useState<Comment[]>(testComments);
+  const [tours, setTours] = useState<Map<string, string>>(new Map([[
+    "tour-demo",
+    "Tour thử nghiệm",
+  ]]));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "rejected">("pending");
@@ -111,10 +131,10 @@ export default function AdminComments() {
       }
 
       const data = await response.json();
-      setComments(data.data || []);
+      setComments(data.data && data.data.length > 0 ? data.data : testComments);
 
       // Tải thông tin tour
-      const tourMap = new Map<string, string>();
+      const tourMap = new Map<string, string>([["tour-demo", "Tour thử nghiệm"]]);
       for (const comment of data.data || []) {
         if (!tourMap.has(comment.tour_id)) {
           try {
