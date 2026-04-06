@@ -45,7 +45,7 @@ function SearchContent() {
     );
   }
 
-  // ===== CODE CŨ CỦA BẠN =====
+ 
   const tourName = data.tourName ?? "";
   const hotelName = data.hotelName ?? "";
   const city = data.city ?? "";
@@ -64,7 +64,7 @@ function SearchContent() {
   const INSURANCE = 500000;
   const total = subtotalAdults + subtotalChildren + INSURANCE;
 
-  // ===== ✅ PHẦN THÊM (KHÔNG SỬA CODE CŨ) =====
+
   const paymentPct = parseInt(data.paymentPct ?? "100");
   const payNow = parseInt(data.payNow ?? "0");
   const remaining = parseInt(data.remaining ?? "0");
