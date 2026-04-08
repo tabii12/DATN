@@ -42,6 +42,12 @@ export default function AdminLayout({
             📄 Bookings
           </Link>
           <Link
+            href="/admin/contacts"
+            className="block px-3 py-2 rounded hover:bg-blue-700"
+          >
+            📧 Liên hệ
+          </Link>
+          <Link
             href="/admin/blogs"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >

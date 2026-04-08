@@ -24,9 +24,10 @@ const HO_TRO = [
 
 function InfoLink({ label, id }: { label: string; id: string | null }) {
   if (!id) return <span className="text-gray-500 cursor-not-allowed">{label}</span>;
+  const href = id === "ho-tro-lien-he" ? "/contact" : `/info?section=${id}`;
   return (
     <Link
-      href={`/info?section=${id}`}
+      href={href}
       className="hover:text-white transition-colors no-underline"
     >
       {label}

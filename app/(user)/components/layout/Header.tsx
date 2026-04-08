@@ -7,6 +7,7 @@ import UserDropdown from "../UserDropdown";
 const NAV_LINKS = [
   { href: "/", label: "Trang Chủ" },
   { href: "/tours", label: "Tours" },
+  { href: "/contact", label: "Liên hệ" },
   { href: "/info", label: "Giới thiệu" },
   { href: "/blogs", label: "Tin tức" },
 ];

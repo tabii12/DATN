@@ -127,7 +127,7 @@ export default function AdminComments() {
       );
 
       if (!response.ok) {
-        throw new Error("Lỗi khi tải bình luận");
+        throw new Error("Lỗi khi tải đánh giá");
       }
 
       const data = await response.json();
@@ -159,7 +159,7 @@ export default function AdminComments() {
       setTours(tourMap);
     } catch (err) {
       console.error("Lỗi:", err);
-      setError("Không thể tải bình luận");
+      setError("Không thể tải đánh giá");
     } finally {
       setLoading(false);
     }
@@ -192,10 +192,10 @@ export default function AdminComments() {
         )
       );
 
-      alert("✅ Bình luận đã được phê duyệt");
+      alert("✅ đánh giá đã được phê duyệt");
     } catch (err) {
       console.error("Lỗi:", err);
-      alert("❌ Lỗi khi phê duyệt bình luận");
+      alert("❌ Lỗi khi phê duyệt đánh giá");
     } finally {
       setProcessingId(null);
     }
@@ -227,17 +227,17 @@ export default function AdminComments() {
         )
       );
 
-      alert("✅ Bình luận đã bị từ chối");
+      alert("✅ đánh giá đã bị từ chối");
     } catch (err) {
       console.error("Lỗi:", err);
-      alert("❌ Lỗi khi từ chối bình luận");
+      alert("❌ Lỗi khi từ chối đánh giá");
     } finally {
       setProcessingId(null);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa bình luận này?")) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa đánh giá này?")) return;
 
     setProcessingId(id);
     try {
@@ -258,10 +258,10 @@ export default function AdminComments() {
       }
 
       setComments(comments.filter((c) => c._id !== id));
-      alert("✅ Bình luận đã bị xóa");
+      alert("✅ đánh giá đã bị xóa");
     } catch (err) {
       console.error("Lỗi:", err);
-      alert("❌ Lỗi khi xóa bình luận");
+      alert("❌ Lỗi khi xóa đánh giá");
     } finally {
       setProcessingId(null);
     }
@@ -297,7 +297,7 @@ export default function AdminComments() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-          <p className="text-gray-600 mt-2">Đang tải bình luận...</p>
+          <p className="text-gray-600 mt-2">Đang tải đánh giá...</p>
         </div>
       </div>
     );
@@ -309,10 +309,10 @@ export default function AdminComments() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            💬 Quản lý bình luận tour
+            💬 Quản lý đánh giá tour
           </h1>
           <p className="text-gray-600">
-            Duyệt, phê duyệt và quản lý tất cả bình luận từ khách hàng
+            Duyệt, phê duyệt và quản lý tất cả đánh giá từ khách hàng
           </p>
         </div>
 
@@ -389,7 +389,7 @@ export default function AdminComments() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {filteredComments.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              <p>Không tìm thấy bình luận nào</p>
+              <p>Không tìm thấy đánh giá nào</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -551,7 +551,7 @@ export default function AdminComments() {
                   </span>
                 </p>
                 <p>
-                  <span className="font-semibold">Ngày bình luận:</span>{" "}
+                  <span className="font-semibold">Ngày dánh giá:</span>{" "}
                   {formatDate(selectedComment.createdAt)}
                 </p>
                 <p>
