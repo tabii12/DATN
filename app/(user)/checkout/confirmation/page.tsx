@@ -71,29 +71,41 @@ function SearchContent() {
       // Lưu booking vào DB với VNPay info
       const saveBooking = async () => {
         try {
-          const res = await fetch(
-            "https://db-pickyourway.vercel.app/api/bookings/create",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-              body: JSON.stringify({
-                ...bookingData,
-                vnpay: {
-                  responseCode: vnpResponseCode,
-                  txnRef: vnpTxnRef,
-                  transactionNo: vnpTransactionNo,
-                  bankCode: vnpBankCode,
-                  amount: paymentAmount,
-                  params: vnpParams,
+            // ✅ Lấy vnpay_result từ localStorage
+            const vnpayResultRaw = localStorage.getItem("vnpay_result");
+            let vnpayResult = null;
+            if (vnpayResultRaw) {
+              try {
+                vnpayResult = JSON.parse(vnpayResultRaw);
+              } catch(e) {
+                console.error("Parse vnpay_result failed");
+              }
+            }
+            
+            const res = await fetch(
+              "https://db-pickyourway.vercel.app/api/bookings/create",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
-                paymentStatus: "PAID",
-                orderId: vnpTxnRef,
-              }),
-            },
-          );
+                body: JSON.stringify({
+                  ...bookingData,
+                  vnpay: {
+                    ...vnpayResult,  // ✅ FULL vnpay_result từ LS
+                    responseCode: vnpResponseCode,
+                    txnRef: vnpTxnRef,
+                    transactionNo: vnpTransactionNo,
+                    bankCode: vnpBankCode,
+                    amount: paymentAmount,
+                    params: vnpParams,
+                  },
+                  paymentStatus: "PAID",
+                  orderId: vnpTxnRef,
+                }),
+              },
+            );
 
           if (res.ok) {
             localStorage.removeItem("tour_booking"); // Clear temp data
