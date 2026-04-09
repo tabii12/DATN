@@ -37,7 +37,7 @@ function SearchContent() {
   // ✅ PRIORITY: bookingData từ searchParams (checkout pass full data)
   let bookingDataRaw = searchParams.get("bookingData");
   let bookingData = null;
-  
+
   if (bookingDataRaw) {
     try {
       bookingData = JSON.parse(bookingDataRaw);
@@ -45,13 +45,13 @@ function SearchContent() {
       console.error("Parse bookingData failed:", e);
     }
   }
-  
+
   // Fallback 1: localStorage (old flow)
   if (!bookingData) {
     const localRaw = localStorage.getItem("tour_booking");
     if (localRaw) bookingData = JSON.parse(localRaw);
   }
-  
+
   // Fallback 2: VNPay orderInfo
   if (!bookingData) {
     const orderInfo = searchParams.get("vnp_OrderInfo");
@@ -71,41 +71,40 @@ function SearchContent() {
       // Lưu booking vào DB với VNPay info
       const saveBooking = async () => {
         try {
-            // ✅ Lấy vnpay_result từ localStorage
-            const vnpayResultRaw = localStorage.getItem("vnpay_result");
-            let vnpayResult = null;
-            if (vnpayResultRaw) {
-              try {
-                vnpayResult = JSON.parse(vnpayResultRaw);
-              } catch(e) {
-                console.error("Parse vnpay_result failed");
-              }
+          // ✅ Lấy vnpay_result từ localStorage
+          const vnpayResultRaw = localStorage.getItem("vnpay_result");
+          let vnpayResult = null;
+          if (vnpayResultRaw) {
+            try {
+              vnpayResult = JSON.parse(vnpayResultRaw);
+            } catch (e) {
+              console.error("Parse vnpay_result failed");
             }
-            
-            const res = await fetch(
-              "https://db-pickyourway.vercel.app/api/bookings",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-                body: JSON.stringify({
-                  ...bookingData,
-                  vnpay: {
-                    ...vnpayResult,  // ✅ FULL vnpay_result từ LS
-                    responseCode: vnpResponseCode,
-                    txnRef: vnpTxnRef,
-                    transactionNo: vnpTransactionNo,
-                    bankCode: vnpBankCode,
-                    amount: paymentAmount,
-                    params: vnpParams,
-                  },
-                  paymentStatus: "paid",
-                  orderId: vnpTxnRef,
-                }),
+          }
+
+          const res = await fetch(
+            "https://db-pickyourway.vercel.app/api/bookings",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
               },
-            );
+              body: JSON.stringify({
+                ...bookingData,
+                vnpay: {
+                  ...vnpayResult, // ✅ FULL vnpay_result từ LS
+                  responseCode: vnpResponseCode,
+                  txnRef: vnpTxnRef,
+                  transactionNo: vnpTransactionNo,
+                  bankCode: vnpBankCode,
+                  amount: paymentAmount,
+                  params: vnpParams,
+                },
+                orderId: vnpTxnRef,
+              }),
+            },
+          );
 
           if (res.ok) {
             localStorage.removeItem("tour_booking"); // Clear temp data
