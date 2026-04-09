@@ -83,7 +83,7 @@ function SearchContent() {
             }
             
             const res = await fetch(
-              "https://db-pickyourway.vercel.app/api/bookings/create",
+              "https://db-pickyourway.vercel.app/api/bookings",
               {
                 method: "POST",
                 headers: {
