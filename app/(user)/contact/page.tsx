@@ -8,6 +8,7 @@ interface TourOption {
 }
 
 interface ContactForm {
+  userId?: string;
   name: string;
   email: string;
   phone: string;
@@ -57,7 +58,7 @@ export default function ContactPage() {
     loadTours();
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     const loadUser = () => {
       const userString = localStorage.getItem("user");
       if (!userString) return;
@@ -66,6 +67,7 @@ export default function ContactPage() {
         const storedUser = JSON.parse(userString);
         setForm((prev) => ({
           ...prev,
+          userId: storedUser._id || storedUser.id || storedUser.userId || prev.userId,
           name: storedUser.name || prev.name,
           email: storedUser.email || prev.email,
           phone: storedUser.phone || storedUser.phoneNumber || prev.phone,
@@ -271,7 +273,7 @@ export default function ContactPage() {
               <li className="flex gap-3"><span className="text-orange-500">•</span> Tư vấn chọn tour phù hợp</li>
               <li className="flex gap-3"><span className="text-orange-500">•</span> Hỗ trợ đặt tour nhanh chóng</li>
               <li className="flex gap-3"><span className="text-orange-500">•</span> Giải đáp thắc mắc bảo hiểm & thanh toán</li>
-              <li className="flex gap-3"><span className="text-orange-500">•</span> Cam kết phản hồi trong 2 giờ</li>
+              <li className="flex gap-3"><span className="text-orange-500">•</span> Cam kết phản hồi trong 24 giờ</li>
             </ul>
           </div>
         </aside>

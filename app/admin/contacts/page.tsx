@@ -15,6 +15,7 @@ interface ContactRecord {
 
 export default function AdminContacts() {
   const [contacts, setContacts] = useState<ContactRecord[]>([]);
+  const [selectedContact, setSelectedContact] = useState<ContactRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -59,7 +60,8 @@ export default function AdminContacts() {
               <tr>
                 <th className="px-4 py-4">Khách hàng</th>
                 <th className="px-4 py-4">Tour</th>
-                <th className="px-4 py-4">Email / Phone</th>
+                <th className="px-4 py-4">Email</th>
+                <th className="px-4 py-4">Phone</th>
                 <th className="px-4 py-4">Nội dung</th>
                 <th className="px-4 py-4">Ngày gửi</th>
               </tr>
@@ -88,17 +90,25 @@ export default function AdminContacts() {
                   <tr key={contact._id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-4 align-top">
                       <p className="font-semibold text-slate-900">{contact.name}</p>
-                      <p className="text-xs text-slate-500">{contact.email}</p>
                     </td>
                     <td className="px-4 py-4 align-top">
                       <p className="font-medium text-slate-800">{contact.tourName || "Không chọn tour"}</p>
-                      {contact.tour && <p className="text-xs text-slate-500">ID: {contact.tour}</p>}
                     </td>
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-4 py-4 align-top text-slate-600 break-words">
+                      <p>{contact.email}</p>
+                    </td>
+                    <td className="px-4 py-4 align-top text-slate-600 break-words">
                       <p>{contact.phone || "Chưa có"}</p>
                     </td>
-                    <td className="px-4 py-4 align-top text-slate-600">
-                      <p className="line-clamp-3 max-w-[320px]">{contact.message}</p>
+                    <td className="px-4 py-4 align-top text-slate-600 max-w-[320px]">
+                      <p className="line-clamp-3 overflow-hidden">{contact.message}</p>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedContact(contact)}
+                        className="mt-2 inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-600 hover:bg-slate-100"
+                      >
+                        Xem thêm
+                      </button>
                     </td>
                     <td className="px-4 py-4 align-top text-slate-500 text-xs">
                       {new Date(contact.createdAt).toLocaleString("vi-VN")}
@@ -110,6 +120,45 @@ export default function AdminContacts() {
           </table>
         </div>
       </div>
+
+      {selectedContact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Nội dung liên hệ</h2>
+                <p className="text-sm text-slate-500">{selectedContact.name} · {selectedContact.email}</p>
+              </div>
+              <button
+                onClick={() => setSelectedContact(null)}
+                className="rounded-full bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
+              >
+                Đóng
+              </button>
+            </div>
+            <div className="mt-5 space-y-4 text-sm text-slate-700">
+              <div>
+                <p className="font-semibold text-slate-800">Tour</p>
+                <p>{selectedContact.tourName || "Không chọn tour"}</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800">Nội dung</p>
+                <p className="whitespace-pre-line break-words text-slate-700">{selectedContact.message}</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="font-semibold text-slate-800">Email</p>
+                  <p>{selectedContact.email}</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-800">Phone</p>
+                  <p>{selectedContact.phone || "Chưa có"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

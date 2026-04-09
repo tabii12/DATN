@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 
 interface ContactItem {
   _id: string;
+  userId?: string;
   name: string;
   email: string;
   phone: string;
@@ -21,7 +22,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, phone, tour, tourName, message } = body;
+    const { userId, name, email, phone, tour, tourName, message } = body;
 
     if (!name || !email || !message) {
       return NextResponse.json(
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     const contact: ContactItem = {
       _id: randomUUID(),
+      userId: userId || undefined,
       name: String(name).trim(),
       email: String(email).trim(),
       phone: String(phone || "").trim(),
@@ -46,31 +48,8 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("Lỗi API liên hệ:", err);
     return NextResponse.json(
-      { success: false, error: "Lỗi nội bộ máy chủ." },
+      { success: false, error: "Lỗi máy chủ." },
       { status: 500 }
     );
   }
-}
-
-export async function DELETE(req: NextRequest) {
-  const url = new URL(req.url);
-  const id = url.searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json(
-      { success: false, error: "Thiếu id cần xoá." },
-      { status: 400 }
-    );
-  }
-
-  const index = CONTACTS.findIndex((item) => item._id === id);
-  if (index === -1) {
-    return NextResponse.json(
-      { success: false, error: "Không tìm thấy liên hệ." },
-      { status: 404 }
-    );
-  }
-
-  CONTACTS.splice(index, 1);
-  return NextResponse.json({ success: true });
 }

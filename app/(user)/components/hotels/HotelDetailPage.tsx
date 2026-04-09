@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import FavoriteButton from "./FavoriteButton";
+import CommentForm from "../CommentForm";
+import CommentsDisplay from "../CommentsDisplay";
 
 // ─────────────────────────── TYPES ───────────────────────────
 
@@ -280,6 +282,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const [activeImg, setActiveImg] = useState(0);
   const [openDay, setOpenDay] = useState<number | null>(0);
   const [showAllTrips, setShowAllTrips] = useState(false);
+  const [commentRefresh, setCommentRefresh] = useState(0);
 
   // ── Booking state ──
   const [adults, setAdults] = useState(2);
@@ -863,7 +866,10 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
       {/* Review */}
       <div ref={reviewRef}>
-        <ReviewSection hotelName={hotel.name} tourId={tour._id} />
+        <CommentsDisplay tourId={tour._id} tourName={tour.name} refreshTrigger={commentRefresh} />
+        <div className="mt-6">
+          <CommentForm tourId={tour._id} tourName={tour.name} onCommentAdded={() => setCommentRefresh((prev) => prev + 1)} />
+        </div>
       </div>
 
       {/* Related */}
