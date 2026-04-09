@@ -52,7 +52,7 @@ export default function AdminTours() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`${API}/tours/admin`)
+    fetch(`${API}/tours/admin?page=1&limit=1000`)
       .then((r) => r.json())
       .then((d) => setTours(d.data || []))
       .catch(() => {})
@@ -316,16 +316,10 @@ export default function AdminTours() {
                           Sửa chi tiết
                         </button>
                         <button
-                          onClick={() => openEdit(t)}
+                          onClick={() => router.push(`/admin/tours/${t.slug}?tab=trips`)}
                           className="text-xs font-semibold text-gray-500 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors"
                         >
-                          Nhanh
-                        </button>
-                        <button
-                          onClick={() => deleteTour(t._id)}
-                          className="text-xs font-semibold text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors"
-                        >
-                          Xoá
+                          Chuyến đi
                         </button>
                       </div>
                     </td>
@@ -387,16 +381,16 @@ export default function AdminTours() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-base font-black text-gray-900">
-                ✏️ Sửa nhanh
+                ✏️ Sửa chuyến đi
               </h2>
               <p className="text-xs text-gray-400 truncate mt-0.5">
-                {editingTour.name}
+                Chuyến đi hiện tại: {editingTour.name}
               </p>
             </div>
             <div className="px-6 py-5 space-y-4">
               <div>
                 <label className="text-xs font-semibold text-gray-500 block mb-1.5">
-                  Tên tour
+                  Tên chuyến đi
                 </label>
                 <input
                   value={editName}

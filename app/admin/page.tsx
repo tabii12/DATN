@@ -132,7 +132,7 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<"overview" | "tours">("overview");
 
   useEffect(() => {
-    fetch(`${API}/tours`)
+    fetch(`${API}/tours/admin?page=1&limit=1000`)
       .then(r => r.json())
       .then(res => { if (res.success) setTours(res.data || []); })
       .catch(() => { })
