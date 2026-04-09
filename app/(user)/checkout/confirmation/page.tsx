@@ -34,22 +34,33 @@ function SearchContent() {
     }
   }, [searchParams]);
 
-  // Lấy booking data (ưu tiên từ VNPay txnRef)
-  const bookingData = (() => {
-    // 1. Thử từ localStorage tour_booking (old flow)
-    let data = localStorage.getItem("tour_booking");
-    if (data) return JSON.parse(data);
-
-    // 2. Fallback từ VNPay order info (parse từ vnp_OrderInfo)
+  // ✅ PRIORITY: bookingData từ searchParams (checkout pass full data)
+  let bookingDataRaw = searchParams.get("bookingData");
+  let bookingData = null;
+  
+  if (bookingDataRaw) {
+    try {
+      bookingData = JSON.parse(bookingDataRaw);
+    } catch (e) {
+      console.error("Parse bookingData failed:", e);
+    }
+  }
+  
+  // Fallback 1: localStorage (old flow)
+  if (!bookingData) {
+    const localRaw = localStorage.getItem("tour_booking");
+    if (localRaw) bookingData = JSON.parse(localRaw);
+  }
+  
+  // Fallback 2: VNPay orderInfo
+  if (!bookingData) {
     const orderInfo = searchParams.get("vnp_OrderInfo");
     if (orderInfo) {
       try {
-        return JSON.parse(decodeURIComponent(orderInfo));
+        bookingData = JSON.parse(decodeURIComponent(orderInfo));
       } catch {}
     }
-
-    return null;
-  })();
+  }
 
   // Xác định trạng thái thanh toán
   const isSuccess = vnpResponseCode === "00" && status === "success";

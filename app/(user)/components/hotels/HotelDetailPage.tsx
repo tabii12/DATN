@@ -363,24 +363,30 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     if (!selectedTripId) return;
     const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("token");
     const trip = departureDates.find((t) => t._id === selectedTripId);
-    const params = new URLSearchParams({
+    
+    // ✅ SAVE TO LOCALSTORAGE
+    const bookingData = {
+      trip_id: selectedTripId,
+      adults,
+      children,
+      infants,
+      singleRooms: pricing.singleRooms,
+      tourSlug: slug,
       tourName: tour?.name ?? "",
       hotelName: tour?.hotel_id?.name ?? "",
       city: tour?.hotel_id?.city ?? "",
       thumbnail: tour?.images?.[0]?.image_url ?? "",
-      tourSlug: slug,
-      pricePerAdult: String(basePrice),
-      pricePerChild: String(Math.round(pricing.childPrice)),
-      adults: String(adults),
-      children: String(children),
-      infants: String(infants),
+      basePrice,
+      grandTotal: pricing.grandTotal,
       departureDate: trip ? new Date(trip.start_date).toLocaleDateString("vi-VN") : "",
-      singleRooms: String(pricing.singleRooms),
-      singleSupplement: String(pricing.singleSupplement),
-      totalPrice: String(pricing.grandTotal),
-      rooms: String(pricing.totalRooms),
+    };
+    localStorage.setItem("tour_booking", JSON.stringify(bookingData));
+    
+    const params = new URLSearchParams({
+      tourSlug: slug,  // Chỉ cần slug để identify
     });
     const checkoutUrl = `/checkout?${params.toString()}`;
+    
     if (!isLoggedIn) {
       const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
       router.push(`/auth/login?redirect=${encodeURIComponent(currentUrl)}`);

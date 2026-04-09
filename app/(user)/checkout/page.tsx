@@ -49,15 +49,23 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const tourName = searchParams.get("tourName") ?? "";
-  const hotelName = searchParams.get("hotelName") ?? "";
-  const city = searchParams.get("city") ?? "";
-  const thumbnail = searchParams.get("thumbnail") ?? "";
-  const tourSlug = searchParams.get("tourSlug") ?? "";
-  const pricePerAdult = parseInt(searchParams.get("pricePerAdult") ?? "0");
+  // ✅ READ LOCALSTORAGE
+  const rawBooking = localStorage.getItem("tour_booking");
+  const bookingData = rawBooking ? JSON.parse(rawBooking) : {};
+  
+  const tourName = bookingData.tourName ?? searchParams.get("tourName") ?? "";
+  const hotelName = bookingData.hotelName ?? searchParams.get("hotelName") ?? "";
+  const city = bookingData.city ?? searchParams.get("city") ?? "";
+  const thumbnail = bookingData.thumbnail ?? searchParams.get("thumbnail") ?? "";
+  const tourSlug = bookingData.tourSlug ?? searchParams.get("tourSlug") ?? "";
+  const pricePerAdult = parseInt(bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0");
   const pricePerChild = parseInt(searchParams.get("pricePerChild") ?? "0");
-  const adults = parseInt(searchParams.get("adults") ?? "1");
-  const children = parseInt(searchParams.get("children") ?? "0");
+  const adults = parseInt(bookingData.adults ?? searchParams.get("adults") ?? "1");
+  const children = parseInt(bookingData.children ?? searchParams.get("children") ?? "0");
+  const infants = parseInt(bookingData.infants ?? "0");
+  const trip_id = bookingData.trip_id ?? "";
+  const singleRooms = parseInt(bookingData.singleRooms ?? "0");
+  const grandTotal = parseInt(bookingData.grandTotal ?? "0");
 
   const [form, setForm] = useState({
     name: "",
@@ -118,7 +126,21 @@ function SearchContent() {
     setErrors(newErrors);
     if (Object.values(newErrors).some(Boolean)) return;
 
+    // ✅ PASS FULL BOOKING DATA
+    const fullBooking = {
+      ...bookingData,  // trip_id, adults, children, infants, singleRooms, grandTotal
+      contactName: form.name,
+      contactEmail: form.email,
+      contactPhone: form.phone,
+      paymentPct,
+      payNow,
+      remaining,
+      total,  // full price including insurance
+    };
+    
     const params = new URLSearchParams({
+      bookingData: JSON.stringify(fullBooking),
+      // Fallback individual params
       tourName,
       hotelName,
       city,
