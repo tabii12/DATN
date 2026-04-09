@@ -18,22 +18,77 @@ function SearchContent() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
 
+// Parse tất cả VNPay params từ callback
+  const vnpParams = Object.fromEntries(searchParams.entries());
+  const vnpResponseCode = searchParams.get('vnp_ResponseCode');
+  const vnpTxnRef = searchParams.get('vnp_TxnRef');
+  const vnpAmount = searchParams.get('vnp_Amount');
+  const vnpTransactionNo = searchParams.get('vnp_TransactionNo');
+  const vnpBankCode = searchParams.get('vnp_BankCode');
+  const status = searchParams.get('status') || 'unknown';
+  
   useEffect(() => {
-    if (searchParams.toString()) {
-      const obj: any = {};
-      searchParams.forEach((value, key) => {
-        obj[key] = value;
-      });
-
-      setData(obj);
-      localStorage.setItem("tour_booking", JSON.stringify(obj));
-    } else {
-      const saved = localStorage.getItem("tour_booking");
-      if (saved) {
-        setData(JSON.parse(saved));
-      }
+    // Lưu VNPay info vào localStorage để dùng ngay
+    if (vnpTxnRef) {
+      localStorage.setItem('vnpay_result', JSON.stringify(vnpParams));
     }
   }, [searchParams]);
+
+  // Lấy booking data (ưu tiên từ VNPay txnRef)
+  const bookingData = (() => {
+    // 1. Thử từ localStorage tour_booking (old flow)
+    let data = localStorage.getItem('tour_booking');
+    if (data) return JSON.parse(data);
+    
+    // 2. Fallback từ VNPay order info (parse từ vnp_OrderInfo)
+    const orderInfo = searchParams.get('vnp_OrderInfo');
+    if (orderInfo) {
+      try {
+        return JSON.parse(decodeURIComponent(orderInfo));
+      } catch {}
+    }
+    
+    return null;
+  })();
+
+  // Xác định trạng thái thanh toán
+  const isSuccess = vnpResponseCode === '00' && status === 'success';
+  const paymentAmount = vnpAmount ? parseInt(vnpAmount) / 100 : 0; // VNPay chia 100
+
+  useEffect(() => {
+    if (isSuccess && bookingData && vnpTxnRef) {
+      // Lưu booking vào DB với VNPay info
+      const saveBooking = async () => {
+        try {
+          const res = await fetch('/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...bookingData,
+              vnpay: {
+                responseCode: vnpResponseCode,
+                txnRef: vnpTxnRef,
+                transactionNo: vnpTransactionNo,
+                bankCode: vnpBankCode,
+                amount: paymentAmount,
+                params: vnpParams
+              },
+              paymentStatus: 'PAID',
+              orderId: vnpTxnRef
+            })
+          });
+          
+          if (res.ok) {
+            localStorage.removeItem('tour_booking'); // Clear temp data
+            setData({ ...bookingData, vnpay: vnpParams });
+          }
+        } catch (error) {
+          console.error('Lưu booking failed:', error);
+        }
+      };
+      saveBooking();
+    }
+  }, [isSuccess, bookingData, vnpTxnRef]);
 
   if (!data) {
     return (
