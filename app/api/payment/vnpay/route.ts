@@ -9,7 +9,7 @@ const VNP_HASH_SECRET = "MT2SFAQ1GR8B26P4F0RKNFAC1UOHY9PO";
 // ══════════════════════════════════════════════
 
 const VNP_URL = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-const VNP_RETURN_URL = process.env.NEXT_PUBLIC_BASE_URL + "/checkout/vnpay-return";
+const VNP_RETURN_URL = "https://pickyourway.vercel.app/checkout/vnpay-return";
 
 function sortObject(obj: Record<string, string>) {
   return Object.keys(obj)
