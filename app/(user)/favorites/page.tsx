@@ -37,7 +37,7 @@ export default function FavoritePage() {
       }
 
       const res = await axios.get(
-        "https://db-datn-six.vercel.app/api/favorites/my-favorites",
+        "https://db-pickyourway.vercel.app/api/favorites/my-favorites",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -66,7 +66,7 @@ export default function FavoritePage() {
       const token = localStorage.getItem("token");
 
       await axios.post(
-        "https://db-datn-six.vercel.app/api/favorites/toggle",
+        "https://db-pickyourway.vercel.app/api/favorites/toggle",
         { tour_id: tourId },
         {
           headers: {

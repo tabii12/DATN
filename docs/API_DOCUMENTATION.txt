@@ -1,7 +1,7 @@
 ==================================================
 PROJECT: TRAVEL BOOKING SYSTEM
 API DOCUMENTATION
-BASE DOMAIN: https://db-datn-six.vercel.app
+BASE DOMAIN: https://db-pickyourway.vercel.app
 ==================================================
 
 I. GIỚI THIỆU
@@ -36,14 +36,14 @@ II. PHÂN QUYỀN HỆ THỐNG
 
 ==================================================
 MODULE: TOUR API
-BASE URL: https://db-datn-six.vercel.app/api/tours
+BASE URL: https://db-pickyourway.vercel.app/api/tours
 ==================================================
 
 1. Tạo Tour
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/tours/create
+Full URL: https://db-pickyourway.vercel.app/api/tours/create
 Mô tả: Tạo mới một tour du lịch.
 Content-Type: multipart/form-data
 Upload: images (tối đa 5 ảnh)
@@ -53,7 +53,7 @@ Middleware sử dụng: multer
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/tours/
+Full URL: https://db-pickyourway.vercel.app/api/tours/
 Mô tả: Lấy danh sách tất cả các tour.
 Content-Type: application/json
 
@@ -61,7 +61,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /detail/:slug
-Full URL: https://db-datn-six.vercel.app/api/tours/detail/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/tours/detail/{slug}
 Mô tả: Lấy thông tin chi tiết của tour dựa vào slug.
 Content-Type: application/json
 
@@ -69,7 +69,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /update/:slug
-Full URL: https://db-datn-six.vercel.app/api/tours/update/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/tours/update/{slug}
 Mô tả: Cập nhật thông tin tour.
 Content-Type: multipart/form-data
 Upload: images (tối đa 5 ảnh, không bắt buộc)
@@ -78,7 +78,7 @@ Upload: images (tối đa 5 ảnh, không bắt buộc)
 --------------------------------------------------
 Method: DELETE
 Endpoint: /image/:imageId
-Full URL: https://db-datn-six.vercel.app/api/tours/image/{imageId}
+Full URL: https://db-pickyourway.vercel.app/api/tours/image/{imageId}
 Mô tả: Xoá một ảnh cụ thể của tour theo imageId.
 Content-Type: application/json
 
@@ -86,20 +86,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PATCH
 Endpoint: /status/:slug
-Full URL: https://db-datn-six.vercel.app/api/tours/status/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/tours/status/{slug}
 Mô tả: Cập nhật trạng thái tour (ví dụ: hoạt động / ngừng hoạt động).
 Content-Type: application/json
 
 ==================================================
 MODULE: USER API
-BASE URL: https://db-datn-six.vercel.app/api/users
+BASE URL: https://db-pickyourway.vercel.app/api/users
 ==================================================
 
 1. Lấy Danh Sách Người Dùng
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/users/
+Full URL: https://db-pickyourway.vercel.app/api/users/
 Mô tả: Lấy danh sách tất cả người dùng trong hệ thống.
 Content-Type: application/json
 
@@ -108,7 +108,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: POST
 Endpoint: /register
-Full URL: https://db-datn-six.vercel.app/api/users/register
+Full URL: https://db-pickyourway.vercel.app/api/users/register
 Mô tả: Tạo tài khoản mới và gửi mã xác thực email.
 Content-Type: application/json
 
@@ -124,7 +124,7 @@ Body mẫu:
 --------------------------------------------------
 Method: POST
 Endpoint: /login
-Full URL: https://db-datn-six.vercel.app/api/users/login
+Full URL: https://db-pickyourway.vercel.app/api/users/login
 Mô tả: Đăng nhập bằng email và mật khẩu (chỉ áp dụng cho tài khoản đăng ký thường).
 Content-Type: application/json
 
@@ -139,7 +139,7 @@ Body mẫu:
 --------------------------------------------------
 Method: POST
 Endpoint: /google-auth
-Full URL: https://db-datn-six.vercel.app/api/users/google-auth
+Full URL: https://db-pickyourway.vercel.app/api/users/google-auth
 Mô tả: Xác thực người dùng bằng Google ID Token. 
 Nếu email chưa tồn tại sẽ tự động tạo tài khoản mới.
 Nếu đã tồn tại sẽ đăng nhập và trả về JWT.
@@ -155,7 +155,7 @@ Body mẫu:
 --------------------------------------------------
 Method: POST
 Endpoint: /verify-email
-Full URL: https://db-datn-six.vercel.app/api/users/verify-email
+Full URL: https://db-pickyourway.vercel.app/api/users/verify-email
 Mô tả: Kiểm tra mã xác thực email được gửi về email người dùng.
 Content-Type: application/json
 
@@ -170,7 +170,7 @@ Body mẫu:
 --------------------------------------------------
 Method: GET
 Endpoint: /verify-email/:email/:code
-Full URL: https://db-datn-six.vercel.app/api/users/verify-email/{email}/{code}
+Full URL: https://db-pickyourway.vercel.app/api/users/verify-email/{email}/{code}
 Mô tả: Xác thực tài khoản thông qua đường link gửi trong email.
 Content-Type: text/html
 
@@ -179,7 +179,7 @@ Content-Type: text/html
 --------------------------------------------------
 Method: PATCH
 Endpoint: /status/:id
-Full URL: https://db-datn-six.vercel.app/api/users/status/{id}
+Full URL: https://db-pickyourway.vercel.app/api/users/status/{id}
 Mô tả: Cập nhật trạng thái người dùng.
 Giá trị hợp lệ: active | inactive | blocked
 Content-Type: application/json
@@ -193,13 +193,13 @@ Body mẫu:
 --------------------------------------------------
 Method: PUT 
 Endpont: /role/:id
-Full URL: https://db-datn-six.vercel.app/api/users/role/{id}
+Full URL: https://db-pickyourway.vercel.app/api/users/role/{id}
 Giá trị hợp lệ: user | admin
 Content-Type: application/json
 
 ==================================================
 MODULE: BOOKING API
-BASE URL: https://db-datn-six.vercel.app/api/bookings
+BASE URL: https://db-pickyourway.vercel.app/api/bookings
 ==================================================
 
 Yêu cầu xác thực:
@@ -210,7 +210,7 @@ Yêu cầu xác thực:
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/bookings/create
+Full URL: https://db-pickyourway.vercel.app/api/bookings/create
 Middleware: authMiddleware
 Mô tả: Người dùng tạo đơn đặt tour.
 Content-Type: application/json
@@ -219,7 +219,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /my-bookings
-Full URL: https://db-datn-six.vercel.app/api/bookings/my-bookings
+Full URL: https://db-pickyourway.vercel.app/api/bookings/my-bookings
 Middleware: authMiddleware
 Mô tả: Lấy danh sách các booking của người dùng hiện tại.
 Content-Type: application/json
@@ -228,7 +228,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/bookings/{id}
+Full URL: https://db-pickyourway.vercel.app/api/bookings/{id}
 Middleware: authMiddleware
 Mô tả: Lấy thông tin chi tiết một booking theo ID.
 Content-Type: application/json
@@ -237,7 +237,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PATCH
 Endpoint: /:id/cancel
-Full URL: https://db-datn-six.vercel.app/api/bookings/{id}/cancel
+Full URL: https://db-pickyourway.vercel.app/api/bookings/{id}/cancel
 Middleware: authMiddleware
 Mô tả: Người dùng huỷ booking của mình.
 Content-Type: application/json
@@ -248,7 +248,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /admin/all
-Full URL: https://db-datn-six.vercel.app/api/bookings/admin/all
+Full URL: https://db-pickyourway.vercel.app/api/bookings/admin/all
 Middleware: authMiddleware + isAdmin
 Mô tả: Admin xem toàn bộ booking trong hệ thống.
 Content-Type: application/json
@@ -257,21 +257,21 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PATCH
 Endpoint: /admin/:id/confirm-payment
-Full URL: https://db-datn-six.vercel.app/api/bookings/admin/{id}/confirm-payment
+Full URL: https://db-pickyourway.vercel.app/api/bookings/admin/{id}/confirm-payment
 Middleware: authMiddleware + isAdmin
 Mô tả: Admin xác nhận thanh toán cho booking.
 Content-Type: application/json
 
 ==================================================
 MODULE: HOTEL API
-BASE URL: https://db-datn-six.vercel.app/api/hotels
+BASE URL: https://db-pickyourway.vercel.app/api/hotels
 ==================================================
 
 1. Tạo Khách Sạn
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/hotels/create
+Full URL: https://db-pickyourway.vercel.app/api/hotels/create
 Mô tả: Tạo mới một khách sạn.
 Content-Type: multipart/form-data
 Upload: images (nếu có sử dụng upload hình)
@@ -280,7 +280,7 @@ Upload: images (nếu có sử dụng upload hình)
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/hotels/
+Full URL: https://db-pickyourway.vercel.app/api/hotels/
 Mô tả: Lấy danh sách tất cả khách sạn.
 Content-Type: application/json
 
@@ -288,7 +288,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /detail/:slug
-Full URL: https://db-datn-six.vercel.app/api/hotels/detail/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/hotels/detail/{slug}
 Mô tả: Lấy thông tin chi tiết khách sạn theo slug.
 Content-Type: application/json
 
@@ -296,7 +296,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /update/:slug
-Full URL: https://db-datn-six.vercel.app/api/hotels/update/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/hotels/update/{slug}
 Mô tả: Cập nhật thông tin khách sạn.
 Content-Type: multipart/form-data
 
@@ -304,7 +304,7 @@ Content-Type: multipart/form-data
 --------------------------------------------------
 Method: DELETE
 Endpoint: /delete/:id
-Full URL: https://db-datn-six.vercel.app/api/hotels/delete/{id}
+Full URL: https://db-pickyourway.vercel.app/api/hotels/delete/{id}
 Mô tả: Xoá khách sạn theo ID.
 Content-Type: application/json
 
@@ -312,20 +312,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PATCH
 Endpoint: /status/:slug
-Full URL: https://db-datn-six.vercel.app/api/hotels/status/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/hotels/status/{slug}
 Mô tả: Cập nhật trạng thái khách sạn (active / inactive).
 Content-Type: application/json
 
 ==================================================
 MODULE: Comment API
-BASE URL: https://db-datn-six.vercel.app/api/comments
+BASE URL: https://db-pickyourway.vercel.app/api/comments
 ==================================================
 
 1. Tạo Comment
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/comments/create
+Full URL: https://db-pickyourway.vercel.app/api/comments/create
 Mô tả: Người dùng tạo bình luận cho một tour.
 Content-Type: application/json
 
@@ -333,7 +333,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /tour/
-Full URL: https://db-datn-six.vercel.app/api/comments/tour/{tour_id}
+Full URL: https://db-pickyourway.vercel.app/api/comments/tour/{tour_id}
 Mô tả: Lấy toàn bộ bình luận của một tour dựa vào tour_id.
 Content-Type: application/json
 
@@ -341,7 +341,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/comments/{id}
+Full URL: https://db-pickyourway.vercel.app/api/comments/{id}
 Mô tả: Cập nhật nội dung comment theo ID.
 Content-Type: application/json
 
@@ -349,114 +349,114 @@ Content-Type: application/json
 --------------------------------------------------
 Method: DELETE
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/comments/{id}
+Full URL: https://db-pickyourway.vercel.app/api/comments/{id}
 Mô tả: Xoá comment theo ID.
 Content-Type: application/json
 
 ==================================================
 MODULE: BLOG API
-BASE URL: https://db-datn-six.vercel.app/api/blogs
+BASE URL: https://db-pickyourway.vercel.app/api/blogs
 ==================================================
 
 1. Tạo Blog
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/blogs/create
+Full URL: https://db-pickyourway.vercel.app/api/blogs/create
 Content-Type: multipart/form-data
 
 2. Lấy Danh Sách Blog
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/blogs/
+Full URL: https://db-pickyourway.vercel.app/api/blogs/
 Content-Type: application/json
 
 3. Lấy Chi Tiết Blog Theo Slug
 --------------------------------------------------
 Method: GET
 Endpoint: /:slug
-Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/blogs/{slug}
 Content-Type: application/json
 
 4. Cập Nhật Blog (Content + Title + Upload ảnh)
 --------------------------------------------------
 Method: PUT
 Endpoint: /:slug
-Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/blogs/{slug}
 Content-Type: multipart/form-data
 
 5. Cập Nhật Trạng Thái Blog
 --------------------------------------------------
 Method: PATCH
 Endpoint: /:slug/status
-Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}/status
+Full URL: https://db-pickyourway.vercel.app/api/blogs/{slug}/status
 Content-Type: application/json
 
 6. Xoá Blog
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:slug
-Full URL: https://db-datn-six.vercel.app/api/blogs/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/blogs/{slug}
 Content-Type: application/json
 
 7. Xoá Ảnh Blog
 --------------------------------------------------
 Method: DELETE
 Endpoint: /image/:imageId
-Full URL: https://db-datn-six.vercel.app/api/blogs/image/{imageId}
+Full URL: https://db-pickyourway.vercel.app/api/blogs/image/{imageId}
 Content-Type: application/json
 
 ==================================================
 MODULE: SALE API
-BASE URL: https://db-datn-six.vercel.app/api/sales
+BASE URL: https://db-pickyourway.vercel.app/api/sales
 ==================================================
 
 1. Tạo Sale
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/sales/create
+Full URL: https://db-pickyourway.vercel.app/api/sales/create
 Content-Type: application/json
 
 2. Lấy Danh Sách Sale
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/sales/
+Full URL: https://db-pickyourway.vercel.app/api/sales/
 Content-Type: application/json
 
 3. Lấy Chi Tiết Sale
 --------------------------------------------------
 Method: GET
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/sales/{id}
+Full URL: https://db-pickyourway.vercel.app/api/sales/{id}
 Content-Type: application/json
 
 4. Cập Nhật Sale
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/sales/{id}
+Full URL: https://db-pickyourway.vercel.app/api/sales/{id}
 Content-Type: application/json
 
 5. Xoá Sale
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/sales/{id}
+Full URL: https://db-pickyourway.vercel.app/api/sales/{id}
 Content-Type: application/json
 
 ==================================================
 MODULE: CATEGORY API
-BASE URL: https://db-datn-six.vercel.app/api/categories
+BASE URL: https://db-pickyourway.vercel.app/api/categories
 ==================================================
 
 1. Tạo Category
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/categories/create
+Full URL: https://db-pickyourway.vercel.app/api/categories/create
 Mô tả: Tạo mới một danh mục (ví dụ: Du lịch biển, Du lịch núi, Tour nước ngoài...).
 Content-Type: application/json
 
@@ -464,7 +464,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/categories/
+Full URL: https://db-pickyourway.vercel.app/api/categories/
 Mô tả: Lấy tất cả danh mục trong hệ thống.
 Content-Type: application/json
 
@@ -472,7 +472,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /:slug
-Full URL: https://db-datn-six.vercel.app/api/categories/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/categories/{slug}
 Mô tả: Lấy thông tin chi tiết danh mục theo slug.
 Content-Type: application/json
 
@@ -480,7 +480,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /:slug
-Full URL: https://db-datn-six.vercel.app/api/categories/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/categories/{slug}
 Mô tả: Cập nhật thông tin danh mục.
 Content-Type: application/json
 
@@ -488,20 +488,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PATCH
 Endpoint: /:slug/status
-Full URL: https://db-datn-six.vercel.app/api/categories/{slug}/status
+Full URL: https://db-pickyourway.vercel.app/api/categories/{slug}/status
 Mô tả: Cập nhật trạng thái danh mục (active / inactive).
 Content-Type: application/json
 
 ==================================================
 MODULE: ITINERARY API
-BASE URL: https://db-datn-six.vercel.app/api/itineraries
+BASE URL: https://db-pickyourway.vercel.app/api/itineraries
 ==================================================
 
 1. Tạo Itinerary
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/itineraries/create
+Full URL: https://db-pickyourway.vercel.app/api/itineraries/create
 Mô tả: Tạo lịch trình cho một tour (ví dụ: Ngày 1, Ngày 2...).
 Content-Type: application/json
 
@@ -509,7 +509,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /tour/:tourId
-Full URL: https://db-datn-six.vercel.app/api/itineraries/tour/{tourId}
+Full URL: https://db-pickyourway.vercel.app/api/itineraries/tour/{tourId}
 Mô tả: Lấy toàn bộ lịch trình của một tour dựa theo tourId.
 Content-Type: application/json
 
@@ -517,7 +517,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/itineraries/{id}
+Full URL: https://db-pickyourway.vercel.app/api/itineraries/{id}
 Mô tả: Cập nhật nội dung lịch trình theo ID.
 Content-Type: application/json
 
@@ -525,20 +525,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/itineraries/{id}
+Full URL: https://db-pickyourway.vercel.app/api/itineraries/{id}
 Mô tả: Xoá lịch trình theo ID.
 Content-Type: application/json
 
 ==================================================
 MODULE: ITINERARY DETAIL API
-BASE URL: https://db-datn-six.vercel.app/api/itinerary-details
+BASE URL: https://db-pickyourway.vercel.app/api/itinerary-details
 ==================================================
 
 1. Tạo Itinerary Detail
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/itinerary-details/create
+Full URL: https://db-pickyourway.vercel.app/api/itinerary-details/create
 Mô tả: Tạo chi tiết hoạt động cho một itinerary (ví dụ: Buổi sáng tham quan, Buổi chiều di chuyển...).
 Content-Type: application/json
 
@@ -546,7 +546,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /itinerary/:itineraryId
-Full URL: https://db-datn-six.vercel.app/api/itinerary-details/itinerary/{itineraryId}
+Full URL: https://db-pickyourway.vercel.app/api/itinerary-details/itinerary/{itineraryId}
 Mô tả: Lấy toàn bộ chi tiết thuộc một itinerary.
 Content-Type: application/json
 
@@ -554,7 +554,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/itinerary-details/{id}
+Full URL: https://db-pickyourway.vercel.app/api/itinerary-details/{id}
 Mô tả: Cập nhật nội dung chi tiết theo ID.
 Content-Type: application/json
 
@@ -562,20 +562,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/itinerary-details/{id}
+Full URL: https://db-pickyourway.vercel.app/api/itinerary-details/{id}
 Mô tả: Xoá chi tiết itinerary theo ID.
 Content-Type: application/json
 
 ==================================================
 MODULE: ITINERARY SERVICE API
-BASE URL: https://db-datn-six.vercel.app/api/itinerary-services
+BASE URL: https://db-pickyourway.vercel.app/api/itinerary-services
 ==================================================
 
 1. Tạo Itinerary Service
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/itinerary-services/create
+Full URL: https://db-pickyourway.vercel.app/api/itinerary-services/create
 Mô tả: Thêm dịch vụ vào một itinerary (ví dụ: Bao gồm ăn sáng, Vé tham quan, Xe đưa đón...).
 Content-Type: application/json
 
@@ -583,7 +583,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /itinerary/:itineraryId
-Full URL: https://db-datn-six.vercel.app/api/itinerary-services/itinerary/{itineraryId}
+Full URL: https://db-pickyourway.vercel.app/api/itinerary-services/itinerary/{itineraryId}
 Mô tả: Lấy toàn bộ dịch vụ thuộc một itinerary.
 Content-Type: application/json
 
@@ -591,7 +591,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/itinerary-services/{id}
+Full URL: https://db-pickyourway.vercel.app/api/itinerary-services/{id}
 Mô tả: Cập nhật thông tin dịch vụ theo ID.
 Content-Type: application/json
 
@@ -599,20 +599,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/itinerary-services/{id}
+Full URL: https://db-pickyourway.vercel.app/api/itinerary-services/{id}
 Mô tả: Xoá dịch vụ khỏi itinerary theo ID.
 Content-Type: application/json
 
 ==================================================
 MODULE: SERVICE API
-BASE URL: https://db-datn-six.vercel.app/api/services
+BASE URL: https://db-pickyourway.vercel.app/api/services
 ==================================================
 
 1. Tạo Service
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/services/create
+Full URL: https://db-pickyourway.vercel.app/api/services/create
 Mô tả: Tạo dịch vụ mới trong hệ thống (ví dụ: Ăn sáng, Vé tham quan, Xe đưa đón...).
 Content-Type: application/json
 
@@ -620,7 +620,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/services/
+Full URL: https://db-pickyourway.vercel.app/api/services/
 Mô tả: Lấy tất cả dịch vụ hiện có trong hệ thống.
 Content-Type: application/json
 
@@ -628,7 +628,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/services/{id}
+Full URL: https://db-pickyourway.vercel.app/api/services/{id}
 Mô tả: Lấy thông tin chi tiết dịch vụ theo ID.
 Content-Type: application/json
 
@@ -636,7 +636,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/services/{id}
+Full URL: https://db-pickyourway.vercel.app/api/services/{id}
 Mô tả: Cập nhật thông tin dịch vụ theo ID.
 Content-Type: application/json
 
@@ -644,20 +644,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/services/{id}
+Full URL: https://db-pickyourway.vercel.app/api/services/{id}
 Mô tả: Xoá dịch vụ khỏi hệ thống.
 Content-Type: application/json
 
 ==================================================
 MODULE: TRIP API
-BASE URL: https://db-datn-six.vercel.app/api/trips
+BASE URL: https://db-pickyourway.vercel.app/api/trips
 ==================================================
 
 1. Tạo Trip (Đợt Khởi Hành)
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/trips/create
+Full URL: https://db-pickyourway.vercel.app/api/trips/create
 Mô tả: Tạo một đợt khởi hành cụ thể cho tour (ví dụ: Tour Đà Lạt ngày 20/06/2026).
 Content-Type: application/json
 
@@ -665,7 +665,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/trips/
+Full URL: https://db-pickyourway.vercel.app/api/trips/
 Mô tả: Lấy tất cả các đợt khởi hành trong hệ thống.
 Content-Type: application/json
 
@@ -673,7 +673,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /tour/:slug
-Full URL: https://db-datn-six.vercel.app/api/trips/tour/{slug}
+Full URL: https://db-pickyourway.vercel.app/api/trips/tour/{slug}
 Mô tả: Lấy danh sách các đợt khởi hành thuộc một tour dựa vào slug.
 Content-Type: application/json
 
@@ -681,7 +681,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/trips/{id}
+Full URL: https://db-pickyourway.vercel.app/api/trips/{id}
 Mô tả: Cập nhật thông tin đợt khởi hành theo ID.
 Content-Type: application/json
 
@@ -689,20 +689,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/trips/{id}
+Full URL: https://db-pickyourway.vercel.app/api/trips/{id}
 Mô tả: Xoá đợt khởi hành khỏi hệ thống.
 Content-Type: application/json
 
 ==================================================
 MODULE: TOUR MEMBER API
-BASE URL: https://db-datn-six.vercel.app/api/tour-members
+BASE URL: https://db-pickyourway.vercel.app/api/tour-members
 ==================================================
 
 1. Tạo Tour Member
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/tour-members/create
+Full URL: https://db-pickyourway.vercel.app/api/tour-members/create
 Mô tả: Thêm thành viên tham gia vào một Trip cụ thể.
 Content-Type: application/json
 
@@ -710,7 +710,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /
-Full URL: https://db-datn-six.vercel.app/api/tour-members/
+Full URL: https://db-pickyourway.vercel.app/api/tour-members/
 Mô tả: Lấy toàn bộ danh sách thành viên trong hệ thống.
 Content-Type: application/json
 
@@ -718,7 +718,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /tour/:tour_id
-Full URL: https://db-datn-six.vercel.app/api/tour-members/tour/{tour_id}
+Full URL: https://db-pickyourway.vercel.app/api/tour-members/tour/{tour_id}
 Mô tả: Lấy danh sách thành viên thuộc một Trip cụ thể.
 Content-Type: application/json
 
@@ -726,7 +726,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/tour-members/{id}
+Full URL: https://db-pickyourway.vercel.app/api/tour-members/{id}
 Mô tả: Cập nhật thông tin thành viên theo ID.
 Content-Type: application/json
 
@@ -734,20 +734,20 @@ Content-Type: application/json
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/tour-members/{id}
+Full URL: https://db-pickyourway.vercel.app/api/tour-members/{id}
 Mô tả: Xoá thành viên khỏi Trip.
 Content-Type: application/json
 
 ==================================================
 MODULE: PLACE API
-BASE URL: https://db-datn-six.vercel.app/api/places
+BASE URL: https://db-pickyourway.vercel.app/api/places
 ==================================================
 
 1. Tạo Place
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/places/create
+Full URL: https://db-pickyourway.vercel.app/api/places/create
 Mô tả: Tạo địa điểm mới trong hệ thống (ví dụ: Thác Datanla, Núi Langbiang...).
 Content-Type: multipart/form-data
 Upload: images (tối đa 10 ảnh)
@@ -757,7 +757,7 @@ Middleware: multer
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/places/{id}
+Full URL: https://db-pickyourway.vercel.app/api/places/{id}
 Mô tả: Cập nhật thông tin địa điểm theo ID.
 Content-Type: multipart/form-data
 Upload: images (tối đa 10 ảnh)
@@ -766,20 +766,20 @@ Upload: images (tối đa 10 ảnh)
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/places/{id}
+Full URL: https://db-pickyourway.vercel.app/api/places/{id}
 Mô tả: Xoá địa điểm khỏi hệ thống.
 Content-Type: application/json
 
 ==================================================
 MODULE: DESCRIPTION API
-BASE URL: https://db-datn-six.vercel.app/api/descriptions
+BASE URL: https://db-pickyourway.vercel.app/api/descriptions
 ==================================================
 
 1. Tạo Description
 --------------------------------------------------
 Method: POST
 Endpoint: /create
-Full URL: https://db-datn-six.vercel.app/api/descriptions/create
+Full URL: https://db-pickyourway.vercel.app/api/descriptions/create
 Mô tả: Tạo nội dung mô tả cho một tour (ví dụ: Bao gồm, Không bao gồm, Lưu ý...).
 Content-Type: application/json
 
@@ -787,7 +787,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: GET
 Endpoint: /tour/:tour_id
-Full URL: https://db-datn-six.vercel.app/api/descriptions/tour/{tour_id}
+Full URL: https://db-pickyourway.vercel.app/api/descriptions/tour/{tour_id}
 Mô tả: Lấy tất cả nội dung mô tả của một tour.
 Content-Type: application/json
 
@@ -795,7 +795,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PUT
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/descriptions/{id}
+Full URL: https://db-pickyourway.vercel.app/api/descriptions/{id}
 Mô tả: Cập nhật nội dung mô tả theo ID.
 Content-Type: application/json
 
@@ -803,6 +803,6 @@ Content-Type: application/json
 --------------------------------------------------
 Method: DELETE
 Endpoint: /:id
-Full URL: https://db-datn-six.vercel.app/api/descriptions/{id}
+Full URL: https://db-pickyourway.vercel.app/api/descriptions/{id}
 Mô tả: Xoá mô tả khỏi tour.
 Content-Type: application/json

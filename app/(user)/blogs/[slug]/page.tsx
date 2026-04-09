@@ -25,7 +25,7 @@ export default function BlogDetailPage() {
     const fetchBlog = async () => {
       try {
         // Assuming API has /api/blogs/{slug} endpoint
-        const response = await fetch(`https://db-datn-six.vercel.app/api/blogs/${slug}`);
+        const response = await fetch(`https://db-pickyourway.vercel.app/api/blogs/${slug}`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

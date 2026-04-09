@@ -37,7 +37,7 @@ export default function ContactPage() {
   useEffect(() => {
     async function loadTours() {
       try {
-        const res = await fetch("https://db-datn-six.vercel.app/api/tours");
+        const res = await fetch("https://db-pickyourway.vercel.app/api/tours");
         const data = await res.json();
         if (data?.success && Array.isArray(data.data)) {
           setTours(

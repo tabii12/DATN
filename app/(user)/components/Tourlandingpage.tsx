@@ -110,8 +110,8 @@ export default function ToursLandingPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("https://db-datn-six.vercel.app/api/tours").then(r => r.json()),
-      fetch("https://db-datn-six.vercel.app/api/sales").then(r => r.json()).catch(() => ({ data: [] })),
+      fetch("https://db-pickyourway.vercel.app/api/tours").then(r => r.json()),
+      fetch("https://db-pickyourway.vercel.app/api/sales").then(r => r.json()).catch(() => ({ data: [] })),
     ])
       .then(async ([res, salesRes]) => {
         if (!res.success) return;
@@ -125,7 +125,7 @@ export default function ToursLandingPage() {
         try {
           const results = await Promise.allSettled(
             tourList.map(t =>
-              fetch(`https://db-datn-six.vercel.app/api/trips/tour/${t.slug}`)
+              fetch(`https://db-pickyourway.vercel.app/api/trips/tour/${t.slug}`)
                 .then(r => r.json())
                 .then(d => ({ tourId: t._id, trips: d.data || [] }))
             )

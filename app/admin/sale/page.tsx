@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-const API_TOURS = "https://db-datn-six.vercel.app/api/tours";
-const API_SALES = "https://db-datn-six.vercel.app/api/sales";
+const API_TOURS = "https://db-pickyourway.vercel.app/api/tours";
+const API_SALES = "https://db-pickyourway.vercel.app/api/sales";
 
 type Tour = {
   _id: string;

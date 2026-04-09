@@ -237,7 +237,7 @@ docs/
 
 ### 3️⃣ Integration
 ```bash
-# 1. Update API URL trong components (hiện tại: https://db-datn-six.vercel.app)
+# 1. Update API URL trong components (hiện tại: https://db-pickyourway.vercel.app)
 # 2. Backend phải chạy ở cùng domain hoặc cấu hình CORS
 # 3. Test flow: User login → Book tour → Comment
 ```

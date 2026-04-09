@@ -44,7 +44,7 @@ function LoginForm() {
     if (!validateAll()) return;
 
     try {
-      const res = await fetch("https://db-datn-six.vercel.app/api/users/login", {
+      const res = await fetch("https://db-pickyourway.vercel.app/api/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -139,7 +139,7 @@ function LoginForm() {
           onSuccess={async (credentialResponse) => {
             try {
               const res = await axios.post(
-                "https://db-datn-six.vercel.app/api/users/google-auth",
+                "https://db-pickyourway.vercel.app/api/users/google-auth",
                 { token: credentialResponse.credential }
               );
 

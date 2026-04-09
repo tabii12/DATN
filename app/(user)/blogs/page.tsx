@@ -24,7 +24,7 @@ export default function BlogsPage() {
     async function loadBlogs() {
       setLoading(true);
       try {
-        const response = await fetch('https://db-datn-six.vercel.app/api/blogs/');
+        const response = await fetch('https://db-pickyourway.vercel.app/api/blogs/');
         const data = await response.json();
 
         console.log("API DATA:", data);

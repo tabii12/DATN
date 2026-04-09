@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 
-const API = "https://db-datn-six.vercel.app/api/blogs";
+const API = "https://db-pickyourway.vercel.app/api/blogs";
 
 type Blog = {
     _id: string;

@@ -56,7 +56,7 @@ function useHomeData() {
     async function fetchHome() {
       setLoading(true);
       try {
-        const res = await fetch("https://db-datn-six.vercel.app/api/home");
+        const res = await fetch("https://db-pickyourway.vercel.app/api/home");
         const json = await res.json();
         if (!json.success) return;
         const data = json.data;
@@ -134,7 +134,7 @@ export default function HomePage() {
   const handleRandomTourByCity = async (cityName?: string) => {
     if (!cityName) return;
     try {
-      const res = await fetch("https://db-datn-six.vercel.app/api/tours");
+      const res = await fetch("https://db-pickyourway.vercel.app/api/tours");
       const json = await res.json();
       if (!json.success) return;
 

@@ -266,7 +266,7 @@ function LoadingScreen({ attempt, max }: { attempt: number; max: number }) {
   );
 }
 
-const BASE_URL = "https://db-datn-six.vercel.app";
+const BASE_URL = "https://db-pickyourway.vercel.app";
 const MAX_RETRY = 8;
 const RETRY_DELAY = 8000;
 
@@ -1022,7 +1022,7 @@ function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: strin
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) { setCanReview("notlogged"); return; }
-    fetch("https://db-datn-six.vercel.app/api/bookings/my-bookings", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("https://db-pickyourway.vercel.app/api/bookings/my-bookings", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((res) => {
         const bookings: { tour_id?: string | { _id?: string } }[] = res.data ?? res.bookings ?? [];
@@ -1273,7 +1273,7 @@ function RelatedTours({ city, currentSlug }: { city: string; currentSlug: string
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("https://db-datn-six.vercel.app/api/tours")
+    fetch("https://db-pickyourway.vercel.app/api/tours")
       .then((r) => r.json())
       .then((res) => {
         if (!res.success || !Array.isArray(res.data)) return;

@@ -389,7 +389,7 @@ function BlogSection() {
     async function loadBlogs() {
       setLoading(true);
       try {
-        const res = await fetch("https://db-datn-six.vercel.app/api/blogs/");
+        const res = await fetch("https://db-pickyourway.vercel.app/api/blogs/");
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const items = Array.isArray(data) ? data : data.data || data.blogs || [];

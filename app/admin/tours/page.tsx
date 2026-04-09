@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API = "https://db-datn-six.vercel.app/api";
+const API = "https://db-pickyourway.vercel.app/api";
 const ITEMS_PER_PAGE = 10;
 
 interface Tour {

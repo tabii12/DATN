@@ -193,7 +193,7 @@ GET    /api/tours/{id}                  - Lấy info tour
 ## ⚠️ Important Notes
 
 1. **Backend bắt buộc:** Frontend không hoạt động mà không có backend API
-2. **API URL:** Hiện tại dùng `https://db-datn-six.vercel.app`
+2. **API URL:** Hiện tại dùng `https://db-pickyourway.vercel.app`
 3. **Authentication:** Dùng JWT token trong localStorage
 4. **Status = pending:** Bình luận mới cần admin phê duyệt
 5. **CORS:** Backend cần cấu hình CORS header

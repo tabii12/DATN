@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const API = "https://db-datn-six.vercel.app/api";
+const API = "https://db-pickyourway.vercel.app/api";
 
 interface TourAPI {
   _id: string;

@@ -20,7 +20,7 @@ export default function FavoriteButton({ tour_id, initialFavorite }: Props) {
     setLoading(true);
 
     try {
-      const res = await fetch("https://db-datn-six.vercel.app/api/favorites/toggle", {
+      const res = await fetch("https://db-pickyourway.vercel.app/api/favorites/toggle", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

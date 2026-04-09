@@ -359,9 +359,9 @@ function HotelListingContent() {
     useEffect(() => {
         // Fetch tours + trips song song
         Promise.all([
-            fetch("https://db-datn-six.vercel.app/api/tours").then(r => r.json()),
-            fetch("https://db-datn-six.vercel.app/api/trips/").then(r => r.json()),
-            fetch("https://db-datn-six.vercel.app/api/sales").then(r => r.json()).catch(() => ({ data: [] })),
+            fetch("https://db-pickyourway.vercel.app/api/tours").then(r => r.json()),
+            fetch("https://db-pickyourway.vercel.app/api/trips/").then(r => r.json()),
+            fetch("https://db-pickyourway.vercel.app/api/sales").then(r => r.json()).catch(() => ({ data: [] })),
         ])
             .then(([toursRes, tripsRes, salesRes]) => {
                 if (toursRes.success && Array.isArray(toursRes.data)) {

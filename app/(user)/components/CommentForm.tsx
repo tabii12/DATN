@@ -40,7 +40,7 @@ export default function CommentForm({
 
         // Gọi API để kiểm tra booking
         const response = await fetch(
-          `https://db-datn-six.vercel.app/api/bookings/user/check?tour_id=${tourId}`,
+          `https://db-pickyourway.vercel.app/api/bookings/user/check?tour_id=${tourId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -103,7 +103,7 @@ export default function CommentForm({
       const userObj = JSON.parse(user);
 
       const response = await fetch(
-        "https://db-datn-six.vercel.app/api/comments",
+        "https://db-pickyourway.vercel.app/api/comments",
         {
           method: "POST",
           headers: {

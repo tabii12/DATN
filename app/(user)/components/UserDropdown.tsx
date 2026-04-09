@@ -66,7 +66,7 @@ export default function UserDropdown() {
 
       // 🔥 FIX CHÍNH: thêm Authorization
       const res = await fetch(
-        `https://db-datn-six.vercel.app/api/users/${userId}`,
+        `https://db-pickyourway.vercel.app/api/users/${userId}`,
         {
           method: "GET",
           headers: {

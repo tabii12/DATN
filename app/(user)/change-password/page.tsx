@@ -55,7 +55,7 @@ export default function ChangePasswordPage() {
       setLoading(true);
 
       await axios.put(
-        "https://db-datn-six.vercel.app/api/users/change-password",
+        "https://db-pickyourway.vercel.app/api/users/change-password",
         {
           currentPassword,
           newPassword,

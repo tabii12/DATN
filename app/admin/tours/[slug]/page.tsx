@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-const API = "https://db-datn-six.vercel.app/api";
+const API = "https://db-pickyourway.vercel.app/api";
 
 type Hotel = {
   _id: string;

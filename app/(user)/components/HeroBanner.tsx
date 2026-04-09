@@ -70,7 +70,7 @@ export default function HeroBanner({
   }, [images.length]);
 
   useEffect(() => {
-    fetch("https://db-datn-six.vercel.app/api/tours")
+    fetch("https://db-pickyourway.vercel.app/api/tours")
       .then((r) => r.json())
       .then((res) => {
         if (res.success && Array.isArray(res.data)) {

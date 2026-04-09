@@ -118,7 +118,7 @@ export default function AdminComments() {
 
       // Lấy tất cả comments
       const response = await fetch(
-        `https://db-datn-six.vercel.app/api/comments/admin/all?status=${filterStatus === "all" ? "" : filterStatus}`,
+        `https://db-pickyourway.vercel.app/api/comments/admin/all?status=${filterStatus === "all" ? "" : filterStatus}`,
         {
           headers: {
             Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
@@ -139,7 +139,7 @@ export default function AdminComments() {
         if (!tourMap.has(comment.tour_id)) {
           try {
             const tourRes = await fetch(
-              `https://db-datn-six.vercel.app/api/tours/${comment.tour_id}`,
+              `https://db-pickyourway.vercel.app/api/tours/${comment.tour_id}`,
               {
                 headers: {
                   Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
@@ -171,7 +171,7 @@ export default function AdminComments() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `https://db-datn-six.vercel.app/api/comments/admin/${id}/approve`,
+        `https://db-pickyourway.vercel.app/api/comments/admin/${id}/approve`,
         {
           method: "PATCH",
           headers: {
@@ -207,7 +207,7 @@ export default function AdminComments() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `https://db-datn-six.vercel.app/api/comments/admin/${id}/reject`,
+        `https://db-pickyourway.vercel.app/api/comments/admin/${id}/reject`,
         {
           method: "PATCH",
           headers: {
@@ -244,7 +244,7 @@ export default function AdminComments() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `https://db-datn-six.vercel.app/api/comments/admin/${id}`,
+        `https://db-pickyourway.vercel.app/api/comments/admin/${id}`,
         {
           method: "DELETE",
           headers: {
