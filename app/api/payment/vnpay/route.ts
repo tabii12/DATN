@@ -4,8 +4,8 @@ import crypto from "crypto";
 // ══════════════════════════════════════════════
 //  ⚠️  THAY 2 GIÁ TRỊ NÀY KHI CÓ EMAIL VNPAY
 // ══════════════════════════════════════════════
-const VNP_TMN_CODE = "2QXUI4J4";
-const VNP_HASH_SECRET = "RAOEXHYVSDDIIENYWSLDIIZTJXQWALFB";
+const VNP_TMN_CODE = "PTTWTZZC";
+const VNP_HASH_SECRET = "MT2SFAQ1GR8B26P4F0RKNFAC1UOHY9PO";
 // ══════════════════════════════════════════════
 
 const VNP_URL = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
