@@ -66,7 +66,7 @@ function SearchContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: payNow,
+          amount: total,
           orderInfo: `Thanh toan tour ${tourSlug || tourName}`,
           txnRef,
         }),
