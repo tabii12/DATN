@@ -883,18 +883,14 @@ export default function EditTourPage() {
                     </div>
 
                     {/* Giá / đêm */}
-                    {selectedHotel.price_per_night !== undefined && (
+{selectedHotel.price_per_night !== undefined && Number.isFinite(selectedHotel.price_per_night) && (
                       <div className="text-right shrink-0 bg-white rounded-xl px-3 py-2 border border-orange-100 shadow-sm">
                         <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">
                           Giá / đêm
                         </p>
                         <p className="text-xl font-black text-orange-500 leading-tight">
-                          {selectedHotel.price_per_night.toLocaleString(
-                            "vi-VN",
-                          )}
-                          <span className="text-xs font-semibold text-orange-400">
-                            đ
-                          </span>
+                          {selectedHotel.price_per_night.toLocaleString("vi-VN")}
+                          <span className="text-xs font-semibold text-orange-400">đ</span>
                         </p>
                       </div>
                     )}
