@@ -8,9 +8,8 @@ function formatVND(n: number) {
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
-  credit: "Thẻ tín dụng",
-  momo: "MoMo",
-  transfer: "Chuyển khoản ngân hàng",
+  vnpay: "Thanh toán VNPay",
+  bank_transfer: "Chuyển khoản ngân hàng",
 };
 
 function SearchContent() {
@@ -37,7 +36,7 @@ function SearchContent() {
   // ✅ PRIORITY: bookingData từ searchParams (checkout pass full data)
   let bookingDataRaw = searchParams.get("bookingData");
   let bookingData = null;
-  
+
   if (bookingDataRaw) {
     try {
       bookingData = JSON.parse(bookingDataRaw);
@@ -45,13 +44,13 @@ function SearchContent() {
       console.error("Parse bookingData failed:", e);
     }
   }
-  
+
   // Fallback 1: localStorage (old flow)
   if (!bookingData) {
     const localRaw = localStorage.getItem("tour_booking");
     if (localRaw) bookingData = JSON.parse(localRaw);
   }
-  
+
   // Fallback 2: VNPay orderInfo
   if (!bookingData) {
     const orderInfo = searchParams.get("vnp_OrderInfo");
@@ -71,40 +70,53 @@ function SearchContent() {
       // Lưu booking vào DB với VNPay info
       const saveBooking = async () => {
         try {
-            // ✅ Lấy vnpay_result từ localStorage
-            const vnpayResultRaw = localStorage.getItem("vnpay_result");
-            let vnpayResult = null;
-            if (vnpayResultRaw) {
-              try {
-                vnpayResult = JSON.parse(vnpayResultRaw);
-              } catch(e) {
-                console.error("Parse vnpay_result failed");
-              }
+          // ✅ Lấy vnpay_result từ localStorage
+          const vnpayResultRaw = localStorage.getItem("vnpay_result");
+          let vnpayResult = null;
+          if (vnpayResultRaw) {
+            try {
+              vnpayResult = JSON.parse(vnpayResultRaw);
+            } catch (e) {
+              console.error("Parse vnpay_result failed");
             }
-            
-            const res = await fetch(
-              "https://db-pickyourway.vercel.app/api/bookings",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-                body: JSON.stringify({
-                  ...bookingData,
+          }
+
+          const res = await fetch(
+            "https://db-pickyourway.vercel.app/api/bookings",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+              body: JSON.stringify({
+                ...bookingData,
+
+                orderId: vnpTxnRef,
+
+                payment: {
+                  method: "vnpay",
+                  amount: paymentAmount,
+
+                  status: isSuccess ? "paid" : "failed",
+
+                  bank_code: vnpBankCode || "NCB",
+                  bank_account_number: "0123456789",
+                  bank_account_name: "PICKYOURWAY COMPANY LIMITED",
+
                   vnpay: {
-                    ...vnpayResult,  // ✅ FULL vnpay_result từ LS
+                    ...vnpayResult,
                     responseCode: vnpResponseCode,
                     txnRef: vnpTxnRef,
                     transactionNo: vnpTransactionNo,
-                    bankCode: vnpBankCode,
                     amount: paymentAmount,
-                    params: vnpParams,
                   },
-                  orderId: vnpTxnRef,
-                }),
-              },
-            );
+
+                  transfer_content: `BOOKING_${vnpTxnRef}`,
+                },
+              }),
+            },
+          );
 
           if (res.ok) {
             localStorage.removeItem("tour_booking"); // Clear temp data
@@ -140,7 +152,11 @@ function SearchContent() {
   const contactName = data.contactName ?? "";
   const contactEmail = data.contactEmail ?? "";
   const contactPhone = data.contactPhone ?? "";
-  const payment = data.payment ?? "credit";
+
+  const payment = data.payment || {};
+  const paymentMethod = payment.method || "transfer";
+  const paymentAmountReal = payment.amount || 0;
+  const paymentStatus = payment.status || "pending";
 
   const subtotalAdults = adults * pricePerAdult;
   const subtotalChildren = children * pricePerChild;
@@ -148,7 +164,6 @@ function SearchContent() {
   const total = subtotalAdults + subtotalChildren + INSURANCE;
 
   const paymentPct = parseInt(data.paymentPct ?? "100");
-  const payNow = parseInt(data.payNow ?? "0");
   const remaining = parseInt(data.remaining ?? "0");
 
   const orderId = "TV" + Date.now().toString().slice(-8);
@@ -184,7 +199,10 @@ function SearchContent() {
             {/* ===== ✅ PHẦN THÊM (LIÊN KẾT 2 FILE) ===== */}
             <div className="space-y-1">
               <p className="text-green-600 font-semibold">
-                Đã thanh toán: {formatVND(payNow)}
+                Đã thanh toán: {formatVND(paymentAmountReal)}
+              </p>
+              <p className="text-sm text-gray-500">
+                Trạng thái: {paymentStatus}
               </p>
 
               {paymentPct === 50 && remaining > 0 && (
