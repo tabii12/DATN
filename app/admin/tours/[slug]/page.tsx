@@ -924,16 +924,34 @@ export default function EditTourPage() {
                 <SectionTitle>Thêm chuyến đi</SectionTitle>
                 <button onClick={() => setRepeatMode(r => !r)} className={`text-xs font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-colors ${repeatMode ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}>🔁 Lặp lịch</button>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
                 <div>
                   <label className="text-xs font-semibold text-gray-500 block mb-1">{repeatMode ? "Bắt đầu từ" : "Ngày đi"}</label>
                   <input type="date" value={tripForm.start_date} min={today} onChange={e => setTripForm(f => ({ ...f, start_date: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
                 </div>
                 {!repeatMode && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày về</label>
-                    <input type="date" value={tripForm.end_date} min={tripForm.start_date || today} onChange={e => setTripForm(f => ({ ...f, end_date: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
-                  </div>
+                  <>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày về</label>
+                      <div className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 flex items-center">
+                        {tripForm.end_date 
+                          ? new Date(tripForm.end_date).toLocaleDateString("vi-VN")
+                          : <span className="text-gray-300">--</span>
+                        }
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Số ngày</label>
+                      <input type="number" min={1} max={30} value={tripForm.end_date && tripForm.start_date ? Math.max(1, Math.round((new Date(tripForm.end_date).getTime() - new Date(tripForm.start_date).getTime()) / (24 * 60 * 60 * 1000)) + 1) : ""} onChange={e => {
+                        if (tripForm.start_date && e.target.value) {
+                          const days = Math.max(1, Number(e.target.value));
+                          const endDate = new Date(tripForm.start_date);
+                          endDate.setDate(endDate.getDate() + days - 1);
+                          setTripForm(f => ({ ...f, end_date: endDate.toISOString().split("T")[0] }));
+                        }
+                      }} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+                    </div>
+                  </>
                 )}
                 <div>
                   <label className="text-xs font-semibold text-gray-500 block mb-1">Giá (đ/người)</label>
@@ -953,7 +971,7 @@ export default function EditTourPage() {
                       <input type="number" min={1} max={52} value={repeatWeeks} onChange={e => setRepeatWeeks(Number(e.target.value))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 bg-white"/>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Số ngày / chuyến</label>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Số ngày</label>
                       <input type="number" min={1} max={30} value={repeatDuration} onChange={e => setRepeatDuration(Number(e.target.value))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 bg-white"/>
                     </div>
                   </div>
@@ -974,7 +992,7 @@ export default function EditTourPage() {
                     </div>
                     {tripForm.start_date && (
                       <p className="text-[11px] text-gray-500 mt-2">
-                        Nếu ngày bạn chọn trong tuần đã qua, ngày đó sẽ được tạo sang tuần sau.
+                        Nếu ngày chọn trong tuần đã qua, ngày đó sẽ được tạo sang tuần sau.
                       </p>
                     )}
                   </div>
