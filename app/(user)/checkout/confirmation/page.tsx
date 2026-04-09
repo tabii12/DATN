@@ -60,7 +60,7 @@ function SearchContent() {
       // Lưu booking vào DB với VNPay info
       const saveBooking = async () => {
         try {
-          const res = await fetch('/api/bookings', {
+          const res = await fetch('https://db-pickyourway.vercel.app/api/bookings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
