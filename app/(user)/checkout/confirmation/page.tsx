@@ -101,7 +101,7 @@ function SearchContent() {
                     amount: paymentAmount,
                     params: vnpParams,
                   },
-                  paymentStatus: "PAID",
+                  paymentStatus: "paid",
                   orderId: vnpTxnRef,
                 }),
               },
