@@ -636,10 +636,7 @@ export default function EditTourPage() {
                   {hotelForm.price_per_night && (
                     <p className="text-[11px] text-orange-500 font-semibold mt-1">
                       ={" "}
-                      {Number(hotelForm.price_per_night).toLocaleString(
-                        "vi-VN",
-                      )}
-                      đ/đêm
+{Number.isFinite(Number(hotelForm.price_per_night)) ? Number(hotelForm.price_per_night).toLocaleString("vi-VN") : "0"} đ/đêm
                     </p>
                   )}
                 </div>
@@ -1648,7 +1645,7 @@ export default function EditTourPage() {
                                 </div>
                                 <div className="flex items-center gap-3 mt-1 flex-wrap">
                                   <span className="text-[11px] font-bold text-orange-500">
-                                    {trip.base_price.toLocaleString("vi-VN")}đ
+{Number.isFinite(trip.base_price) ? trip.base_price.toLocaleString("vi-VN") : "0"}đ
                                   </span>
                                   <span className="text-[11px] text-gray-400">
                                     {trip.booked_people}/{trip.max_people} · còn{" "}
