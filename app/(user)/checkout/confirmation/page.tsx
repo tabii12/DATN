@@ -120,7 +120,7 @@ function SearchContent() {
 
           if (res.ok) {
             localStorage.removeItem("tour_booking"); // Clear temp data
-            localStorage.removeItem("vnpay_result"); // Clear VNPay result
+            // localStorage.removeItem("vnpay_result"); // Clear VNPay result
             setData({ ...bookingData, vnpay: vnpParams });
           }
         } catch (error) {
