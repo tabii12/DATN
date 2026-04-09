@@ -61,7 +61,7 @@ function SearchContent() {
       const saveBooking = async () => {
         try {
           const res = await fetch(
-            "https://db-pickyourway.vercel.app/api/bookings",
+            "https://db-pickyourway.vercel.app/api/bookings/create",
             {
               method: "POST",
               headers: {
