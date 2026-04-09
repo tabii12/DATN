@@ -49,6 +49,8 @@ function SearchContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  console.log( "total", total, "payNow", payNow, "remaining", remaining);
+
   const orderItems = [
     { label: `Giá tour (${adults} người lớn)`, value: formatVND(subtotalAdults) },
     ...(children > 0
