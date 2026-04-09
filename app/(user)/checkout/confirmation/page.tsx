@@ -64,14 +64,13 @@ function SearchContent() {
               body: JSON.stringify({
                 ...bookingData,
                 orderId: vnpTxnRef,
-                payment: {
+                vnpay: {
                   method: "vnpay",
                   amount: paymentAmount,
                   status: "paid",
                   bank_code: vnpParams.vnp_BankCode || "NCB",
                   bank_account_number: "0123456789",
                   bank_account_name: "PICKYOURWAY COMPANY LIMITED",
-                  vnpay: vnpParams,
                   transfer_content:
                     vnpParams.vnp_OrderInfo || `BOOKING_${vnpTxnRef}`,
                 },
