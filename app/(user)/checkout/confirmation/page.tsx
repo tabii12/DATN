@@ -18,72 +18,80 @@ function SearchContent() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
 
-// Parse tất cả VNPay params từ callback
+  // Parse tất cả VNPay params từ callback
   const vnpParams = Object.fromEntries(searchParams.entries());
-  const vnpResponseCode = searchParams.get('vnp_ResponseCode');
-  const vnpTxnRef = searchParams.get('vnp_TxnRef');
-  const vnpAmount = searchParams.get('vnp_Amount');
-  const vnpTransactionNo = searchParams.get('vnp_TransactionNo');
-  const vnpBankCode = searchParams.get('vnp_BankCode');
-  const status = searchParams.get('status') || 'unknown';
-  
+  const vnpResponseCode = searchParams.get("vnp_ResponseCode");
+  const vnpTxnRef = searchParams.get("vnp_TxnRef");
+  const vnpAmount = searchParams.get("vnp_Amount");
+  const vnpTransactionNo = searchParams.get("vnp_TransactionNo");
+  const vnpBankCode = searchParams.get("vnp_BankCode");
+  const status = searchParams.get("status") || "unknown";
+
   useEffect(() => {
     // Lưu VNPay info vào localStorage để dùng ngay
     if (vnpTxnRef) {
-      localStorage.setItem('vnpay_result', JSON.stringify(vnpParams));
+      localStorage.setItem("vnpay_result", JSON.stringify(vnpParams));
     }
   }, [searchParams]);
 
   // Lấy booking data (ưu tiên từ VNPay txnRef)
   const bookingData = (() => {
     // 1. Thử từ localStorage tour_booking (old flow)
-    let data = localStorage.getItem('tour_booking');
+    let data = localStorage.getItem("tour_booking");
     if (data) return JSON.parse(data);
-    
+
     // 2. Fallback từ VNPay order info (parse từ vnp_OrderInfo)
-    const orderInfo = searchParams.get('vnp_OrderInfo');
+    const orderInfo = searchParams.get("vnp_OrderInfo");
     if (orderInfo) {
       try {
         return JSON.parse(decodeURIComponent(orderInfo));
       } catch {}
     }
-    
+
     return null;
   })();
 
   // Xác định trạng thái thanh toán
-  const isSuccess = vnpResponseCode === '00' && status === 'success';
+  const isSuccess = vnpResponseCode === "00" && status === "success";
   const paymentAmount = vnpAmount ? parseInt(vnpAmount) / 100 : 0; // VNPay chia 100
+
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     if (isSuccess && bookingData && vnpTxnRef) {
       // Lưu booking vào DB với VNPay info
       const saveBooking = async () => {
         try {
-          const res = await fetch('https://db-pickyourway.vercel.app/api/bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...bookingData,
-              vnpay: {
-                responseCode: vnpResponseCode,
-                txnRef: vnpTxnRef,
-                transactionNo: vnpTransactionNo,
-                bankCode: vnpBankCode,
-                amount: paymentAmount,
-                params: vnpParams
+          const res = await fetch(
+            "https://db-pickyourway.vercel.app/api/bookings",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
               },
-              paymentStatus: 'PAID',
-              orderId: vnpTxnRef
-            })
-          });
-          
+              body: JSON.stringify({
+                ...bookingData,
+                vnpay: {
+                  responseCode: vnpResponseCode,
+                  txnRef: vnpTxnRef,
+                  transactionNo: vnpTransactionNo,
+                  bankCode: vnpBankCode,
+                  amount: paymentAmount,
+                  params: vnpParams,
+                },
+                paymentStatus: "PAID",
+                orderId: vnpTxnRef,
+              }),
+            },
+          );
+
           if (res.ok) {
-            localStorage.removeItem('tour_booking'); // Clear temp data
+            localStorage.removeItem("tour_booking"); // Clear temp data
             setData({ ...bookingData, vnpay: vnpParams });
           }
         } catch (error) {
-          console.error('Lưu booking failed:', error);
+          console.error("Lưu booking failed:", error);
         }
       };
       saveBooking();
@@ -100,7 +108,6 @@ function SearchContent() {
     );
   }
 
- 
   const tourName = data.tourName ?? "";
   const hotelName = data.hotelName ?? "";
   const city = data.city ?? "";
@@ -119,7 +126,6 @@ function SearchContent() {
   const INSURANCE = 500000;
   const total = subtotalAdults + subtotalChildren + INSURANCE;
 
-
   const paymentPct = parseInt(data.paymentPct ?? "100");
   const payNow = parseInt(data.payNow ?? "0");
   const remaining = parseInt(data.remaining ?? "0");
@@ -129,7 +135,6 @@ function SearchContent() {
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="max-w-2xl mx-auto space-y-5">
-
         {/* SUCCESS */}
         <div className="bg-white p-6 rounded-xl text-center shadow">
           <CheckCircle2 className="text-green-500 mx-auto mb-2" size={40} />
@@ -153,9 +158,7 @@ function SearchContent() {
             </p>
 
             {/* ===== CODE CŨ ===== */}
-            <p className="font-bold text-indigo-600">
-              {formatVND(total)}
-            </p>
+            <p className="font-bold text-indigo-600">{formatVND(total)}</p>
 
             {/* ===== ✅ PHẦN THÊM (LIÊN KẾT 2 FILE) ===== */}
             <div className="space-y-1">
@@ -182,9 +185,7 @@ function SearchContent() {
         {/* ===== ✅ THÊM PHƯƠNG THỨC THANH TOÁN ===== */}
         <div className="bg-white p-4 rounded-xl shadow text-sm">
           <p className="font-medium">Phương thức thanh toán:</p>
-          <p className="text-indigo-600">
-            {PAYMENT_LABELS[payment]}
-          </p>
+          <p className="text-indigo-600">{PAYMENT_LABELS[payment]}</p>
         </div>
 
         {/* BUTTON */}
