@@ -61,7 +61,7 @@ function StatCard({
       <div className={`absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-10 ${color}`} />
 
       <div className="flex items-start justify-between mb-3">
-        <div className={`text-2xl w-10 h-10 rounded-xl flex items-center justify-center ${color} bg-opacity-10`}>
+        <div className={`text-2xl w-10 h-10 rounded-xl flex items-center justify-center bg-opacity-10`}>
           {icon}
         </div>
       </div>

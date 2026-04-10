@@ -142,7 +142,7 @@ export default function CommentsDisplay({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 border border-gray-100">
+    <div className="max-w-300 mx-auto bg-white rounded-lg shadow p-6 border border-gray-100">
       {/* Header */}
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-gray-900 mb-2">
