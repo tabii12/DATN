@@ -237,7 +237,7 @@ Content-Type: application/json
 --------------------------------------------------
 Method: PATCH
 Endpoint: /:id/cancel
-Full URL: https://db-pickyourway.vercel.app/api/bookings/{id}/cancel
+Full URL: https://db-pickyourway.vercel.app/api/bookings/detail/{id}/cancel
 Middleware: authMiddleware
 Mô tả: Người dùng huỷ booking của mình.
 Content-Type: application/json
