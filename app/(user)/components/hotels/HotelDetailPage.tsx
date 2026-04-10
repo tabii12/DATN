@@ -298,9 +298,16 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const scrollToReview = () => reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   // ── Derived data ──
-  const departureDates = (tour?.trips ?? [])
-    .filter((t) => t.status === "open" && t.booked_people < t.max_people)
-    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const departureDates = (tour?.trips ?? [])
+  .filter((t) =>
+    t.status === "open" &&
+    t.booked_people < t.max_people &&
+    new Date(t.start_date) >= today
+  )
+  .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
   const selectedTrip = departureDates.find((t) => t._id === selectedTripId);
   const minPrice = departureDates.length > 0

@@ -137,7 +137,7 @@ export default function AdminSales() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
+      <div className="mx-auto px-4 py-6 space-y-5">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
