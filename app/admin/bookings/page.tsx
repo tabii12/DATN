@@ -16,7 +16,7 @@ interface Booking {
   completed?: boolean;
 }
 
-const API_URL = "https://db-datn-six.vercel.app/api/bookings";
+const API_URL = "https://db-pickyourway.vercel.app/api/bookings";
 
 const mockData: Booking[] = [
   {
@@ -34,8 +34,8 @@ const mockData: Booking[] = [
   },
   {
     id: "2",
-    customerName: "Nguyễn Thị Phương Thảo",
-    email: "thithao@gmail.com",
+    customerName: "Chu Kha",
+    email: "kha@gmail.com",
     phone: "0912345678",
     tourName: "Tour Phú Quốc 4N3Đ",
     departureDate: "2026-06-15",
