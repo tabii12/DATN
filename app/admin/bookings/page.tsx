@@ -78,7 +78,7 @@ export default function BookingPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(API_URL+"/admin/all");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
 
