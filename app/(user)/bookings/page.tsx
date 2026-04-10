@@ -55,7 +55,7 @@ export default function BookingsPage() {
 
       if (token) {
         try {
-          const res = await fetch("https://db-pickyourway.vercel.app/api/bookings/user", {
+          const res = await fetch("https://db-pickyourway.vercel.app/api/bookings/my-bookings", {
             headers: {
               Authorization: `Bearer ${token}`,
             },
