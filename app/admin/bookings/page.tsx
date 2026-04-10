@@ -78,7 +78,7 @@ export default function BookingPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_URL+"/admin/all");
+      const res = await fetch("https://db-pickyourway.vercel.app/api/bookings/admin/all");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
 
