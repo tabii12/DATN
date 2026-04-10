@@ -9,29 +9,87 @@ import {
   LogOut,
   Lock,
   Briefcase,
+  Star,
 } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import CommentForm from "../components/CommentForm";
 
 function formatVND(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
 }
 
+interface Booking {
+  id: string;
+  tourId: string;
+  tourName: string;
+  hotelName: string;
+  city: string;
+  thumbnail: string;
+  adults: number;
+  children: number;
+  pricePerAdult: number;
+  pricePerChild: number;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  departureDate: string;
+  paymentStatus: string;
+  completed?: boolean;
+}
+
 export default function BookingsPage() {
-  const [data, setData] = useState<any>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
 
   const router = useRouter();
   const pathname = usePathname();
 
   // ===== LOAD DATA =====
   useEffect(() => {
-    const saved = localStorage.getItem("tour_booking");
-    if (saved) {
-      setData(JSON.parse(saved));
-    }
+    const loadData = async () => {
+      const token = localStorage.getItem("token");
+      const u = localStorage.getItem("user");
+      if (u) setUser(JSON.parse(u));
 
-    const u = localStorage.getItem("user");
-    if (u) setUser(JSON.parse(u));
+      if (token) {
+        try {
+          const res = await fetch("https://db-pickyourway.vercel.app/api/bookings/user", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            // Normalize bookings
+            const normalized = (data.bookings || data.data || data || []).map((b: any) => ({
+              id: b.id || b._id,
+              tourId: b.tourId || b.tour_id || b.tour?.id || "",
+              tourName: b.tourName || b.tour_name,
+              hotelName: b.hotelName || b.hotel_name,
+              city: b.city,
+              thumbnail: b.thumbnail,
+              adults: b.adults || 1,
+              children: b.children || 0,
+              pricePerAdult: b.pricePerAdult || b.price_per_adult || b.price,
+              pricePerChild: b.pricePerChild || b.price_per_child || b.childPrice,
+              contactName: b.contactName || b.contact_name || b.customerName,
+              contactEmail: b.contactEmail || b.contact_email || b.email,
+              contactPhone: b.contactPhone || b.contact_phone || b.phone,
+              departureDate: b.departureDate || b.departure_date,
+              paymentStatus: b.paymentStatus || b.payment_status || "pending",
+              completed: b.completed || false,
+            }));
+            setBookings(normalized);
+          }
+        } catch (error) {
+          console.error("Lỗi tải bookings:", error);
+        }
+      }
+      setLoading(false);
+    };
+
+    loadData();
   }, []);
 
   const handleLogout = () => {
@@ -41,18 +99,26 @@ export default function BookingsPage() {
     router.push("/auth/login");
   };
 
-  if (!data) {
+  const isTourCompleted = (booking: Booking) => {
+    if (booking.completed) return true;
+    // Giả sử tour 3 ngày, nếu departureDate + 3 < now thì completed
+    const depDate = new Date(booking.departureDate);
+    const now = new Date();
+    const endDate = new Date(depDate);
+    endDate.setDate(endDate.getDate() + 3); // Giả sử 3 ngày
+    return endDate < now;
+  };
+
+  if (loading) {
     return (
-      <div className="text-center py-20 text-red-500 font-semibold">
-        Chưa có thông tin tour!
+      <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>Đang tải...</p>
+        </div>
       </div>
     );
   }
-
-  const total =
-    Number(data.adults || 1) * Number(data.pricePerAdult || 0) +
-    Number(data.children || 0) * Number(data.pricePerChild || 0) +
-    500000;
 
   return (
     <div className=" min-h-screen bg-gray-100 p-6 flex gap-6">
@@ -94,69 +160,118 @@ export default function BookingsPage() {
       {/* ===== CONTENT ===== */}
       <div className="flex-1 space-y-6">
 
-        {/* CARD TOUR */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <h1 className="text-2xl font-bold">Tour đã đặt</h1>
 
-          <h1 className="text-2xl font-bold mb-4">
-            Tour đã đặt
-          </h1>
-
-          <div className="flex gap-5">
-
-            {/* Image */}
-            {data.thumbnail && (
-              <img
-                src={data.thumbnail}
-                className="w-56 h-40 object-cover rounded-xl"
-              />
-            )}
-
-            {/* Info */}
-            <div className="flex-1 space-y-2">
-              <p className="text-lg font-semibold">{data.tourName}</p>
-
-              <p className="text-gray-500">
-                {data.hotelName} - {data.city}
-              </p>
-
-              <p>
-                👨‍👩‍👧 {data.adults} người lớn - {data.children} trẻ em
-              </p>
-
-              <p className="text-xl text-indigo-600 font-bold">
-                {formatVND(total)}
-              </p>
-            </div>
+        {bookings.length === 0 ? (
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
+            <p className="text-gray-500">Bạn chưa đặt tour nào.</p>
           </div>
-        </div>
+        ) : (
+          bookings.map((booking) => {
+            const total =
+              booking.adults * booking.pricePerAdult +
+              booking.children * booking.pricePerChild +
+              500000;
 
-        {/* CONTACT */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="font-bold text-lg mb-3">
-            Thông tin liên hệ
-          </h2>
+            return (
+              <div key={booking.id} className="bg-white rounded-2xl shadow-lg p-6">
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="flex gap-5">
 
-            <div>
-              <p className="text-gray-500">Khách hàng</p>
-              <p className="font-medium">{data.contactName}</p>
-            </div>
+                  {/* Image */}
+                  {booking.thumbnail && (
+                    <img
+                      src={booking.thumbnail}
+                      className="w-56 h-40 object-cover rounded-xl"
+                    />
+                  )}
 
-            <div>
-              <p className="text-gray-500">Email</p>
-              <p className="font-medium">{data.contactEmail}</p>
-            </div>
+                  {/* Info */}
+                  <div className="flex-1 space-y-2">
+                    <p className="text-lg font-semibold">{booking.tourName}</p>
 
-            <div>
-              <p className="text-gray-500">Số điện thoại</p>
-              <p className="font-medium">{data.contactPhone}</p>
-            </div>
+                    <p className="text-gray-500">
+                      {booking.hotelName} - {booking.city}
+                    </p>
 
-          </div>
-        </div>
+                    <p>
+                      👨‍👩‍👧 {booking.adults} người lớn - {booking.children} trẻ em
+                    </p>
+
+                    <p className="text-xl text-indigo-600 font-bold">
+                      {formatVND(total)}
+                    </p>
+
+                    <p className="text-sm">
+                      Ngày đi: {new Date(booking.departureDate).toLocaleDateString("vi-VN")}
+                    </p>
+
+                    <p className="text-sm">
+                      Trạng thái: {booking.paymentStatus === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}
+                    </p>
+
+                    {isTourCompleted(booking) && (
+                      <button 
+                        onClick={() => setReviewBooking(booking)}
+                        className="mt-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 flex items-center gap-2"
+                      >
+                        <Star size={16} /> Đánh giá tour
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* CONTACT */}
+                <div className="mt-4 pt-4 border-t">
+                  <h3 className="font-bold text-lg mb-3">Thông tin liên hệ</h3>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+
+                    <div>
+                      <p className="text-gray-500">Khách hàng</p>
+                      <p className="font-medium">{booking.contactName}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-gray-500">Email</p>
+                      <p className="font-medium">{booking.contactEmail}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-gray-500">Số điện thoại</p>
+                      <p className="font-medium">{booking.contactPhone}</p>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
 
       </div>
+
+      {/* REVIEW MODAL */}
+      {reviewBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Đánh giá tour: {reviewBooking.tourName}</h2>
+              <button 
+                onClick={() => setReviewBooking(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <CommentForm 
+              tourId={reviewBooking.tourId} 
+              tourName={reviewBooking.tourName}
+              onCommentAdded={() => setReviewBooking(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface Booking {
   id: string;
@@ -8,12 +8,15 @@ interface Booking {
   phone: string;
   tourName: string;
   departureDate: string;
-  adults: number; // người lớn
-  children: number; // trẻ em
-  price: number; // giá mỗi người lớn
-  childPrice: number; // giá trẻ em
+  adults: number;
+  children: number;
+  price: number;
+  childPrice: number;
   paymentStatus: "paid" | "deposit";
+  completed?: boolean;
 }
+
+const API_URL = "https://db-datn-six.vercel.app/api/bookings";
 
 const mockData: Booking[] = [
   {
@@ -44,69 +47,213 @@ const mockData: Booking[] = [
   },
 ];
 
+// Normalize để tương thích nhiều cấu trúc JSON khác nhau từ API
+function normalizeBooking(raw: Record<string, unknown>): Booking {
+  return {
+    id: String(raw.id || raw._id || ""),
+    customerName: String(raw.customerName || raw.customer_name || raw.name || raw.fullName || "—"),
+    email: String(raw.email || "—"),
+    phone: String(raw.phone || raw.phoneNumber || raw.phone_number || "—"),
+    tourName: String(raw.tourName || raw.tour_name || (raw.tour as Record<string, unknown>)?.name || "—"),
+    departureDate: String(raw.departureDate || raw.departure_date || raw.date || "—"),
+    adults: parseInt(String(raw.adults || raw.numAdults || raw.num_adults || 1)),
+    children: parseInt(String(raw.children || raw.numChildren || raw.num_children || 0)),
+    price: parseFloat(String(raw.price || raw.adultPrice || raw.adult_price || 0)),
+    childPrice: parseFloat(String(raw.childPrice || raw.child_price || raw.childrenPrice || 0)),
+    paymentStatus: (raw.paymentStatus || raw.payment_status || raw.status) === "paid" ? "paid" : "deposit",
+    completed: Boolean(raw.completed || false),
+  };
+}
+
 const formatCurrency = (value: number) =>
-  value.toLocaleString("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  });
+  value.toLocaleString("vi-VN", { style: "currency", currency: "VND" });
 
 export default function BookingPage() {
-  const [bookings] = useState<Booking[]>(mockData);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isLiveData, setIsLiveData] = useState(false);
+
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+
+      // Hỗ trợ nhiều cấu trúc: array thẳng, hoặc { data: [], bookings: [], results: [] }
+      const raw: Record<string, unknown>[] = Array.isArray(json)
+        ? json
+        : (json.data || json.bookings || json.results || []);
+        setBookings(raw.map(normalizeBooking));
+      setIsLiveData(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Lỗi không xác định";
+      setError(`Không thể tải từ API (${msg}). Hiển thị dữ liệu mẫu.`);
+      setBookings(mockData);
+      setIsLiveData(false);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const markCompleted = async (id: string) => {
+    // Giả định API PUT để update completed
+    try {
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: true }),
+      });
+      if (res.ok) {
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, completed: true } : b));
+      }
+    } catch (error) {
+      console.error("Lỗi cập nhật:", error);
+      // Fallback: update local
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, completed: true } : b));
+    }
+  };
+
+  const totalRevenue = bookings.reduce(
+    (sum, b) => sum + b.adults * b.price + b.children * b.childPrice,
+    0
+  );
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">📄 Danh sách Booking Tour</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">📄 Danh sách Booking Tour</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {isLiveData ? "🟢 Dữ liệu thật từ API" : "🟡 Dữ liệu mẫu"}
+          </p>
+        </div>
+        <button
+          onClick={fetchBookings}
+          disabled={loading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+        >
+          {loading ? "Đang tải..." : "↻ Làm mới"}
+        </button>
+      </div>
 
+      {/* Thống kê nhanh */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="bg-gray-50 rounded-xl p-4">
+          <div className="text-xs text-gray-500">Tổng booking</div>
+          <div className="text-xl font-bold">{bookings.length}</div>
+        </div>
+        <div className="bg-green-50 rounded-xl p-4">
+          <div className="text-xs text-gray-500">Đã thanh toán</div>
+          <div className="text-xl font-bold text-green-700">
+            {bookings.filter((b) => b.paymentStatus === "paid").length}
+          </div>
+        </div>
+        <div className="bg-yellow-50 rounded-xl p-4">
+          <div className="text-xs text-gray-500">Đã cọc</div>
+          <div className="text-xl font-bold text-yellow-700">
+            {bookings.filter((b) => b.paymentStatus === "deposit").length}
+          </div>
+        </div>
+        <div className="bg-blue-50 rounded-xl p-4">
+          <div className="text-xs text-gray-500">Doanh thu</div>
+          <div className="text-lg font-bold text-blue-700">
+            {formatCurrency(totalRevenue)}
+          </div>
+        </div>
+      </div>
+
+      {/* Thông báo lỗi */}
+      {error && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-sm">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {/* Bảng */}
       <div className="overflow-x-auto">
         <table className="w-full bg-white rounded-2xl shadow">
           <thead className="bg-gray-100 text-left">
             <tr>
               <th className="p-3">Khách hàng</th>
-              <th>Email</th>
-              <th>SĐT</th>
-              <th>Tour</th>
-              <th>Ngày đi</th>
-              <th>Số người</th>
-              <th>Tổng tiền</th>
-              <th>Trạng thái</th>
+              <th className="p-3">Email</th>
+              <th className="p-3">SĐT</th>
+              <th className="p-3">Tour</th>
+              <th className="p-3">Ngày đi</th>
+              <th className="p-3">Số người</th>
+              <th className="p-3">Tổng tiền</th>
+              <th className="p-3">Trạng thái</th>
+              <th className="p-3">Hoàn thành</th>
             </tr>
           </thead>
-
           <tbody>
-            {bookings.map((b) => {
-              const total = b.adults * b.price + b.children * b.childPrice;
-              return (
-                <tr key={b.id} className="border-t hover:bg-gray-50">
-                  <td className="p-3 font-medium">{b.customerName}</td>
-                  <td>{b.email}</td>
-                  <td>{b.phone}</td>
-                  <td>{b.tourName}</td>
-                  <td>{b.departureDate}</td>
-
-                  {/* số người chi tiết */}
-                  <td>
-                    <div className="text-sm">
-                      <div>👨‍🦰 Người lớn: {b.adults}</div>
-                      <div>🧒 Trẻ em: {b.children}</div>
-                    </div>
-                  </td>
-
-                  <td className="font-semibold">{formatCurrency(total)}</td>
-
-                  <td>
-                    {b.paymentStatus === "paid" ? (
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                        Đã thanh toán 100%
-                      </span>
-                    ) : (
-                      <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">
-                        Đã cọc 50%
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+            {loading && bookings.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="p-8 text-center text-gray-400">
+                  Đang tải dữ liệu...
+                </td>
+              </tr>
+            ) : bookings.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="p-8 text-center text-gray-400">
+                  Không có booking nào.
+                </td>
+              </tr>
+            ) : (
+              bookings.map((b) => {
+                const total = b.adults * b.price + b.children * b.childPrice;
+                return (
+                  <tr key={b.id} className="border-t hover:bg-gray-50">
+                    <td className="p-3 font-medium">{b.customerName}</td>
+                    <td className="p-3 text-sm text-gray-600">{b.email}</td>
+                    <td className="p-3">{b.phone}</td>
+                    <td className="p-3">{b.tourName}</td>
+                    <td className="p-3">
+                      {b.departureDate !== "—"
+                        ? new Date(b.departureDate).toLocaleDateString("vi-VN")
+                        : "—"}
+                    </td>
+                    <td className="p-3">
+                      <div className="text-sm">
+                        <div>👨‍🦰 NL: {b.adults} ({formatCurrency(b.price)}/ng)</div>
+                        {b.children > 0 && (
+                          <div>🧒 TE: {b.children} ({formatCurrency(b.childPrice)}/ng)</div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3 font-semibold">{formatCurrency(total)}</td>
+                    <td className="p-3">
+                      {b.paymentStatus === "paid" ? (
+                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                          Đã TT 100%
+                        </span>
+                      ) : (
+                        <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">
+                          Đã cọc 50%
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {b.completed ? (
+                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                          ✅ Hoàn thành
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => markCompleted(b.id)}
+                          className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                        >
+                          Đánh dấu HT
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
