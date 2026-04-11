@@ -1,5 +1,5 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Plane,
@@ -45,30 +45,38 @@ function SearchContent() {
   const router = useRouter();
 
   // ✅ READ LOCALSTORAGE
-  const rawBooking = localStorage.getItem("tour_booking");
-  const bookingData = rawBooking ? JSON.parse(rawBooking) : {};
+  const [bookingData, setBookingData] = useState<any>(null);
 
-  const tourName = bookingData.tourName ?? searchParams.get("tourName") ?? "";
-  const hotelName =
-    bookingData.hotelName ?? searchParams.get("hotelName") ?? "";
-  const city = bookingData.city ?? searchParams.get("city") ?? "";
-  const thumbnail =
-    bookingData.thumbnail ?? searchParams.get("thumbnail") ?? "";
-  const tourSlug = bookingData.tourSlug ?? searchParams.get("tourSlug") ?? "";
-  const pricePerAdult = parseInt(
-    bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0",
-  );
-  const pricePerChild = parseInt(searchParams.get("pricePerChild") ?? "0");
-  const adults = parseInt(
-    bookingData.adults ?? searchParams.get("adults") ?? "1",
-  );
-  const children = parseInt(
-    bookingData.children ?? searchParams.get("children") ?? "0",
-  );
-  const infants = parseInt(bookingData.infants ?? "0");
-  const trip_id = bookingData.trip_id ?? "";
-  const singleRooms = parseInt(bookingData.singleRooms ?? "0");
-  const grandTotal = parseInt(bookingData.grandTotal ?? "0");
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("tour_booking");
+
+      if (!raw) {
+        router.push("/");
+        return;
+      }
+
+      setBookingData(JSON.parse(raw));
+    } catch (err) {
+      console.error("Parse booking failed", err);
+      router.push("/");
+    }
+  }, [router]);
+
+  if (!bookingData) {
+    return <div className="p-10 text-center">Đang tải dữ liệu...</div>;
+  }
+
+  const tourName = bookingData.tourName ?? "";
+  const hotelName = bookingData.hotelName ?? "";
+  const city = bookingData.city ?? "";
+  const thumbnail = bookingData.thumbnail ?? "";
+
+  const pricePerAdult = bookingData.basePrice ?? 0;
+  const pricePerChild = bookingData.pricePerChild ?? 0;
+
+  const adults = bookingData.adults ?? 1;
+  const children = bookingData.children ?? 0;
 
   const [form, setForm] = useState({
     name: "",
@@ -121,17 +129,21 @@ function SearchContent() {
   };
 
   const handleNext = () => {
-    const newTouched = Object.fromEntries(FIELDS.map((f) => [f, true]));
-    const newErrors = Object.fromEntries(
-      FIELDS.map((f) => [f, validate(f, (form as Record<string, string>)[f])]),
-    );
+    const newErrors = {
+      name: validate("name", form.name),
+      email: validate("email", form.email),
+      phone: validate("phone", form.phone),
+    };
 
-    setTouched(newTouched);
     setErrors(newErrors);
+    setTouched({
+      name: true,
+      email: true,
+      phone: true,
+    });
 
     if (Object.values(newErrors).some(Boolean)) return;
 
-    // ✅ FULL BOOKING DATA
     const fullBooking = {
       ...bookingData,
       contactName: form.name,
@@ -143,10 +155,9 @@ function SearchContent() {
       total,
     };
 
-    // ✅ LƯU VÀO SESSION STORAGE
-    sessionStorage.setItem("bookingData", JSON.stringify(fullBooking));
+    // ⚠️ QUAN TRỌNG: dùng localStorage (không phải session)
+    localStorage.setItem("bookingData", JSON.stringify(fullBooking));
 
-    // ✅ CHUYỂN TRANG (KHÔNG PARAM)
     router.push("/checkout/payment");
   };
 
