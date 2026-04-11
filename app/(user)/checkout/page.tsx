@@ -52,16 +52,24 @@ function SearchContent() {
   // ✅ READ LOCALSTORAGE
   const rawBooking = localStorage.getItem("tour_booking");
   const bookingData = rawBooking ? JSON.parse(rawBooking) : {};
-  
+
   const tourName = bookingData.tourName ?? searchParams.get("tourName") ?? "";
-  const hotelName = bookingData.hotelName ?? searchParams.get("hotelName") ?? "";
+  const hotelName =
+    bookingData.hotelName ?? searchParams.get("hotelName") ?? "";
   const city = bookingData.city ?? searchParams.get("city") ?? "";
-  const thumbnail = bookingData.thumbnail ?? searchParams.get("thumbnail") ?? "";
+  const thumbnail =
+    bookingData.thumbnail ?? searchParams.get("thumbnail") ?? "";
   const tourSlug = bookingData.tourSlug ?? searchParams.get("tourSlug") ?? "";
-  const pricePerAdult = parseInt(bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0");
+  const pricePerAdult = parseInt(
+    bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0",
+  );
   const pricePerChild = parseInt(searchParams.get("pricePerChild") ?? "0");
-  const adults = parseInt(bookingData.adults ?? searchParams.get("adults") ?? "1");
-  const children = parseInt(bookingData.children ?? searchParams.get("children") ?? "0");
+  const adults = parseInt(
+    bookingData.adults ?? searchParams.get("adults") ?? "1",
+  );
+  const children = parseInt(
+    bookingData.children ?? searchParams.get("children") ?? "0",
+  );
   const infants = parseInt(bookingData.infants ?? "0");
   const trip_id = bookingData.trip_id ?? "";
   const singleRooms = parseInt(bookingData.singleRooms ?? "0");
@@ -83,7 +91,7 @@ function SearchContent() {
   const subtotalChildren = children * pricePerChild;
   const INSURANCE = 500_000;
   const total = subtotalAdults + subtotalChildren + INSURANCE;
-  const payNow = Math.round(total * paymentPct / 100);
+  const payNow = Math.round((total * paymentPct) / 100);
   const remaining = total - payNow;
 
   const orderItems = [
@@ -122,42 +130,29 @@ function SearchContent() {
     const newErrors = Object.fromEntries(
       FIELDS.map((f) => [f, validate(f, (form as Record<string, string>)[f])]),
     );
+
     setTouched(newTouched);
     setErrors(newErrors);
+
     if (Object.values(newErrors).some(Boolean)) return;
 
-    // ✅ PASS FULL BOOKING DATA
+    // ✅ FULL BOOKING DATA
     const fullBooking = {
-      ...bookingData,  // trip_id, adults, children, infants, singleRooms, grandTotal
+      ...bookingData,
       contactName: form.name,
       contactEmail: form.email,
       contactPhone: form.phone,
       paymentPct,
       payNow,
       remaining,
-      total,  // full price including insurance
+      total,
     };
-    
-    const params = new URLSearchParams({
-      bookingData: JSON.stringify(fullBooking),
-      // Fallback individual params
-      tourName,
-      hotelName,
-      city,
-      thumbnail,
-      tourSlug,
-      pricePerAdult: String(pricePerAdult),
-      pricePerChild: String(pricePerChild),
-      adults: String(adults),
-      children: String(children),
-      contactName: form.name,
-      contactEmail: form.email,
-      contactPhone: form.phone,
-      paymentPct: String(paymentPct),
-      payNow: String(payNow),
-      remaining: String(remaining),
-    });
-    router.push(`/checkout/payment?${params.toString()}`);
+
+    // ✅ LƯU VÀO SESSION STORAGE
+    sessionStorage.setItem("bookingData", JSON.stringify(fullBooking));
+
+    // ✅ CHUYỂN TRANG (KHÔNG PARAM)
+    router.push("/checkout/payment");
   };
 
   const inputClass = (name: string) =>
@@ -333,7 +328,7 @@ function SearchContent() {
                 )}
               </div>
 
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-slate-600 mb-1.5">
                   Địa chỉ <span className="text-red-400">*</span>
                 </label>
@@ -360,7 +355,7 @@ function SearchContent() {
                     </p>
                   )
                 )}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

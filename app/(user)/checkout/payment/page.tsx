@@ -1,6 +1,6 @@
 "use client";
-import { useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, Suspense, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plane,
   MapPin,
@@ -17,44 +17,83 @@ function formatVND(n: number) {
 }
 
 function generateTxnRef() {
-  return Date.now() + "_" + Math.random().toString(36).slice(2, 7).toUpperCase();
+  return (
+    Date.now() + "_" + Math.random().toString(36).slice(2, 7).toUpperCase()
+  );
 }
 
 function SearchContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
+  const [booking, setBooking] = useState<any>(null);
 
-  const tourName = searchParams.get("tourName") ?? "";
-  const city = searchParams.get("city") ?? "";
-  const thumbnail = searchParams.get("thumbnail") ?? "";
-  const tourSlug = searchParams.get("tourSlug") ?? "";
-  const pricePerAdult = parseInt(searchParams.get("pricePerAdult") ?? "0");
-  const pricePerChild = parseInt(searchParams.get("pricePerChild") ?? "0");
-  const adults = parseInt(searchParams.get("adults") ?? "1");
-  const children = parseInt(searchParams.get("children") ?? "0");
-  const contactName = searchParams.get("contactName") ?? "";
-  const contactEmail = searchParams.get("contactEmail") ?? "";
-  const contactPhone = searchParams.get("contactPhone") ?? "";
-  const paymentPct = parseInt(searchParams.get("paymentPct") ?? "100") as 50 | 100;
+  useEffect(() => {
+    try {
+      const data = localStorage.getItem("bookingData");
+
+      if (!data) {
+        router.push("/");
+        return;
+      }
+
+      const parsed = JSON.parse(data);
+      setBooking(parsed);
+    } catch (err) {
+      console.error("Parse bookingData failed", err);
+      router.push("/");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (booking) {
+      localStorage.setItem("bookingData", JSON.stringify(booking));
+    }
+  }, [booking, router]);
+
+  const tourName = booking?.tourName ?? "";
+  const city = booking?.city ?? "";
+  const thumbnail = booking?.thumbnail ?? "";
+  const tourSlug = booking?.tourSlug ?? "";
+
+  const pricePerAdult = booking?.basePrice ?? 0;
+  const adults = booking?.adults ?? 1;
+  const children = booking?.children ?? 0;
+
+  const contactName = booking?.contactName ?? "";
+  const contactEmail = booking?.contactEmail ?? "";
+  const contactPhone = booking?.contactPhone ?? "";
+
+  const paymentPct = booking?.paymentPct ?? 100;
 
   const INSURANCE = 500_000;
+
   const subtotalAdults = adults * pricePerAdult;
-  const subtotalChildren = children * pricePerChild;
+  const subtotalChildren = children * (booking?.pricePerChild ?? 0);
+
   const total = subtotalAdults + subtotalChildren + INSURANCE;
-  const payNow = parseInt(
-    searchParams.get("payNow") ?? String(Math.round((total * paymentPct) / 100))
-  );
-  const remaining = parseInt(searchParams.get("remaining") ?? String(total - payNow));
+
+  const payNow = booking?.payNow ?? Math.round((total * paymentPct) / 100);
+
+  const remaining = booking?.remaining ?? total - payNow;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  console.log( "total", total, "payNow", payNow, "remaining", remaining);
+  if (!booking) {
+    return <div className="p-10 text-center">Đang tải dữ liệu...</div>;
+  }
 
   const orderItems = [
-    { label: `Giá tour (${adults} người lớn)`, value: formatVND(subtotalAdults) },
+    {
+      label: `Giá tour (${adults} người lớn)`,
+      value: formatVND(subtotalAdults),
+    },
     ...(children > 0
-      ? [{ label: `Giá tour (${children} trẻ em)`, value: formatVND(subtotalChildren) }]
+      ? [
+          {
+            label: `Giá tour (${children} trẻ em)`,
+            value: formatVND(subtotalChildren),
+          },
+        ]
       : []),
     { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
   ];
@@ -68,7 +107,7 @@ function SearchContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: total,
+          amount: payNow,
           orderInfo: `Thanh toan tour ${tourSlug || tourName}`,
           txnRef,
         }),
@@ -88,14 +127,16 @@ function SearchContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans pb-10">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 font-sans pb-10">
       {/* Header */}
       <header className="bg-white border-b border-slate-100 shadow-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center gap-3">
           <div className="bg-indigo-600 text-white p-2 rounded-xl">
             <Plane size={20} />
           </div>
-          <span className="font-bold text-xl text-slate-800 tracking-tight">TourViet</span>
+          <span className="font-bold text-xl text-slate-800 tracking-tight">
+            TourViet
+          </span>
           <div className="ml-auto flex items-center gap-2 text-sm">
             <span className="text-slate-400 px-3 py-1 rounded-full text-xs border border-slate-200 line-through">
               1 Thông tin
@@ -130,10 +171,14 @@ function SearchContent() {
 
             <div className="flex items-center gap-4 p-4 rounded-xl border-2 border-indigo-500 bg-indigo-50 mb-6">
               <div className="w-14 h-10 bg-blue-700 rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-white font-extrabold text-sm tracking-tight">VNPay</span>
+                <span className="text-white font-extrabold text-sm tracking-tight">
+                  VNPay
+                </span>
               </div>
               <div>
-                <p className="font-semibold text-sm text-indigo-700">Cổng thanh toán VNPay</p>
+                <p className="font-semibold text-sm text-indigo-700">
+                  Cổng thanh toán VNPay
+                </p>
                 <p className="text-xs text-slate-400 mt-0.5">
                   ATM nội địa · Visa/Mastercard · QR Code · Ví điện tử
                 </p>
@@ -145,9 +190,15 @@ function SearchContent() {
                 { step: "1", text: 'Nhấn "Xác nhận thanh toán" bên dưới' },
                 { step: "2", text: "Bạn sẽ được chuyển sang trang VNPay" },
                 { step: "3", text: "Chọn phương thức và hoàn tất thanh toán" },
-                { step: "4", text: "Hệ thống tự động xác nhận và gửi vé cho bạn" },
+                {
+                  step: "4",
+                  text: "Hệ thống tự động xác nhận và gửi vé cho bạn",
+                },
               ].map((item) => (
-                <div key={item.step} className="flex items-center gap-3 text-sm text-slate-600">
+                <div
+                  key={item.step}
+                  className="flex items-center gap-3 text-sm text-slate-600"
+                >
                   <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 font-bold text-xs flex items-center justify-center shrink-0">
                     {item.step}
                   </div>
@@ -167,7 +218,9 @@ function SearchContent() {
         {/* RIGHT */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5">
-            <h2 className="font-semibold text-slate-700 text-lg">Tổng kết đơn hàng</h2>
+            <h2 className="font-semibold text-slate-700 text-lg">
+              Tổng kết đơn hàng
+            </h2>
 
             {thumbnail && (
               <div className="flex gap-3 items-center bg-slate-50 rounded-xl p-3 border border-slate-100">
@@ -177,7 +230,9 @@ function SearchContent() {
                   className="w-16 h-12 rounded-lg object-cover shrink-0"
                 />
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-700 truncate">{tourName}</p>
+                  <p className="text-sm font-semibold text-slate-700 truncate">
+                    {tourName}
+                  </p>
                   <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                     <MapPin size={10} />
                     {city}
@@ -190,7 +245,9 @@ function SearchContent() {
               {orderItems.map((item) => (
                 <div key={item.label} className="flex justify-between text-sm">
                   <span className="text-slate-500">{item.label}</span>
-                  <span className="font-medium text-slate-700">{item.value}</span>
+                  <span className="font-medium text-slate-700">
+                    {item.value}
+                  </span>
                 </div>
               ))}
             </div>
@@ -198,7 +255,9 @@ function SearchContent() {
             <div className="border-t border-slate-100 pt-3">
               <div className="flex justify-between text-sm mb-3">
                 <span className="text-slate-500">Tổng cộng</span>
-                <span className="font-semibold text-slate-700">{formatVND(total)}</span>
+                <span className="font-semibold text-slate-700">
+                  {formatVND(total)}
+                </span>
               </div>
 
               <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 space-y-2">
@@ -209,20 +268,30 @@ function SearchContent() {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-600">Thanh toán ngay</span>
-                  <span className="text-xl font-bold text-indigo-600">{formatVND(payNow)}</span>
+                  <span className="text-sm text-slate-600">
+                    Thanh toán ngay
+                  </span>
+                  <span className="text-xl font-bold text-indigo-600">
+                    {formatVND(payNow)}
+                  </span>
                 </div>
                 {paymentPct === 50 && remaining > 0 && (
                   <div className="flex justify-between items-center border-t border-indigo-100 pt-2">
-                    <span className="text-xs text-slate-400">Còn lại (trước khởi hành)</span>
-                    <span className="text-xs font-medium text-slate-500">{formatVND(remaining)}</span>
+                    <span className="text-xs text-slate-400">
+                      Còn lại (trước khởi hành)
+                    </span>
+                    <span className="text-xs font-medium text-slate-500">
+                      {formatVND(remaining)}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs text-slate-500 space-y-1">
-              <p className="font-medium text-slate-600 mb-1">Thông tin liên hệ</p>
+              <p className="font-medium text-slate-600 mb-1">
+                Thông tin liên hệ
+              </p>
               <p>{contactName}</p>
               <p>{contactEmail}</p>
               <p>{contactPhone}</p>
