@@ -851,3 +851,47 @@ Endpoint: /:id
 Full URL: https://db-pickyourway.vercel.app/api/contacts/{id}
 Mô tả: Admin xóa bỏ một yêu cầu liên hệ khỏi hệ thống.
 Content-Type: application/json
+
+==================================================
+MODULE: SERVICE API
+BASE URL: https://db-pickyourway.vercel.app/api/services
+==================================================
+
+1. Tạo Dịch Vụ Mới
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-pickyourway.vercel.app/api/services/create
+Mô tả: Thêm một dịch vụ mới (khách sạn, xe, HDV...) vào kho tổng.
+Content-Type: application/json
+
+2. Lấy Danh Sách Dịch Vụ
+--------------------------------------------------
+Method: GET
+Endpoint: /all
+Full URL: https://db-pickyourway.vercel.app/api/services/all?type=hotel
+Mô tả: Lấy danh sách dịch vụ. Có thể dùng query ?type= để lọc theo loại (hotel, transport, guide...).
+Content-Type: application/json
+
+3. Lấy Chi Tiết Dịch Vụ
+--------------------------------------------------
+
+Method: GET
+Endpoint: /:id
+Full URL: https://db-pickyourway.vercel.app/api/services/{id}
+Mô tả: Lấy thông tin chi tiết của một dịch vụ cụ thể.
+
+4. Cập Nhật Dịch Vụ
+--------------------------------------------------
+Method: PUT
+Endpoint: /update/:id
+Full URL: https://db-pickyourway.vercel.app/api/services/update/{id}
+Mô tả: Cập nhật thông tin hoặc thay đổi giá gốc của dịch vụ.
+
+5. Xóa Dịch Vụ
+--------------------------------------------------
+
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-pickyourway.vercel.app/api/services/{id}
+Mô tả: Xóa vĩnh viễn dịch vụ khỏi kho dữ liệu.
