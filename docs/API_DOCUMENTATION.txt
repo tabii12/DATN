@@ -806,3 +806,48 @@ Endpoint: /:id
 Full URL: https://db-pickyourway.vercel.app/api/descriptions/{id}
 Mô tả: Xoá mô tả khỏi tour.
 Content-Type: application/json
+
+==================================================
+MODULE: DESCRIPTION API
+BASE URL: https://db-pickyourway.vercel.app/api/contacts
+==================================================
+
+1. Tạo Yêu Cầu Liên Hệ (Contact)
+--------------------------------------------------
+Method: POST
+Endpoint: /create
+Full URL: https://db-pickyourway.vercel.app/api/contacts/create
+Người dùng gửi form liên hệ tư vấn hoặc đặt tour riêng.
+Content-Type: application/json
+
+2. Lấy Toàn Bộ Danh Sách Liên Hệ
+--------------------------------------------------
+Method: GET
+Endpoint: /all
+Full URL: https://db-pickyourway.vercel.app/api/contacts/all
+Mô tả: Admin lấy danh sách tất cả các yêu cầu liên hệ từ khách hàng.
+Content-Type: application/json
+
+3. Lấy Chi Tiết Một Liên Hệ
+--------------------------------------------------
+Method: GET
+Endpoint: /:id
+Full URL: https://db-pickyourway.vercel.app/api/contacts/{id}
+Mô tả: Admin xem chi tiết nội dung và thông tin khách hàng theo ID.
+Content-Type: application/json
+
+4. Cập Nhật Trạng Thái Liên Hệ
+--------------------------------------------------
+Method: PUT
+Endpoint: /status/:id
+Full URL: https://db-pickyourway.vercel.app/api/contacts/status/{id}
+Mô tả: Admin cập nhật trạng thái xử lý (Ví dụ: Chuyển từ 'pending' sang 'contacted').
+Content-Type: application/json
+
+5. Xóa Yêu Cầu Liên Hệ
+--------------------------------------------------
+Method: DELETE
+Endpoint: /:id
+Full URL: https://db-pickyourway.vercel.app/api/contacts/{id}
+Mô tả: Admin xóa bỏ một yêu cầu liên hệ khỏi hệ thống.
+Content-Type: application/json
