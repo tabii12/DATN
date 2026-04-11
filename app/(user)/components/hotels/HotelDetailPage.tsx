@@ -390,7 +390,7 @@ const departureDates = (tour?.trips ?? [])
       grandTotal: pricing.grandTotal,
       departureDate: trip ? new Date(trip.start_date).toLocaleDateString("vi-VN") : "",
     };
-    localStorage.setItem("tour_booking", JSON.stringify(bookingData));
+    localStorage.setItem("booking_data", JSON.stringify(bookingData));
     
     const params = new URLSearchParams({
       tourSlug: slug,  // Chỉ cần slug để identify

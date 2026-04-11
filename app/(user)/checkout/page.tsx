@@ -35,11 +35,6 @@ function validate(name: string, value: string): string {
         return "SĐT phải 10 số và bắt đầu bằng 0 (VD: 0912345678)";
       return "";
     }
-    case "address":
-      if (!value.trim()) return "Vui lòng nhập địa chỉ";
-      if (value.trim().length < 10)
-        return "Địa chỉ quá ngắn (tối thiểu 10 ký tự)";
-      return "";
     default:
       return "";
   }
@@ -50,18 +45,26 @@ function SearchContent() {
   const router = useRouter();
 
   // ✅ READ LOCALSTORAGE
-  const rawBooking = localStorage.getItem("tour_booking");
+  const rawBooking = localStorage.getItem("booking_data");
   const bookingData = rawBooking ? JSON.parse(rawBooking) : {};
-  
+
   const tourName = bookingData.tourName ?? searchParams.get("tourName") ?? "";
-  const hotelName = bookingData.hotelName ?? searchParams.get("hotelName") ?? "";
+  const hotelName =
+    bookingData.hotelName ?? searchParams.get("hotelName") ?? "";
   const city = bookingData.city ?? searchParams.get("city") ?? "";
-  const thumbnail = bookingData.thumbnail ?? searchParams.get("thumbnail") ?? "";
+  const thumbnail =
+    bookingData.thumbnail ?? searchParams.get("thumbnail") ?? "";
   const tourSlug = bookingData.tourSlug ?? searchParams.get("tourSlug") ?? "";
-  const pricePerAdult = parseInt(bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0");
+  const pricePerAdult = parseInt(
+    bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0",
+  );
   const pricePerChild = parseInt(searchParams.get("pricePerChild") ?? "0");
-  const adults = parseInt(bookingData.adults ?? searchParams.get("adults") ?? "1");
-  const children = parseInt(bookingData.children ?? searchParams.get("children") ?? "0");
+  const adults = parseInt(
+    bookingData.adults ?? searchParams.get("adults") ?? "1",
+  );
+  const children = parseInt(
+    bookingData.children ?? searchParams.get("children") ?? "0",
+  );
   const infants = parseInt(bookingData.infants ?? "0");
   const trip_id = bookingData.trip_id ?? "";
   const singleRooms = parseInt(bookingData.singleRooms ?? "0");
@@ -71,7 +74,6 @@ function SearchContent() {
     name: "",
     email: "",
     phone: "",
-    address: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -83,7 +85,7 @@ function SearchContent() {
   const subtotalChildren = children * pricePerChild;
   const INSURANCE = 500_000;
   const total = subtotalAdults + subtotalChildren + INSURANCE;
-  const payNow = Math.round(total * paymentPct / 100);
+  const payNow = Math.round((total * paymentPct) / 100);
   const remaining = total - payNow;
 
   const orderItems = [
@@ -102,7 +104,7 @@ function SearchContent() {
     { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
   ];
 
-  const FIELDS = ["name", "email", "phone", "address"];
+  const FIELDS = ["name", "email", "phone"];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -118,46 +120,47 @@ function SearchContent() {
   };
 
   const handleNext = () => {
+    // 1. Validation logic
     const newTouched = Object.fromEntries(FIELDS.map((f) => [f, true]));
     const newErrors = Object.fromEntries(
       FIELDS.map((f) => [f, validate(f, (form as Record<string, string>)[f])]),
     );
+
     setTouched(newTouched);
     setErrors(newErrors);
+
     if (Object.values(newErrors).some(Boolean)) return;
 
-    // ✅ PASS FULL BOOKING DATA
-    const fullBooking = {
-      ...bookingData,  // trip_id, adults, children, infants, singleRooms, grandTotal
+    // 2. Gom tất cả dữ liệu cần thiết vào một object duy nhất
+    // Kết hợp thông tin từ bookingData gốc và các dữ liệu từ form/tính toán hiện tại
+    const finalBookingPayload = {
+      ...bookingData, // trip_id, adults, children, infants, singleRooms, grandTotal...
+      tourName,
+      hotelName,
+      city,
+      thumbnail,
+      pricePerAdult,
+      pricePerChild,
       contactName: form.name,
       contactEmail: form.email,
       contactPhone: form.phone,
       paymentPct,
       payNow,
       remaining,
-      total,  // full price including insurance
+      total, // Tổng tiền cuối cùng sau khi cộng bảo hiểm/phí
+      updatedAt: new Date().toISOString(), // Optional: Để kiểm tra tính mới của dữ liệu
     };
-    
-    const params = new URLSearchParams({
-      bookingData: JSON.stringify(fullBooking),
-      // Fallback individual params
-      tourName,
-      hotelName,
-      city,
-      thumbnail,
-      tourSlug,
-      pricePerAdult: String(pricePerAdult),
-      pricePerChild: String(pricePerChild),
-      adults: String(adults),
-      children: String(children),
-      contactName: form.name,
-      contactEmail: form.email,
-      contactPhone: form.phone,
-      paymentPct: String(paymentPct),
-      payNow: String(payNow),
-      remaining: String(remaining),
-    });
-    router.push(`/checkout/payment?${params.toString()}`);
+
+    try {
+      // 3. Lưu vào localStorage với key 'booking_data'
+      localStorage.setItem("booking_data", JSON.stringify(finalBookingPayload));
+
+      // 4. Chuyển hướng sang trang payment (URL giờ đây cực kỳ sạch)
+      router.push("/checkout/payment");
+    } catch (error) {
+      console.error("Lỗi khi lưu dữ liệu đặt chỗ:", error);
+      // Bạn có thể thêm thông báo lỗi cho người dùng ở đây nếu localStorage bị đầy (rất hiếm)
+    }
   };
 
   const inputClass = (name: string) =>
@@ -328,35 +331,6 @@ function SearchContent() {
                   !touched.phone && (
                     <p className="mt-1 text-xs text-slate-400">
                       Nhập số bắt đầu bằng 0, đủ 10 chữ số
-                    </p>
-                  )
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">
-                  Địa chỉ <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    name="address"
-                    value={form.address}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="123 Đường ABC, Quận X, TP.HCM"
-                    className={inputClass("address")}
-                  />
-                  <FieldIcon name="address" />
-                </div>
-                {touched.address && errors.address ? (
-                  <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                    <AlertCircle size={11} />
-                    {errors.address}
-                  </p>
-                ) : (
-                  !touched.address && (
-                    <p className="mt-1 text-xs text-slate-400">
-                      Nhập đầy đủ địa chỉ, tối thiểu 10 ký tự
                     </p>
                   )
                 )}
