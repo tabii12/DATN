@@ -931,7 +931,7 @@ export default function EditTourPage() {
                     /tours/{val}
                   </span>
                 )}
-                onSave={() => {}}
+                onSave={() => { }}
               />
 
               <InlineField
@@ -1352,28 +1352,37 @@ export default function EditTourPage() {
                                   placeholder="Tiêu đề hoạt động"
                                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400"
                                 />
-                                <textarea
-                                  value={editDetailContent}
-                                  onChange={(e) =>
-                                    setEditDetailContent(e.target.value)
-                                  }
-                                  rows={3}
-                                  placeholder="Mô tả chi tiết..."
-                                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 resize-none"
-                                />
+                                <textarea value={editDetailContent} onChange={e => setEditDetailContent(e.target.value)} rows={3} placeholder="Mô tả chi tiết..." className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 resize-none" />
+                                {/* Upload ảnh cho hoạt động */}
+                                <div>
+                                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Ảnh minh hoạ</label>
+                                  <label className="flex items-center gap-2 w-fit bg-gray-50 hover:bg-orange-50 border border-dashed border-gray-200 hover:border-orange-300 text-gray-500 hover:text-orange-500 text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer transition-all">
+                                    🖼️ Thêm ảnh
+                                    <input type="file" accept="image/*" className="hidden"
+                                      onChange={async e => {
+                                        const file = e.target.files?.[0];
+                                        if (!file || !dt.place_id) return;
+                                        const fd = new FormData();
+                                        fd.append("images", file);
+                                        await fetch(`${API}/itinerary-details/${dt._id}/upload`, { method: "POST", body: fd });
+                                        await fetchTour();
+                                        e.target.value = "";
+                                      }}
+                                    />
+                                  </label>
+                                  {dt.place_id?.images && dt.place_id.images.length > 0 && (
+                                    <div className="flex gap-2 mt-2 flex-wrap">
+                                      {dt.place_id.images.map((img, k) => (
+                                        <div key={k} className="relative group/img">
+                                          <img src={img.image_url} className="h-16 w-24 object-cover rounded-lg border border-gray-100" />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                                 <div className="flex gap-2">
-                                  <button
-                                    onClick={() => updateDetail(dt._id)}
-                                    className="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer"
-                                  >
-                                    Lưu
-                                  </button>
-                                  <button
-                                    onClick={() => setEditingDetail(null)}
-                                    className="text-gray-500 text-xs px-4 py-2 rounded-lg border border-gray-200 cursor-pointer bg-white"
-                                  >
-                                    Huỷ
-                                  </button>
+                                  <button onClick={() => updateDetail(dt._id)} className="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer">Lưu</button>
+                                  <button onClick={() => setEditingDetail(null)} className="text-gray-500 text-xs px-4 py-2 rounded-lg border border-gray-200 cursor-pointer bg-white">Huỷ</button>
                                 </div>
                               </div>
                             ) : (
@@ -1503,13 +1512,13 @@ export default function EditTourPage() {
                         value={
                           tripForm.end_date && tripForm.start_date
                             ? Math.max(
-                                1,
-                                Math.round(
-                                  (new Date(tripForm.end_date).getTime() -
-                                    new Date(tripForm.start_date).getTime()) /
-                                    (24 * 60 * 60 * 1000),
-                                ) + 1,
-                              )
+                              1,
+                              Math.round(
+                                (new Date(tripForm.end_date).getTime() -
+                                  new Date(tripForm.start_date).getTime()) /
+                                (24 * 60 * 60 * 1000),
+                              ) + 1,
+                            )
                             : ""
                         }
                         onChange={(e) => {
