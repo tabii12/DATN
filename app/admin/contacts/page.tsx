@@ -94,10 +94,10 @@ export default function AdminContacts() {
                     <td className="px-4 py-4 align-top">
                       <p className="font-medium text-slate-800">{contact.tourName || "Không chọn tour"}</p>
                     </td>
-                    <td className="px-4 py-4 align-top text-slate-600 break-words">
+                    <td className="px-4 py-4 align-top text-slate-600 wrap-break-word">
                       <p>{contact.email}</p>
                     </td>
-                    <td className="px-4 py-4 align-top text-slate-600 break-words">
+                    <td className="px-4 py-4 align-top text-slate-600 wrap-break-word">
                       <p>{contact.phone || "Chưa có"}</p>
                     </td>
                     <td className="px-4 py-4 align-top text-slate-600 max-w-[320px]">
@@ -143,7 +143,7 @@ export default function AdminContacts() {
               </div>
               <div>
                 <p className="font-semibold text-slate-800">Nội dung</p>
-                <p className="whitespace-pre-line break-words text-slate-700">{selectedContact.message}</p>
+                <p className="whitespace-pre-line wrap-break-word text-slate-700">{selectedContact.message}</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
