@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2, Home, Calendar } from "lucide-react";
 
 function formatVND(n: number) {
   return n.toLocaleString("vi-VN") + "đ";
@@ -16,234 +16,185 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [data, setData] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(true);
 
-  // Parse tất cả VNPay params từ callback
-  const vnpParams = Object.fromEntries(searchParams.entries());
+  // Parse tất cả VNPay params từ callback URL
   const vnpResponseCode = searchParams.get("vnp_ResponseCode");
   const vnpTxnRef = searchParams.get("vnp_TxnRef");
   const vnpAmount = searchParams.get("vnp_Amount");
-  const vnpTransactionNo = searchParams.get("vnp_TransactionNo");
   const vnpBankCode = searchParams.get("vnp_BankCode");
+  const vnpTransactionNo = searchParams.get("vnp_TransactionNo");
   const status = searchParams.get("status") || "unknown";
 
   useEffect(() => {
-    // Lưu VNPay info vào localStorage để dùng ngay
-    if (vnpTxnRef) {
-      localStorage.setItem("vnpay_result", JSON.stringify(vnpParams));
-    }
-  }, [searchParams]);
+    const saveBookingToDB = async () => {
+      // ✅ 1. Lấy dữ liệu duy nhất từ key booking_data
+      const bookingDataRaw = localStorage.getItem("booking_data");
+      if (!bookingDataRaw) {
+        setIsProcessing(false);
+        return;
+      }
 
-  // ✅ PRIORITY: bookingData từ searchParams (checkout pass full data)
-  let bookingDataRaw = searchParams.get("bookingData");
-  let bookingData = null;
-
-  if (bookingDataRaw) {
-    try {
-      bookingData = JSON.parse(bookingDataRaw);
-    } catch (e) {
-      console.error("Parse bookingData failed:", e);
-    }
-  }
-
-  // Fallback 1: localStorage (old flow)
-  if (!bookingData) {
-    const localRaw = localStorage.getItem("tour_booking");
-    if (localRaw) bookingData = JSON.parse(localRaw);
-  }
-
-  // Fallback 2: VNPay orderInfo
-  if (!bookingData) {
-    const orderInfo = searchParams.get("vnp_OrderInfo");
-    if (orderInfo) {
       try {
-        bookingData = JSON.parse(decodeURIComponent(orderInfo));
-      } catch {}
-    }
-  }
+        const bookingData = JSON.parse(bookingDataRaw);
+        const isSuccess = vnpResponseCode === "00" && status === "success";
+        const paymentAmount = vnpAmount ? parseInt(vnpAmount) / 100 : 0;
 
-  // Xác định trạng thái thanh toán
-  const isSuccess = vnpResponseCode === "00" && status === "success";
-  const paymentAmount = vnpAmount ? parseInt(vnpAmount) / 100 : 0; // VNPay chia 100
-
-  useEffect(() => {
-    if (isSuccess && bookingData && vnpTxnRef) {
-      // Lưu booking vào DB với VNPay info
-      const saveBooking = async () => {
-        try {
-          // ✅ Lấy vnpay_result từ localStorage
-          const vnpayResultRaw = localStorage.getItem("vnpay_result");
-          let vnpayResult = null;
-          if (vnpayResultRaw) {
-            try {
-              vnpayResult = JSON.parse(vnpayResultRaw);
-            } catch (e) {
-              console.error("Parse vnpay_result failed");
-            }
-          }
-
-          const res = await fetch(
-            "https://db-pickyourway.vercel.app/api/bookings",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-              body: JSON.stringify({
-                ...bookingData,
-
-                orderId: vnpTxnRef,
-
-                vnpay: {
-                  method: "vnpay",
-                  amount: paymentAmount,
-
-                  status: isSuccess ? "paid" : "failed",
-
-                  bank_code: vnpBankCode || "NCB",
-                  bank_account_number: "0123456789",
-                  bank_account_name: "PICKYOURWAY COMPANY LIMITED",
-
-                  ...vnpayResult,
-                  responseCode: vnpResponseCode,
-                  txnRef: vnpTxnRef,
-                  transactionNo: vnpTransactionNo,
-
-                  transfer_content: `BOOKING_${vnpTxnRef}`,
-                },
-              }),
+        // ✅ 2. Nếu thanh toán thành công, gọi API lưu vào database
+        if (isSuccess && vnpTxnRef) {
+          const vnpParams = Object.fromEntries(searchParams.entries());
+          
+          const res = await fetch("https://db-pickyourway.vercel.app/api/bookings", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
-          );
+            body: JSON.stringify({
+              ...bookingData,
+              orderId: vnpTxnRef,
+              vnpay: {
+                ...vnpParams,
+                method: "vnpay",
+                amount: paymentAmount,
+                status: "paid",
+                bank_code: vnpBankCode || "NCB",
+                txnRef: vnpTxnRef,
+                transactionNo: vnpTransactionNo,
+              },
+            }),
+          });
 
           if (res.ok) {
-            localStorage.removeItem("tour_booking"); // Clear temp data
-            localStorage.removeItem("vnpay_result"); // Clear VNPay result
-            setData({ ...bookingData, vnpay: vnpParams });
+            // Cập nhật state để hiển thị UI
+            setData(bookingData);
+            // ✅ 3. XÓA SẠCH DỮ LIỆU TẠM TRONG LOCALSTORAGE
+            localStorage.removeItem("booking_data");
+            localStorage.removeItem("vnpay_result"); 
           }
-        } catch (error) {
-          console.error("Lưu booking failed:", error);
+        } else {
+          // Nếu không thành công, vẫn set data để hiển thị thông tin tour đã chọn
+          setData(bookingData);
         }
-      };
-      saveBooking();
-    }
-  }, [isSuccess, bookingData, vnpTxnRef]);
+      } catch (error) {
+        console.error("Lưu booking failed:", error);
+      } finally {
+        setIsProcessing(false);
+      }
+    };
 
-  if (!data) {
+    saveBookingToDB();
+  }, [vnpResponseCode, status, vnpTxnRef, searchParams]);
+
+  if (isProcessing) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-xl font-bold text-red-500">
-          Chưa có thông tin tour!
-        </h2>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+        <Loader2 className="animate-spin text-indigo-600" size={40} />
+        <p className="text-slate-500">Đang hoàn tất giao dịch...</p>
       </div>
     );
   }
 
-  const tourName = data.tourName ?? "";
-  const hotelName = data.hotelName ?? "";
-  const city = data.city ?? "";
-  const thumbnail = data.thumbnail ?? "";
-  const pricePerAdult = parseInt(data.pricePerAdult ?? "0");
-  const pricePerChild = parseInt(data.pricePerChild ?? "0");
-  const adults = parseInt(data.adults ?? "1");
-  const children = parseInt(data.children ?? "0");
-  const contactName = data.contactName ?? "";
-  const contactEmail = data.contactEmail ?? "";
-  const contactPhone = data.contactPhone ?? "";
+  if (!data) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-xl font-bold text-red-500">Chưa có thông tin đơn hàng!</h2>
+        <button onClick={() => router.push("/")} className="mt-4 text-indigo-600 underline">Quay lại trang chủ</button>
+      </div>
+    );
+  }
 
-  const payment = data.payment || {};
-  const paymentMethod = payment.method || "transfer";
-  const paymentAmountReal = payment.amount || 0;
-  const paymentStatus = payment.status || "pending";
+  // Trích xuất dữ liệu hiển thị (Sử dụng destructuring với giá trị mặc định)
+  const {
+    tourName = "",
+    hotelName = "",
+    city = "",
+    thumbnail = "",
+    adults = 1,
+    children = 0,
+    contactName = "",
+    contactEmail = "",
+    contactPhone = "",
+    total = 0,
+    payNow = 0,
+    remaining = 0,
+    paymentPct = 100
+  } = data;
 
-  const subtotalAdults = adults * pricePerAdult;
-  const subtotalChildren = children * pricePerChild;
-  const INSURANCE = 500000;
-  const total = subtotalAdults + subtotalChildren + INSURANCE;
-
-  const paymentPct = parseInt(data.paymentPct ?? "100");
-  const remaining = parseInt(data.remaining ?? "0");
-
-  const orderId = "TV" + Date.now().toString().slice(-8);
+  const isSuccess = vnpResponseCode === "00";
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="max-w-2xl mx-auto space-y-5">
-        {/* SUCCESS */}
-        <div className="bg-white p-6 rounded-xl text-center shadow">
-          <CheckCircle2 className="text-green-500 mx-auto mb-2" size={40} />
-          <h1 className="font-bold text-xl">Đặt tour thành công!</h1>
-          <p className="text-sm text-gray-500">Mã đơn: {orderId}</p>
+        {/* SUCCESS/FAIL CARD */}
+        <div className="bg-white p-8 rounded-2xl text-center shadow-sm border border-slate-100">
+          {isSuccess ? (
+            <>
+              <CheckCircle2 className="text-green-500 mx-auto mb-4" size={50} />
+              <h1 className="font-bold text-2xl text-slate-800">Đặt tour thành công!</h1>
+              <p className="text-sm text-slate-500 mt-2">Mã đơn: {vnpTxnRef}</p>
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="text-red-500 mx-auto mb-4 rotate-180" size={50} />
+              <h1 className="font-bold text-2xl text-slate-800">Thanh toán không thành công</h1>
+              <p className="text-sm text-slate-500 mt-2">Vui lòng thử lại hoặc liên hệ hỗ trợ.</p>
+            </>
+          )}
         </div>
 
-        {/* TOUR */}
-        <div className="bg-white rounded-xl overflow-hidden shadow">
-          {thumbnail && (
-            <img src={thumbnail} className="w-full h-48 object-cover" />
-          )}
-          <div className="p-4 space-y-2">
-            <h2 className="font-bold">{tourName}</h2>
-            <p className="text-sm text-gray-500">
-              {hotelName} - {city}
-            </p>
+        {/* TOUR INFO */}
+        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100">
+          {thumbnail && <img src={thumbnail} className="w-full h-52 object-cover" alt="tour" />}
+          <div className="p-6 space-y-4">
+            <div>
+              <h2 className="font-bold text-xl text-slate-800">{tourName}</h2>
+              <p className="text-sm text-slate-500">{hotelName} - {city}</p>
+            </div>
 
-            <p className="text-sm">
-              {adults} người lớn - {children} trẻ em
-            </p>
+            <div className="flex justify-between text-sm py-3 border-y border-slate-50">
+              <span className="text-slate-600">{adults} người lớn, {children} trẻ em</span>
+              <span className="font-bold text-indigo-600 text-lg">{formatVND(total)}</span>
+            </div>
 
-            {/* ===== CODE CŨ ===== */}
-            <p className="font-bold text-indigo-600">{formatVND(total)}</p>
-
-            {/* ===== ✅ PHẦN THÊM (LIÊN KẾT 2 FILE) ===== */}
-            <div className="space-y-1">
-              <p className="text-green-600 font-semibold">
-                Đã thanh toán: {formatVND(paymentAmountReal)}
-              </p>
-              <p className="text-sm text-gray-500">
-                Trạng thái: {paymentStatus}
-              </p>
-
+            <div className="space-y-2 pt-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500 font-medium">Đã thanh toán (VNPay):</span>
+                <span className="text-green-600 font-bold">{formatVND(payNow)}</span>
+              </div>
               {paymentPct === 50 && remaining > 0 && (
-                <p className="text-sm text-gray-500">
-                  Còn lại: {formatVND(remaining)}
-                </p>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-400 italic">Số tiền còn lại cần thanh toán:</span>
+                  <span className="text-slate-600 font-semibold">{formatVND(remaining)}</span>
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* CONTACT */}
-        <div className="bg-white p-4 rounded-xl shadow text-sm space-y-1">
+        {/* CONTACT INFO */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-1 text-sm text-slate-600">
+          <p className="font-semibold text-slate-800 mb-2">Thông tin liên hệ</p>
           <p>{contactName}</p>
           <p>{contactEmail}</p>
           <p>{contactPhone}</p>
         </div>
 
-        {/* ===== ✅ THÊM PHƯƠNG THỨC THANH TOÁN ===== */}
-        <div className="bg-white p-4 rounded-xl shadow text-sm">
-          <p className="font-medium">Phương thức thanh toán:</p>
-          <p className="text-indigo-600">{PAYMENT_LABELS[payment]}</p>
-        </div>
-
-        {/* BUTTON */}
-        <div className="flex gap-3">
+        {/* NAVIGATION BUTTONS */}
+        <div className="flex gap-4 pt-4">
           <button
             onClick={() => router.push("/")}
-            className="flex-1 border p-3 rounded-xl"
+            className="flex-1 bg-white border border-slate-200 p-4 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center justify-center gap-2"
           >
-            Trang chủ
+            <Home size={18} /> Trang chủ
           </button>
-
           <button
             onClick={() => router.push("/bookings")}
-            className="flex-1 bg-green-600 text-white p-3 rounded-xl"
+            className="flex-1 bg-indigo-600 text-white p-4 rounded-xl font-semibold hover:bg-indigo-700 shadow-lg transition flex items-center justify-center gap-2"
           >
-            Xem thông tin tour
+            <Calendar size={18} /> Đơn hàng của tôi
           </button>
         </div>
-
-        <p className="text-center text-xs text-gray-400">
-          Bảo mật bởi TourViet
-        </p>
       </div>
     </div>
   );
@@ -251,7 +202,7 @@ function SearchContent() {
 
 export default function Page() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="animate-spin" /></div>}>
       <SearchContent />
     </Suspense>
   );
