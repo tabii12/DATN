@@ -245,10 +245,6 @@ export default function EditTourPage() {
   const [tripForm, setTripForm]     = useState({ start_date: "", end_date: "", base_price: "", max_people: "" });
   const [editingTrip, setEditingTrip]   = useState<string | null>(null);
   const [editTripForm, setEditTripForm] = useState({ start_date: "", end_date: "", base_price: "", max_people: "" });
-  const [repeatMode, setRepeatMode]     = useState(false);
-  const [repeatWeeks, setRepeatWeeks]   = useState(4);
-  const [repeatDays, setRepeatDays]     = useState<number[]>([1, 5]);
-  const [repeatDuration, setRepeatDuration] = useState(2);
 
   const fetchTour = async () => {
     if (!slug) return;
@@ -352,36 +348,6 @@ export default function EditTourPage() {
     await fetchTrips();
   };
 
-  const addRepeatTrips = async () => {
-    const today = new Date().toISOString().split("T")[0];
-    if (!tripForm.start_date || !tripForm.base_price || repeatDays.length === 0) return;
-    if (tripForm.start_date < today) {
-      alert("Ngày khởi hành không được chọn ngày đã qua.");
-      return;
-    }
-    const base = new Date(tripForm.start_date);
-    const toCreate: { start: string; end: string }[] = [];
-    for (let w = 0; w < repeatWeeks; w++) {
-      for (const day of repeatDays) {
-        const start = new Date(base);
-        start.setDate(base.getDate() + ((day - base.getDay() + 7) % 7) + w * 7);
-        const end = new Date(start);
-        end.setDate(start.getDate() + repeatDuration - 1);
-        toCreate.push({ start: start.toISOString().split("T")[0], end: end.toISOString().split("T")[0] });
-      }
-    }
-    const unique = toCreate.filter((v, i, a) => a.findIndex(x => x.start === v.start) === i);
-    await Promise.all(unique.map(t =>
-      fetch(`${API}/trips/create`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ tour_id: tour?._id, start_date: t.start, end_date: t.end, base_price: Number(tripForm.base_price), max_people: Number(tripForm.max_people), status: "open" }),
-      })
-    ));
-    await fetchTrips();
-    alert(`✅ Đã tạo ${unique.length} chuyến đi!`);
-  };
-
   const updateTrip = async (id: string) => {
     await fetch(`${API}/trips/${id}`, {
       method:  "PUT",
@@ -427,12 +393,6 @@ export default function EditTourPage() {
     next.setDate(next.getDate() + days);
     return next;
   };
-
-  useEffect(() => {
-    if (!tripForm.start_date || repeatMode) return;
-    const targetEnd = formatDate(addDays(new Date(tripForm.start_date), repeatDuration - 1));
-    setTripForm(prev => ({ ...prev, end_date: targetEnd }));
-  }, [tripForm.start_date, repeatDuration, repeatMode]);
 
   if (!slug || !tour) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -503,20 +463,6 @@ export default function EditTourPage() {
     await fetch(`${API}/itinerary-details/${id}`, { method: "DELETE" });
     await fetchTour();
   };
-
-  const repeatCount = (() => {
-    if (!tripForm.start_date || repeatDays.length === 0) return 0;
-    const base = new Date(tripForm.start_date);
-    const seen = new Set<string>();
-    for (let w = 0; w < repeatWeeks; w++) {
-      for (const day of repeatDays) {
-        const s = new Date(base);
-        s.setDate(base.getDate() + ((day - base.getDay() + 7) % 7) + w * 7);
-        seen.add(s.toISOString().split("T")[0]);
-      }
-    }
-    return seen.size;
-  })();
 
   const selectedHotel: Hotel | undefined = hotels.find(h => h._id === tour.hotel_id?._id) ?? tour.hotel_id;
 
@@ -920,39 +866,32 @@ export default function EditTourPage() {
           return (
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <SectionTitle>Thêm chuyến đi</SectionTitle>
-                <button onClick={() => setRepeatMode(r => !r)} className={`text-xs font-bold px-3 py-1.5 rounded-xl border cursor-pointer transition-colors ${repeatMode ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}>🔁 Lặp lịch</button>
-              </div>
+              <SectionTitle>Thêm chuyến đi</SectionTitle>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 block mb-1">{repeatMode ? "Bắt đầu từ" : "Ngày đi"}</label>
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày đi</label>
                   <input type="date" value={tripForm.start_date} min={today} onChange={e => setTripForm(f => ({ ...f, start_date: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
                 </div>
-                {!repeatMode && (
-                  <>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày về</label>
-                      <div className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 flex items-center">
-                        {tripForm.end_date 
-                          ? new Date(tripForm.end_date).toLocaleDateString("vi-VN")
-                          : <span className="text-gray-300">--</span>
-                        }
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">Số ngày</label>
-                      <input type="number" min={1} max={30} value={tripForm.end_date && tripForm.start_date ? Math.max(1, Math.round((new Date(tripForm.end_date).getTime() - new Date(tripForm.start_date).getTime()) / (24 * 60 * 60 * 1000)) + 1) : ""} onChange={e => {
-                        if (tripForm.start_date && e.target.value) {
-                          const days = Math.max(1, Number(e.target.value));
-                          const endDate = new Date(tripForm.start_date);
-                          endDate.setDate(endDate.getDate() + days - 1);
-                          setTripForm(f => ({ ...f, end_date: endDate.toISOString().split("T")[0] }));
-                        }
-                      }} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
-                    </div>
-                  </>
-                )}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày về</label>
+                  <div className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 flex items-center">
+                    {tripForm.end_date 
+                      ? new Date(tripForm.end_date).toLocaleDateString("vi-VN")
+                      : <span className="text-gray-300">--</span>
+                    }
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">Số ngày</label>
+                  <input type="number" min={1} max={30} value={tripForm.end_date && tripForm.start_date ? Math.max(1, Math.round((new Date(tripForm.end_date).getTime() - new Date(tripForm.start_date).getTime()) / (24 * 60 * 60 * 1000)) + 1) : ""} onChange={e => {
+                    if (tripForm.start_date && e.target.value) {
+                      const days = Math.max(1, Number(e.target.value));
+                      const endDate = new Date(tripForm.start_date);
+                      endDate.setDate(endDate.getDate() + days - 1);
+                      setTripForm(f => ({ ...f, end_date: endDate.toISOString().split("T")[0] }));
+                    }
+                  }} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+                </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-500 block mb-1">Giá (đ/người)</label>
                   <input type="number" value={tripForm.base_price} onChange={e => setTripForm(f => ({ ...f, base_price: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
@@ -962,48 +901,9 @@ export default function EditTourPage() {
                   <input type="number" value={tripForm.max_people} onChange={e => setTripForm(f => ({ ...f, max_people: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
                 </div>
               </div>
-              {repeatMode && (
-                <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 mb-4 space-y-4">
-                  <p className="text-xs font-bold text-orange-700">⚙️ Cấu hình lặp lịch</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Số tuần lặp</label>
-                      <input type="number" min={1} max={52} value={repeatWeeks} onChange={e => setRepeatWeeks(Number(e.target.value))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 bg-white"/>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1.5">Số ngày</label>
-                      <input type="number" min={1} max={30} value={repeatDuration} onChange={e => setRepeatDuration(Number(e.target.value))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 bg-white"/>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600 block mb-2">Ngày khởi hành trong tuần</label>
-                    <div className="flex gap-2 flex-wrap">
-                      {WEEKDAY_LABELS.map((label, val) => {
-                        const startWeekday = tripForm.start_date ? new Date(tripForm.start_date).getDay() : -1;
-                        const nextWeek = startWeekday >= 0 && val < startWeekday;
-                        return (
-                          <button key={val} type="button" onClick={() => setRepeatDays(prev => prev.includes(val) ? prev.filter(d => d !== val) : [...prev, val].sort((a, b) => a - b))}
-                            className={`w-10 h-10 rounded-xl text-xs font-bold border-2 cursor-pointer transition-all ${repeatDays.includes(val) ? "bg-orange-500 text-white border-orange-500" : "bg-white text-gray-500 border-gray-200 hover:border-orange-300"}`}
-                            title={`${WEEKDAY_NAMES[val]}${nextWeek ? " - tuần sau" : ""}`}>
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {tripForm.start_date && (
-                      <p className="text-[11px] text-gray-500 mt-2">
-                        Nếu ngày chọn trong tuần đã qua, ngày đó sẽ được tạo sang tuần sau.
-                      </p>
-                    )}
-                  </div>
-                  <div className="bg-white rounded-xl px-4 py-3 text-xs text-orange-700 font-semibold border border-orange-100">
-                    → Sẽ tạo <span className="text-orange-500 font-black">{repeatCount}</span> chuyến · mỗi chuyến <span className="font-black">{repeatDuration} ngày</span> · trong <span className="font-black">{repeatWeeks} tuần</span>
-                  </div>
-                </div>
-              )}
-              <button onClick={repeatMode ? addRepeatTrips : addTrip} disabled={!tripForm.start_date || !tripForm.base_price || (!repeatMode && !tripForm.end_date) || (repeatMode && repeatDays.length === 0)}
+              <button onClick={addTrip} disabled={!tripForm.start_date || !tripForm.base_price || !tripForm.end_date}
                 className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-colors disabled:opacity-60">
-                {repeatMode ? `🔁 Tạo ${repeatCount} chuyến` : "+ Thêm chuyến"}
+                + Thêm chuyến
               </button>
             </div>
 

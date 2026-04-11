@@ -11,8 +11,8 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* SIDEBAR */}
-      <aside className="w-64 bg-blue-900 text-white">
-        <div className="px-6 py-4 text-lg font-bold border-b border-blue-800">
+      <aside className="w-64 bg-orange-800 text-white">
+        <div className="px-6 py-4 text-lg font-bold border-b border-orange-800">
           Booking Tour Admin
         </div>
 
@@ -69,7 +69,7 @@ export default function AdminLayout({
             href="/admin/comments"
             className="block px-3 py-2 rounded hover:bg-blue-700"
           >
-            💬 Bình luận
+            💬 Đánh Giá
           </Link>
         </nav>
       </aside>
