@@ -47,6 +47,7 @@ type Trip = {
   start_date: string;
   end_date: string;
   base_price: number;
+  min_people: number;
   max_people: number;
   booked_people: number;
   status: "open" | "closed" | "full";
@@ -326,19 +327,9 @@ export default function EditTourPage() {
 
   // Trips
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [tripForm, setTripForm] = useState({
-    start_date: "",
-    end_date: "",
-    base_price: "",
-    max_people: "",
-  });
+  const [tripForm, setTripForm] = useState({ start_date: "", end_date: "", base_price: "", min_people: "", max_people: "" });
   const [editingTrip, setEditingTrip] = useState<string | null>(null);
-  const [editTripForm, setEditTripForm] = useState({
-    start_date: "",
-    end_date: "",
-    base_price: "",
-    max_people: "",
-  });
+  const [editTripForm, setEditTripForm] = useState({ start_date: "", end_date: "", base_price: "", min_people: "", max_people: "" });
 
   const fetchTour = async () => {
     if (!slug) return;
@@ -448,6 +439,7 @@ export default function EditTourPage() {
         start_date: tripForm.start_date,
         end_date: tripForm.end_date,
         base_price: Number(tripForm.base_price),
+        min_people: Number(tripForm.min_people) || 1,
         max_people: Number(tripForm.max_people),
         status: "open",
       }),
@@ -457,12 +449,7 @@ export default function EditTourPage() {
       alert(`Lỗi ${res.status}: ${data.message || "Không rõ"}`);
       return;
     }
-    setTripForm({
-      start_date: "",
-      end_date: "",
-      base_price: "",
-      max_people: "",
-    });
+    setTripForm({ start_date: "", end_date: "", base_price: "", min_people: "", max_people: "" });
     await fetchTrips();
   };
 
@@ -470,13 +457,7 @@ export default function EditTourPage() {
     await fetch(`${API}/trips/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tour_id: tour?._id,
-        start_date: editTripForm.start_date,
-        end_date: editTripForm.end_date,
-        base_price: Number(editTripForm.base_price),
-        max_people: Number(editTripForm.max_people),
-      }),
+      body: JSON.stringify({ tour_id: tour?._id, start_date: editTripForm.start_date, end_date: editTripForm.end_date, base_price: Number(editTripForm.base_price), min_people: Number(editTripForm.min_people) || 1, max_people: Number(editTripForm.max_people) }),
     });
     setEditingTrip(null);
     await fetchTrips();
@@ -1469,7 +1450,7 @@ export default function EditTourPage() {
               <div className="space-y-4">
                 <div className="bg-white rounded-2xl border border-gray-100 p-5">
                   <SectionTitle>Thêm chuyến đi</SectionTitle>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-3">
                     <div>
                       <label className="text-xs font-semibold text-gray-500 block mb-1">
                         Ngày đi
@@ -1552,20 +1533,12 @@ export default function EditTourPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-gray-500 block mb-1">
-                        Tối đa (người)
-                      </label>
-                      <input
-                        type="number"
-                        value={tripForm.max_people}
-                        onChange={(e) =>
-                          setTripForm((f) => ({
-                            ...f,
-                            max_people: e.target.value,
-                          }))
-                        }
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"
-                      />
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Tối thiểu (người)</label>
+                      <input type="number" min={1} value={tripForm.min_people} onChange={e => setTripForm(f => ({ ...f, min_people: e.target.value }))} placeholder="" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 block mb-1">Tối đa (người)</label>
+                      <input type="number" value={tripForm.max_people} onChange={e => setTripForm(f => ({ ...f, max_people: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
                     </div>
                   </div>
                   <button
@@ -1684,22 +1657,8 @@ export default function EditTourPage() {
                                       className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400"
                                     />
                                   </div>
-                                  <div>
-                                    <label className="text-[10px] font-semibold text-gray-400 block mb-1">
-                                      Tối đa
-                                    </label>
-                                    <input
-                                      type="number"
-                                      value={editTripForm.max_people}
-                                      onChange={(e) =>
-                                        setEditTripForm((f) => ({
-                                          ...f,
-                                          max_people: e.target.value,
-                                        }))
-                                      }
-                                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400"
-                                    />
-                                  </div>
+                                  <div><label className="text-[10px] font-semibold text-gray-400 block mb-1">Tối thiểu</label><input type="number" min={1} value={editTripForm.min_people} onChange={e => setEditTripForm(f => ({ ...f, min_people: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" /></div>
+                                  <div><label className="text-[10px] font-semibold text-gray-400 block mb-1">Tối đa</label><input type="number" value={editTripForm.max_people} onChange={e => setEditTripForm(f => ({ ...f, max_people: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400" /></div>
                                   <div className="col-span-2 md:col-span-4 flex gap-2">
                                     <button
                                       onClick={() => updateTrip(trip._id)}
@@ -1759,18 +1718,14 @@ export default function EditTourPage() {
                                         đ
                                       </span>
                                       <span className="text-[11px] text-gray-400">
-                                        {trip.booked_people}/{trip.max_people} ·
-                                        còn{" "}
-                                        <span
-                                          className={
-                                            slotsLeft <= 3
-                                              ? "text-red-500 font-bold"
-                                              : "text-emerald-600 font-semibold"
-                                          }
-                                        >
-                                          {slotsLeft} chỗ
-                                        </span>
+                                        {trip.booked_people}/{trip.max_people} · còn{" "}
+                                        <span className={slotsLeft <= 3 ? "text-red-500 font-bold" : "text-emerald-600 font-semibold"}>{slotsLeft} chỗ</span>
                                       </span>
+                                      {trip.min_people > 0 && trip.booked_people < trip.min_people && (
+                                        <span className="text-[10px] font-bold bg-red-50 text-red-500 border border-red-200 px-2 py-0.5 rounded-full">
+                                          ⚠️ Chưa đủ tối thiểu ({trip.min_people})
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2 shrink-0">
@@ -1788,13 +1743,7 @@ export default function EditTourPage() {
                                     <button
                                       onClick={() => {
                                         setEditingTrip(trip._id);
-                                        setEditTripForm({
-                                          start_date:
-                                            trip.start_date.split("T")[0],
-                                          end_date: trip.end_date.split("T")[0],
-                                          base_price: String(trip.base_price),
-                                          max_people: String(trip.max_people),
-                                        });
+                                        setEditTripForm({ start_date: trip.start_date.split("T")[0], end_date: trip.end_date.split("T")[0], base_price: String(trip.base_price), min_people: String(trip.min_people ?? 1), max_people: String(trip.max_people) });
                                       }}
                                       className="text-xs text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold"
                                     >
