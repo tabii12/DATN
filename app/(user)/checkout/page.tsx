@@ -35,11 +35,6 @@ function validate(name: string, value: string): string {
         return "SĐT phải 10 số và bắt đầu bằng 0 (VD: 0912345678)";
       return "";
     }
-    case "address":
-      if (!value.trim()) return "Vui lòng nhập địa chỉ";
-      if (value.trim().length < 10)
-        return "Địa chỉ quá ngắn (tối thiểu 10 ký tự)";
-      return "";
     default:
       return "";
   }
