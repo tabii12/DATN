@@ -82,14 +82,14 @@ function TourRow({ tour, i }: { tour: TourAPI; i: number }) {
     <tr className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors group">
       <td className="py-3 px-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+          <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
             {img
               ? <img src={img} alt={tour.name} className="w-full h-full object-cover" />
               : <div className="w-full h-full flex items-center justify-center text-lg">🏖️</div>
             }
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-800 truncate max-w-[220px]">{tour.name}</p>
+            <p className="text-sm font-semibold text-gray-800 truncate max-w-55">{tour.name}</p>
             <p className="text-[11px] text-gray-400">{tour.hotel_id?.city}</p>
           </div>
         </div>
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-700"
+                            className="h-full bg-linear-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-700"
                             style={{ width: `${(count / maxCity) * 100}%` }}
                           />
                         </div>
@@ -285,7 +285,7 @@ export default function AdminDashboard() {
                   {tours.slice(0, 5).map((t, i) => (
                     <div key={t._id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
                       <span className="text-[11px] text-gray-300 w-4 text-center font-bold">{i + 1}</span>
-                      <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                      <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                         {t.images?.[0]?.image_url
                           ? <img src={t.images[0].image_url} className="w-full h-full object-cover" />
                           : <div className="w-full h-full flex items-center justify-center text-sm">🏖️</div>
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
                         <p className="text-sm font-semibold text-gray-700 truncate">{t.name}</p>
                         <p className="text-[11px] text-gray-400">{t.hotel_id?.city} · {t.category_id?.name ?? "Chưa phân loại"}</p>
                       </div>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${t.status === "active" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${t.status === "active" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
                         }`}>
                         {t.status === "active" ? "Hoạt động" : "Ẩn"}
                       </span>
@@ -312,8 +312,8 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             {/* Toolbar */}
             <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 flex-wrap">
-              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 flex-1 min-w-[200px]">
-                <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 flex-1 min-w-50">
+                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input

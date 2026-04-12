@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+// --- INTERFACES ---
+interface Place {
+  _id: string;
+  title: string;
+  image?: string; // Đã thêm trường image
+}
 
 interface ItineraryDetail {
   _id: string;
@@ -8,6 +15,7 @@ interface ItineraryDetail {
   title: string;
   content: string;
   order: number;
+  place_id?: Place | string | null;
 }
 
 interface Itinerary {
@@ -32,6 +40,16 @@ export default function TourItineraries({
   onRefresh,
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
+
+  useEffect(() => {
+    fetch(`${API}/places`)
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success) setAllPlaces(res.data);
+      })
+      .catch((err) => console.error("Lỗi fetch places:", err));
+  }, []);
 
   const handleAddDay = async () => {
     try {
@@ -68,7 +86,7 @@ export default function TourItineraries({
         <button
           onClick={handleAddDay}
           disabled={loading}
-          className="bg-[#F26F21] text-white px-6 py-3 rounded-2xl text-[10px]  uppercase tracking-widest hover:opacity-90 transition shadow-lg shadow-orange-100 disabled:bg-gray-300"
+          className="bg-[#F26F21] text-white px-6 py-3 rounded-2xl text-[10px] uppercase tracking-widest hover:opacity-90 transition shadow-lg shadow-orange-100 disabled:bg-gray-300"
         >
           {loading ? "Đang xử lý..." : "+ Thêm ngày mới"}
         </button>
@@ -78,12 +96,17 @@ export default function TourItineraries({
         {itineraries
           .sort((a, b) => a.day_number - b.day_number)
           .map((day) => (
-            <DayItem key={day._id} day={day} onRefresh={onRefresh} />
+            <DayItem
+              key={day._id}
+              day={day}
+              onRefresh={onRefresh}
+              allPlaces={allPlaces}
+            />
           ))}
 
         {itineraries.length === 0 && (
           <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-100">
-            <p className="text-gray-400 text-[10px] uppercase  tracking-widest">
+            <p className="text-gray-400 text-[10px] uppercase tracking-widest">
               Chưa có lịch trình
             </p>
           </div>
@@ -93,12 +116,15 @@ export default function TourItineraries({
   );
 }
 
+// --- COMPONENT: DAY ITEM ---
 function DayItem({
   day,
   onRefresh,
+  allPlaces,
 }: {
   day: Itinerary;
   onRefresh: () => void;
+  allPlaces: Place[];
 }) {
   const [isEditingDay, setIsEditingDay] = useState(false);
   const [dayForm, setDayForm] = useState({
@@ -119,12 +145,7 @@ function DayItem({
   };
 
   const handleDeleteDay = async () => {
-    if (
-      !confirm(
-        `Xóa Ngày ${day.day_number}? Thao tác này sẽ xóa tất cả hoạt động bên trong.`,
-      )
-    )
-      return;
+    if (!confirm(`Xóa Ngày ${day.day_number}?`)) return;
     await fetch(`${API}/itineraries/${day._id}`, { method: "DELETE" });
     onRefresh();
   };
@@ -136,7 +157,7 @@ function DayItem({
       body: JSON.stringify({
         itinerary_id: day._id,
         place_id: null,
-        type: "visit", // Mặc định khớp với Enum backend
+        type: "visit",
         title: "Hoạt động mới",
         content: "Mô tả nội dung hoạt động...",
         order: (day.details?.length || 0) + 1,
@@ -151,14 +172,14 @@ function DayItem({
         {isEditingDay ? (
           <div className="flex flex-1 gap-3 mr-4">
             <input
-              className="flex-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-[#F26F21]"
+              className="flex-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm"
               value={dayForm.title}
               onChange={(e) =>
                 setDayForm({ ...dayForm, title: e.target.value })
               }
             />
             <input
-              className="flex-1 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-[#F26F21]"
+              className="flex-1 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm"
               placeholder="Bữa ăn..."
               value={dayForm.meal_note}
               onChange={(e) =>
@@ -167,31 +188,30 @@ function DayItem({
             />
             <button
               onClick={handleUpdateDay}
-              className="bg-[#F26F21] text-white px-6 rounded-xl text-[10px]  uppercase"
+              className="bg-[#F26F21] text-white px-6 rounded-xl text-[10px] uppercase"
             >
               Lưu
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-4">
-            <div className="bg-[#F26F21] text-white  px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-widest">
+            <div className="bg-[#F26F21] text-white px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-widest">
               NGÀY {day.day_number}
             </div>
-            <h4 className="text-gray-900 text-sm uppercase  tracking-tight">
+            <h4 className="text-gray-900 text-sm uppercase tracking-tight">
               {day.title}
             </h4>
             {day.meal_note && (
-              <span className="text-[10px] font-bold bg-white text-[#F26F21] px-3 py-1 rounded-full uppercase tracking-wider border border-orange-100 shadow-sm">
+              <span className="text-[10px] font-bold bg-white text-[#F26F21] px-3 py-1 rounded-full border border-orange-100">
                 🍴 {day.meal_note}
               </span>
             )}
           </div>
         )}
-
         <div className="flex gap-2">
           <button
             onClick={() => setIsEditingDay(!isEditingDay)}
-            className="p-2 bg-white rounded-xl shadow-sm text-gray-400 hover:text-[#F26F21] transition"
+            className="p-2 bg-white rounded-xl shadow-sm text-gray-400 hover:text-[#F26F21]"
           >
             <svg
               width="14"
@@ -207,7 +227,7 @@ function DayItem({
           </button>
           <button
             onClick={handleDeleteDay}
-            className="p-2 bg-white rounded-xl shadow-sm text-gray-400 hover:text-red-500 transition"
+            className="p-2 bg-white rounded-xl shadow-sm text-gray-400 hover:text-red-500"
           >
             <svg
               width="14"
@@ -232,12 +252,12 @@ function DayItem({
               key={detail._id}
               detail={detail}
               onRefresh={onRefresh}
+              allPlaces={allPlaces}
             />
           ))}
-
         <button
           onClick={handleAddDetail}
-          className="w-full py-4 border-2 border-dashed border-gray-100 rounded-3xl text-gray-400 text-[10px]  uppercase tracking-[0.2em] hover:bg-gray-50 hover:text-[#F26F21] transition-all"
+          className="w-full py-4 border-2 border-dashed border-gray-100 rounded-3xl text-gray-400 text-[10px] uppercase tracking-[0.2em] hover:bg-gray-50 hover:text-[#F26F21] transition-all"
         >
           + Thêm hoạt động chi tiết
         </button>
@@ -246,18 +266,22 @@ function DayItem({
   );
 }
 
+// --- COMPONENT: DETAIL ITEM ---
 function DetailItem({
   detail,
   onRefresh,
+  allPlaces,
 }: {
   detail: ItineraryDetail;
   onRefresh: () => void;
+  allPlaces: Place[];
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     type: detail.type,
     title: detail.title,
     content: detail.content,
+    place_id: (detail.place_id as any)?._id || detail.place_id || "",
   });
 
   const handleUpdate = async () => {
@@ -273,14 +297,11 @@ function DetailItem({
   };
 
   const handleDelete = async () => {
-    if (!confirm("Bạn có chắc chắn muốn xóa hoạt động này?")) return;
-    const res = await fetch(`${API}/itinerary-details/${detail._id}`, {
-      method: "DELETE",
-    });
-    if (res.ok) onRefresh();
+    if (!confirm("Xóa hoạt động này?")) return;
+    await fetch(`${API}/itinerary-details/${detail._id}`, { method: "DELETE" });
+    onRefresh();
   };
 
-  // Map để hiển thị tiếng Việt cho các loại Enum
   const typeMap: Record<string, string> = {
     visit: "Tham quan",
     eat: "Ăn uống",
@@ -289,12 +310,16 @@ function DetailItem({
     other: "Khác",
   };
 
+  // Lấy thông tin địa điểm (đã được populate)
+  const placeData =
+    typeof detail.place_id === "object" ? (detail.place_id as Place) : null;
+
   if (isEditing) {
     return (
       <div className="p-5 bg-orange-50/30 rounded-3xl border-2 border-[#F26F21]/20 space-y-3">
-        <div className="flex gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <select
-            className="px-3 py-2 bg-white border border-gray-100 rounded-xl text-[10px]  uppercase focus:ring-2 focus:ring-[#F26F21]"
+            className="px-3 py-2 bg-white border border-gray-100 rounded-xl text-[10px] uppercase"
             value={form.type}
             onChange={(e) => setForm({ ...form, type: e.target.value })}
           >
@@ -304,14 +329,37 @@ function DetailItem({
             <option value="rest">Nghỉ ngơi</option>
             <option value="other">Khác</option>
           </select>
-          <input
-            className="flex-1 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-[#F26F21]"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-          />
+          {form.type === "visit" && (
+            <select
+              className="px-3 py-2 bg-white border border-gray-100 rounded-xl text-[10px] uppercase"
+              value={form.place_id as string}
+              onChange={(e) => {
+                const selected = allPlaces.find(
+                  (p) => p._id === e.target.value,
+                );
+                setForm({
+                  ...form,
+                  place_id: e.target.value,
+                  title: selected ? selected.title : form.title,
+                });
+              }}
+            >
+              <option value="">-- Gắn địa điểm --</option>
+              {allPlaces.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
+        <input
+          className="w-full px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+        />
         <textarea
-          className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-[#F26F21]"
+          className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl text-sm"
           rows={3}
           value={form.content}
           onChange={(e) => setForm({ ...form, content: e.target.value })}
@@ -319,13 +367,13 @@ function DetailItem({
         <div className="flex gap-2">
           <button
             onClick={handleUpdate}
-            className="flex-1 bg-[#F26F21] text-white py-2 rounded-xl text-[10px]  uppercase"
+            className="flex-1 bg-[#F26F21] text-white py-2 rounded-xl text-[10px] uppercase"
           >
-            Lưu thay đổi
+            Lưu
           </button>
           <button
             onClick={() => setIsEditing(false)}
-            className="px-4 bg-white border border-gray-200 text-gray-400 py-2 rounded-xl text-[10px]  uppercase"
+            className="px-4 bg-white border border-gray-200 text-gray-400 py-2 rounded-xl text-[10px] uppercase"
           >
             Hủy
           </button>
@@ -336,16 +384,45 @@ function DetailItem({
 
   return (
     <div className="flex gap-5 p-5 bg-gray-50/50 rounded-3xl border border-gray-50 group relative hover:border-orange-100 transition-all">
-      <div className="w-8 h-8 bg-[#F26F21] text-white rounded-full flex items-center justify-center shrink-0 text-[10px]  shadow-md shadow-orange-100">
-        {detail.order}
+      {/* KHỐI HÌNH ẢNH HOẶC SỐ THỨ TỰ */}
+      <div className="relative shrink-0">
+        {placeData?.image ? (
+          <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-sm">
+            <img
+              src={placeData.image}
+              alt={placeData.title}
+              className="w-full h-full object-cover"
+              onError={(e) => (e.currentTarget.style.display = "none")}
+            />
+          </div>
+        ) : (
+          <div className="w-8 h-8 bg-[#F26F21] text-white rounded-full flex items-center justify-center text-[10px] shadow-md shadow-orange-100">
+            {detail.order}
+          </div>
+        )}
+
+        {/* Badge số thứ tự nhỏ hiển thị đè lên ảnh nếu có ảnh */}
+        {placeData?.image && (
+          <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#F26F21] text-white rounded-full flex items-center justify-center text-[8px] border-2 border-white font-bold">
+            {detail.order}
+          </div>
+        )}
       </div>
+
       <div className="flex-1">
         <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[9px]  text-[#F26F21] uppercase tracking-widest">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[9px] text-[#F26F21] uppercase tracking-widest font-bold">
               {typeMap[detail.type] || detail.type}
             </span>
-            <h5 className="text-gray-900 text-sm  uppercase tracking-tight">
+
+            {placeData && (
+              <span className="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                📍 {placeData.title}
+              </span>
+            )}
+
+            <h5 className="text-gray-900 text-sm uppercase tracking-tight font-bold">
               {detail.title}
             </h5>
           </div>
@@ -367,7 +444,7 @@ function DetailItem({
               </svg>
             </button>
             <button
-              onClick={() => handleDelete()}
+              onClick={handleDelete}
               className="p-1.5 text-gray-400 hover:text-red-500"
             >
               <svg
