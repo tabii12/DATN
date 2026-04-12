@@ -10,14 +10,14 @@ interface TourImage {
 }
 
 interface Props {
-  tourId: string;
+  slug: string;
   images: TourImage[];
   onRefresh: () => void;
 }
 
 const API = "https://db-pickyourway.vercel.app/api";
 
-export default function TourImages({ tourId, images, onRefresh }: Props) {
+export default function TourImages({ slug, images, onRefresh }: Props) {
   const [uploading, setUploading] = useState(false);
 
   // 1. Xử lý Upload ảnh
@@ -26,27 +26,35 @@ export default function TourImages({ tourId, images, onRefresh }: Props) {
     if (!files || files.length === 0) return;
 
     const formData = new FormData();
-    formData.append("tour_id", tourId);
+    // Không nhất thiết phải append tour_id vào body nếu Backend đã lấy từ URL Params
+
     for (let i = 0; i < files.length; i++) {
       formData.append("images", files[i]);
     }
 
     try {
       setUploading(true);
-      const res = await fetch(`${API}/tour-images/upload`, {
+
+      // SỬA TẠI ĐÂY: Thêm slug vào cuối URL để khớp với Route Backend: /upload/:slug
+      const res = await fetch(`${API}/tours/upload-images/${slug}`, {
         method: "POST",
-        body: formData, // Không để Content-Type khi gửi FormData
+        body: formData, // FormData chứa danh sách file
       });
 
       if (res.ok) {
+        alert("Upload ảnh thành công!");
         onRefresh();
       } else {
-        alert("Lỗi khi upload ảnh");
+        const errorData = await res.json();
+        alert(`Lỗi: ${errorData.message || "Không thể upload ảnh"}`);
       }
     } catch (error) {
       console.error("Upload error:", error);
+      alert("Đã có lỗi xảy ra trong quá trình upload");
     } finally {
       setUploading(false);
+      // Reset input file để có thể chọn lại cùng 1 file nếu cần
+      e.target.value = "";
     }
   };
 
@@ -55,7 +63,7 @@ export default function TourImages({ tourId, images, onRefresh }: Props) {
     if (!confirm("Bạn có chắc chắn muốn xóa ảnh này?")) return;
 
     try {
-      const res = await fetch(`${API}/tour-images/delete/${imageId}`, {
+      const res = await fetch(`${API}/tours/image/${imageId}`, {
         method: "DELETE",
       });
 
@@ -68,20 +76,22 @@ export default function TourImages({ tourId, images, onRefresh }: Props) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h3 className="text-lg font-bold text-gray-800">Thư viện hình ảnh</h3>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-xl uppercase tracking-tight text-gray-800 font-black">
+            Thư viện hình ảnh
+          </h2>
+          <p className="text-xs text-gray-400">
             Quản lý các hình ảnh hiển thị trong gallery của tour
           </p>
         </div>
 
         <label
-          className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-bold transition ${
+          className={`cursor-pointer px-6 py-3 rounded-2xl text-xs uppercase tracking-widest transition shadow-lg ${
             uploading
               ? "bg-gray-100 text-gray-400"
-              : "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-[#F26F21] text-white hover:opacity-90 shadow-orange-100"
           }`}
         >
           {uploading ? "Đang tải lên..." : "+ Tải ảnh lên"}
@@ -97,11 +107,11 @@ export default function TourImages({ tourId, images, onRefresh }: Props) {
       </div>
 
       {/* Danh sách ảnh */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {images.length === 0 && !uploading && (
-          <div className="col-span-full py-10 text-center border-2 border-dashed border-gray-100 rounded-xl">
-            <p className="text-gray-400 text-sm">
-              Tour này chưa có hình ảnh nào
+          <div className="col-span-full py-16 text-center border-2 border-dashed border-gray-50 rounded-3xl">
+            <p className="text-gray-400 text-xs uppercase tracking-widest">
+              Chưa có hình ảnh nào được tải lên
             </p>
           </div>
         )}
@@ -109,29 +119,29 @@ export default function TourImages({ tourId, images, onRefresh }: Props) {
         {images.map((img) => (
           <div
             key={img._id}
-            className="group relative aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-100"
+            className="group relative aspect-square bg-gray-50 rounded-2xl overflow-hidden transition-all hover:shadow-xl"
           >
             <img
               src={img.image_url}
-              alt="Tour image"
-              className="w-full h-full object-cover transition group-hover:scale-110"
+              alt="Tour gallery"
+              className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
             />
 
             {/* Lớp overlay khi hover */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
               <button
                 onClick={() => handleDelete(img._id)}
-                className="bg-white/20 hover:bg-red-500 text-white p-2 rounded-full backdrop-blur-md transition"
+                className="bg-white hover:bg-red-500 hover:text-white text-red-500 p-3 rounded-2xl transition-all shadow-xl transform translate-y-4 group-hover:translate-y-0"
                 title="Xóa ảnh"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
+                  width="18"
+                  height="18"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
@@ -144,10 +154,13 @@ export default function TourImages({ tourId, images, onRefresh }: Props) {
           </div>
         ))}
 
-        {/* Loading placeholders */}
+        {/* Loading placeholder */}
         {uploading && (
-          <div className="aspect-square bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center animate-pulse">
-            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="aspect-square bg-gray-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-[#F26F21]/20 animate-pulse">
+            <div className="w-6 h-6 border-2 border-[#F26F21] border-t-transparent rounded-full animate-spin mb-2"></div>
+            <span className="text-[10px] text-[#F26F21] uppercase tracking-tighter">
+              Đang tải
+            </span>
           </div>
         )}
       </div>

@@ -33,7 +33,7 @@ export default function TourDescriptions({
 
     try {
       setLoading(true);
-      const res = await fetch(`${API}/tour-descriptions/create`, {
+      const res = await fetch(`${API}/descriptions/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tour_id: tourId, ...newDesc }),
@@ -52,7 +52,7 @@ export default function TourDescriptions({
   // 2. Cập nhật mô tả
   const handleUpdate = async (id: string) => {
     try {
-      const res = await fetch(`${API}/tour-descriptions/update/${id}`, {
+      const res = await fetch(`${API}/descriptions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
@@ -69,62 +69,86 @@ export default function TourDescriptions({
   // 3. Xóa mô tả
   const handleDelete = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa mục mô tả này?")) return;
-    await fetch(`${API}/tour-descriptions/delete/${id}`, { method: "DELETE" });
+    await fetch(`${API}/descriptions/${id}`, { method: "DELETE" });
     onRefresh();
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Form thêm mới */}
-      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">
-          Thêm mục mô tả mới
-        </h3>
-        <div className="space-y-3">
-          <input
-            type="text"
-            placeholder="Tiêu đề (VD: Lưu ý, Bao gồm, Không bao gồm...)"
-            className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 transition"
-            value={newDesc.title}
-            onChange={(e) => setNewDesc({ ...newDesc, title: e.target.value })}
-          />
-          <textarea
-            placeholder="Nội dung chi tiết..."
-            rows={4}
-            className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-500 transition"
-            value={newDesc.content}
-            onChange={(e) =>
-              setNewDesc({ ...newDesc, content: e.target.value })
-            }
-          />
+      <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="mb-6">
+          <h2 className="text-xl uppercase tracking-tight text-gray-800 font-black">
+            Thêm mục mô tả mới
+          </h2>
+          <p className="text-xs text-gray-400">
+            Tạo các khối nội dung như: Lưu ý, Bao gồm, Lịch trình tóm tắt...
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] text-gray-400 uppercase tracking-wider ml-1">
+              Tiêu đề mục
+            </label>
+            <input
+              type="text"
+              placeholder="VD: Giá tour bao gồm..."
+              className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm text-gray-700 focus:ring-2 focus:ring-[#F26F21] transition"
+              value={newDesc.title}
+              onChange={(e) =>
+                setNewDesc({ ...newDesc, title: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] text-gray-400 uppercase tracking-wider ml-1">
+              Nội dung chi tiết
+            </label>
+            <textarea
+              placeholder="Nhập nội dung hiển thị..."
+              rows={4}
+              className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm text-gray-700 focus:ring-2 focus:ring-[#F26F21] transition"
+              value={newDesc.content}
+              onChange={(e) =>
+                setNewDesc({ ...newDesc, content: e.target.value })
+              }
+            />
+          </div>
+
           <button
             onClick={handleAddDescription}
             disabled={loading}
-            className="w-full bg-gray-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition disabled:bg-gray-300"
+            className="w-full bg-[#F26F21] text-white py-4 rounded-2xl text-xs uppercase tracking-widest hover:opacity-90 transition shadow-lg shadow-orange-100 disabled:bg-gray-300"
           >
-            {loading ? "Đang xử lý..." : "Thêm vào tour"}
+            {loading ? "Đang xử lý..." : "Xác nhận thêm mục"}
           </button>
         </div>
       </div>
 
       {/* Danh sách các mục đã có */}
       <div className="space-y-4">
+        <h3 className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-bold ml-2">
+          Danh sách mô tả ({descriptions.length})
+        </h3>
+
         {descriptions.map((item) => (
           <div
             key={item._id}
-            className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative group"
+            className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative group transition-all hover:shadow-md"
           >
             {editingId === item._id ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <input
-                  className="w-full p-2 border rounded-lg font-bold"
+                  className="w-full px-4 py-2 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-[#F26F21]"
                   value={editForm.title}
                   onChange={(e) =>
                     setEditForm({ ...editForm, title: e.target.value })
                   }
                 />
                 <textarea
-                  className="w-full p-2 border rounded-lg text-sm"
+                  className="w-full px-4 py-2 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-[#F26F21]"
                   rows={5}
                   value={editForm.content}
                   onChange={(e) =>
@@ -134,13 +158,13 @@ export default function TourDescriptions({
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleUpdate(item._id)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold"
+                    className="bg-[#F26F21] text-white px-6 py-2 rounded-xl text-xs uppercase tracking-widest"
                   >
-                    Lưu thay đổi
+                    Lưu
                   </button>
                   <button
                     onClick={() => setEditingId(null)}
-                    className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-xs"
+                    className="bg-gray-100 text-gray-500 px-6 py-2 rounded-xl text-xs uppercase tracking-widest"
                   >
                     Hủy
                   </button>
@@ -148,11 +172,11 @@ export default function TourDescriptions({
               </div>
             ) : (
               <>
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-black text-gray-800 uppercase tracking-tight text-sm">
+                <div className="flex justify-between items-start mb-3">
+                  <h4 className="text-sm uppercase tracking-tight text-[#F26F21] bg-orange-50 px-3 py-1 rounded-lg">
                     {item.title}
                   </h4>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => {
                         setEditingId(item._id);
@@ -161,15 +185,39 @@ export default function TourDescriptions({
                           content: item.content,
                         });
                       }}
-                      className="text-blue-500 text-xs font-semibold hover:underline"
+                      className="text-gray-400 hover:text-[#F26F21] transition-colors"
                     >
-                      Sửa
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
                     </button>
                     <button
                       onClick={() => handleDelete(item._id)}
-                      className="text-red-400 text-xs font-semibold hover:underline"
+                      className="text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      Xóa
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
                     </button>
                   </div>
                 </div>
