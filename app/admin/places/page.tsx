@@ -261,6 +261,69 @@ export default function AdminPlaces() {
         )}
       </div>
 
+      {/* Pagination Controls */}
+      {filtered.length > ITEMS_PER_PAGE && (
+        <div className="mt-10 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="p-2 w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+          >
+            <svg
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+
+          {[...Array(Math.ceil(filtered.length / ITEMS_PER_PAGE))].map(
+            (_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i + 1)}
+                style={{
+                  backgroundColor:
+                    currentPage === i + 1 ? FPT_ORANGE : "transparent",
+                  color: currentPage === i + 1 ? "white" : "#4B5563",
+                  borderColor: currentPage === i + 1 ? FPT_ORANGE : "#E5E7EB",
+                }}
+                className="w-10 h-10 rounded-xl border font-bold text-sm transition-all"
+              >
+                {i + 1}
+              </button>
+            ),
+          )}
+
+          <button
+            onClick={() =>
+              setCurrentPage((prev) =>
+                Math.min(prev + 1, Math.ceil(filtered.length / ITEMS_PER_PAGE)),
+              )
+            }
+            disabled={
+              currentPage === Math.ceil(filtered.length / ITEMS_PER_PAGE)
+            }
+            className="p-2 w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+          >
+            <svg
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
