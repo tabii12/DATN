@@ -88,8 +88,6 @@ export default function AdminPlaces() {
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const token = localStorage.getItem("token");
-
   const handleSave = async () => {
     if (!title) return alert("Vui lòng nhập tên địa điểm");
     setSaving(true);
@@ -109,6 +107,8 @@ export default function AdminPlaces() {
 
       const url = editingId ? `${API}/places/${editingId}` : `${API}/places`;
       const method = editingId ? "PATCH" : "POST";
+
+      const token = localStorage.getItem("token");
 
       const res = await fetch(url, {
         method,
@@ -136,6 +136,8 @@ export default function AdminPlaces() {
   const deletePlace = async (id: string) => {
     if (!confirm("Bạn có chắc muốn xóa địa điểm này không?")) return;
     try {
+      const token = localStorage.getItem("token");
+
       const res = await fetch(`${API}/places/${id}`, {
         method: "DELETE",
         headers: {
