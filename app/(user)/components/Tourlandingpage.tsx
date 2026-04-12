@@ -7,13 +7,6 @@ interface TourAPI {
   _id: string;
   name: string;
   slug: string;
-  hotel_id: {
-    name: string;
-    address: string;
-    city: string;
-    price_per_night: number;
-    rating: number;
-  };
   category_id: { name: string; slug: string } | null;
   images: { image_url: string }[];
   descriptions: { title: string; content: string }[];
@@ -33,9 +26,7 @@ function scoreFromRating(r: number) {
 }
 
 function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?: TripMin }) {
-  const score = scoreFromRating(tour.hotel_id.rating);
   const img = tour.images?.[0]?.image_url;
-  const price = trip?.price ?? tour.hotel_id.price_per_night;
   const startDate = trip?.start_date
     ? new Date(trip.start_date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
     : null;
@@ -56,7 +47,6 @@ function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?:
           </div>
         )}
         <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded-full">
-          {score.toFixed(1)} ⭐
         </div>
       </div>
       <div className="p-3.5 flex flex-col gap-1.5 flex-1">
@@ -69,13 +59,12 @@ function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?:
           {tour.name}
         </h3>
         <p className="text-[11px] text-gray-400 flex items-center gap-1">
-          <span>📍</span>{tour.hotel_id.city}
+          <span>📍</span>
         </p>
         <div className="mt-auto pt-2 flex items-center justify-between border-t border-gray-50">
           <div>
             <p className="text-[10px] text-gray-400">{startDate ? `Khởi hành ${startDate}` : "Giá từ"}</p>
             <p className="text-sm font-black text-orange-500">
-              {price.toLocaleString("vi-VN")}
               <span className="text-[10px] font-normal text-gray-400">/người</span>
             </p>
           </div>
