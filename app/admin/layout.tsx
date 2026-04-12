@@ -1,10 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const adminName = localStorage.getItem("user.name");
+  const [adminName, setAdminName] = useState<string | null>("Administrator");
+
+  useEffect(() => {
+    const name = localStorage.getItem("user.name");
+    if (name) {
+      setAdminName(name);
+    }
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -52,7 +59,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-xs font-bold text-gray-900">{adminName || "Administrator"}</p>
+              <p className="text-xs font-bold text-gray-900">
+                {adminName || "Administrator"}
+              </p>
             </div>
           </div>
         </header>
