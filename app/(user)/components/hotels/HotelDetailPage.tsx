@@ -524,7 +524,6 @@ const departureDates = (tour?.trips ?? [])
                     <div className="flex items-center gap-2.5 px-3 py-2.5">
                       <span className={`text-xl font-black text-white ${scoreColor} px-2 py-0.5 rounded-md leading-tight`}>{score.toFixed(1)}</span>
                       <span className="text-sm font-bold text-green-600">{label}</span>
-                      <span className="text-xs text-gray-400 ml-auto">575 đánh giá</span>
                     </div>
                     <div className="h-px bg-gray-100" />
                     <div className="flex-1 p-3 flex flex-col justify-between">
