@@ -97,27 +97,32 @@ export default function AdminPlaces() {
       formData.append("title", title);
       formData.append("content", content);
 
-      // Thêm ảnh mới
       selectedFiles.forEach((file) => {
         formData.append("images", file);
       });
 
-      // Thêm danh sách ID ảnh cần xoá (cho trường hợp update)
       if (editingId && deleteImageIds.length > 0) {
         formData.append("delete_image_ids", JSON.stringify(deleteImageIds));
       }
+
+      const token = localStorage.getItem("token");
 
       const url = editingId ? `${API}/places/${editingId}` : `${API}/places`;
       const method = editingId ? "PATCH" : "POST";
 
       const res = await fetch(url, {
         method,
-        body: formData, // Không để Content-Type để trình duyệt tự nhận diện Multipart
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
       });
 
       if (res.ok) {
         setIsModalOpen(false);
         fetchPlaces();
+      } else if (res.status === 401) {
+        alert("❌ Phiên đăng nhập hết hạn hoặc bạn không có quyền");
       } else {
         alert("❌ Lưu thất bại");
       }

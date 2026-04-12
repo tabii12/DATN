@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ReactNode } from "react";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const adminName = localStorage.getItem("user.name");
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* SIDEBAR - Màu nền Cam FPT */}
@@ -50,7 +52,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-xs font-bold text-gray-900">Administrator</p>
+              <p className="text-xs font-bold text-gray-900">{adminName || "Administrator"}</p>
             </div>
           </div>
         </header>
