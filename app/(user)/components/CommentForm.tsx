@@ -40,7 +40,7 @@ export default function CommentForm({
 
         // Gọi API để kiểm tra booking
         const response = await fetch(
-          `https://db-pickyourway.vercel.app/api/bookings/user/check?tour_id=${tourId}`,
+          `https://db-pickyourway.vercel.app/api/bookings/check-booked/${tourId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
