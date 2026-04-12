@@ -326,7 +326,7 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-[350px] overflow-y-auto p-1 pr-2 custom-scrollbar">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-87.5 overflow-y-auto p-1 pr-2 custom-scrollbar">
             {filteredServices.map((service) => {
               const selected = tripForm.selected_services.find(
                 (s) => s.service_id === service._id,
