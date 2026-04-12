@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 
-// ─────────────────────────── TYPES (SÁT VỚI BE) ───────────────────────────
+// ─────────────────────────── TYPES (Dữ liệu chuẩn từ BE) ───────────────────────────
 
 interface BookingRaw {
   _id: string;
@@ -9,18 +9,15 @@ interface BookingRaw {
   contactName: string;
   contactEmail: string;
   contactPhone: string;
-  departureDate: any; // Xử lý được cả string lẫn {$date: string}
+  departureDate: any;
   adults: number;
   children: number;
   infants: number;
-  total_members: number;
-  basePrice: number;
   total: number;
   singleRooms: number;
   status: "pending" | "confirmed" | "paid" | "cancelled";
-  orderId: string;
   createdAt: any;
-  updatedAt: any;
+  orderId: string;
 }
 
 interface Booking {
@@ -39,68 +36,72 @@ interface Booking {
   createdAt: string;
 }
 
-// ─────────────────────────── NORMALIZE (TỐI GIẢN) ───────────────────────────
+// ─────────────────────────── NORMALIZE (Gọn gàng) ───────────────────────────
 
 function normalizeBooking(raw: BookingRaw): Booking {
   const parseDate = (d: any) => (d?.$date ? d.$date : d) || "";
 
   return {
     id: raw._id,
-    customerName: raw.contactName || "Khách vãng lai",
+    customerName: raw.contactName || "—",
     email: raw.contactEmail || "—",
     phone: raw.contactPhone || "—",
-    tourName: raw.tourName || "Chưa xác định",
+    tourName: raw.tourName || "—",
     departureDate: parseDate(raw.departureDate),
-    adults: raw.adults || 0,
-    children: raw.children || 0,
-    infants: raw.infants || 0,
-    totalPrice: raw.total || 0,
+    adults: Number(raw.adults ?? 0),
+    children: Number(raw.children ?? 0),
+    infants: Number(raw.infants ?? 0),
+    totalPrice: Number(raw.total ?? 0),
     status: raw.status || "pending",
-    singleRooms: raw.singleRooms || 0,
+    singleRooms: Number(raw.singleRooms ?? 0),
     createdAt: parseDate(raw.createdAt),
   };
 }
 
 // ─────────────────────────── HELPERS ───────────────────────────
 
-const fmt = (n: number) => n.toLocaleString("vi-VN") + "₫";
+const fmt = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
 function fmtDate(str: string) {
   if (!str || str === "—") return "—";
   const d = new Date(str);
-  return isNaN(d.getTime()) ? str : d.toLocaleDateString("vi-VN");
+  return isNaN(d.getTime())
+    ? str
+    : d.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const configs: Record<string, { label: string; style: string }> = {
-    paid: {
-      label: "✓ Đã thanh toán",
-      style: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    },
-    confirmed: {
-      label: "● Đã xác nhận",
-      style: "bg-blue-50 text-blue-700 border-blue-200",
-    },
-    cancelled: {
-      label: "✕ Đã hủy",
-      style: "bg-red-50 text-red-700 border-red-200",
-    },
-    pending: {
-      label: "○ Chờ thanh toán",
-      style: "bg-amber-50 text-amber-600 border-amber-200",
-    },
-  };
-  const config = configs[status] || configs.pending;
+  const s = status.toLowerCase();
+  if (s === "paid")
+    return (
+      <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
+        ✓ Đã TT 100%
+      </span>
+    );
+  if (s === "confirmed")
+    return (
+      <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
+        ● Đã xác nhận
+      </span>
+    );
+  if (s === "cancelled")
+    return (
+      <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
+        ✕ Đã hủy
+      </span>
+    );
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${config.style}`}
-    >
-      {config.label}
+    <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 border border-gray-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
+      ○ Chờ TT
     </span>
   );
 }
 
-// ─────────────────────────── MAIN COMPONENT ───────────────────────────
+// ─────────────────────────── MAIN ───────────────────────────
 
 const API = "https://db-pickyourway.vercel.app/api";
 
@@ -109,7 +110,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(true);
   const [isLive, setIsLive] = useState(false);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilter] = useState("all");
+  const [filterStatus, setFilter] = useState<string>("all");
   const [expandedId, setExpanded] = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
@@ -120,9 +121,11 @@ export default function BookingPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error();
+
       const json = await res.json();
-      const data = Array.isArray(json) ? json : json.data || [];
-      setBookings(data.map(normalizeBooking));
+      const raw: BookingRaw[] = Array.isArray(json) ? json : (json.data ?? []);
+
+      setBookings(raw.map(normalizeBooking));
       setIsLive(true);
     } catch (err) {
       setIsLive(false);
@@ -137,6 +140,7 @@ export default function BookingPage() {
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     const token = localStorage.getItem("token");
+    if (!token) return alert("Vui lòng đăng nhập!");
     try {
       const res = await fetch(`${API}/bookings/admin/${id}/status`, {
         method: "PATCH",
@@ -150,9 +154,10 @@ export default function BookingPage() {
         setBookings((prev) =>
           prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)),
         );
+        alert("Cập nhật thành công!");
       }
     } catch (err) {
-      alert("Lỗi cập nhật!");
+      alert("Lỗi kết nối!");
     }
   };
 
@@ -167,77 +172,81 @@ export default function BookingPage() {
     );
   });
 
-  const stats = {
-    total: bookings.length,
-    revenue: bookings.reduce((s, b) => s + b.totalPrice, 0),
-    paid: bookings.filter((b) => b.status === "paid").length,
-  };
-
   return (
-    <div className="min-h-screen bg-[#f8f9fa] p-4 md:p-8 font-sans text-slate-900">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="min-h-screen bg-gray-50 font-sans">
+      <div className="mx-auto px-4 py-6 space-y-5">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-800">
-              DANH SÁCH ĐẶT TOUR
+            <h1 className="text-xl font-black text-gray-900">
+              📋 Quản lý Booking
             </h1>
-            <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
               <span
-                className={`w-2 h-2 rounded-full ${isLive ? "bg-green-500 animate-pulse" : "bg-slate-300"}`}
+                className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-emerald-500" : "bg-amber-400"}`}
               />
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                {isLive ? "Hệ thống trực tuyến" : "Mất kết nối server"}
-              </span>
-            </div>
+              {isLive ? "Dữ liệu thật từ API" : "Chưa tải được dữ liệu"}
+            </p>
           </div>
           <button
             onClick={fetchBookings}
-            className="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded-xl border border-slate-200 shadow-sm transition-all active:scale-95 flex items-center gap-2 text-sm"
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60"
           >
-            {loading ? "..." : "↻ Làm mới dữ liệu"}
+            {loading ? "Đang tải..." : "↻ Làm mới"}
           </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-              Tổng đơn hàng
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <p className="text-[11px] text-gray-500 font-semibold mb-1">
+              Tổng đơn
             </p>
-            <p className="text-3xl font-black text-slate-800">{stats.total}</p>
+            <p className="text-2xl font-black text-gray-900">
+              {bookings.length}
+            </p>
           </div>
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">
-              Đã hoàn tất
+          <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
+            <p className="text-[11px] text-emerald-600 font-semibold mb-1">
+              Đã thanh toán
             </p>
-            <p className="text-3xl font-black text-emerald-600">{stats.paid}</p>
+            <p className="text-2xl font-black text-emerald-700">
+              {bookings.filter((b) => b.status === "paid").length}
+            </p>
           </div>
-          <div className="bg-slate-900 p-5 rounded-2xl shadow-lg shadow-slate-200">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-              Tổng doanh thu
+          <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
+            <p className="text-[11px] text-blue-600 font-semibold mb-1">
+              Đã xác nhận
             </p>
-            <p className="text-2xl font-black text-white">
-              {fmt(stats.revenue)}
+            <p className="text-2xl font-black text-blue-700">
+              {bookings.filter((b) => b.status === "confirmed").length}
+            </p>
+          </div>
+          <div className="bg-orange-500 rounded-xl p-4 text-white shadow-lg shadow-orange-200">
+            <p className="text-[11px] text-white/80 font-semibold mb-1">
+              Doanh thu
+            </p>
+            <p className="text-xl font-black">
+              {fmt(bookings.reduce((s, b) => s + b.totalPrice, 0))}
             </p>
           </div>
         </div>
 
-        {/* Filters & Search */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4">
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
           <input
-            type="text"
-            placeholder="Tìm kiếm khách hàng, tour..."
-            className="flex-1 bg-slate-50 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500/20 outline-none transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm theo tên, email, SĐT, tour..."
+            className="flex-1 px-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-400 bg-white shadow-sm"
           />
-          <div className="flex bg-slate-50 p-1 rounded-xl">
-            {["all", "pending", "confirmed", "paid"].map((f) => (
+          <div className="flex gap-1.5 bg-white border border-gray-200 rounded-xl p-1 shadow-sm overflow-x-auto">
+            {["all", "pending", "confirmed", "paid", "cancelled"].map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filterStatus === f ? "bg-white text-orange-600 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${filterStatus === f ? "bg-orange-500 text-white" : "text-gray-500 hover:bg-gray-50"}`}
               >
                 {f === "all"
                   ? "Tất cả"
@@ -245,77 +254,125 @@ export default function BookingPage() {
                     ? "Đã TT"
                     : f === "confirmed"
                       ? "Xác nhận"
-                      : "Chờ"}
+                      : f === "cancelled"
+                        ? "Đã hủy"
+                        : "Chờ TT"}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Table Body */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <th className="px-6 py-4">Khách hàng</th>
-                  <th className="px-6 py-4">Chi tiết Tour</th>
-                  <th className="px-6 py-4">Tổng tiền</th>
-                  <th className="px-6 py-4 text-center">Trạng thái</th>
-                  <th className="px-6 py-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {filtered.map((b) => (
-                  <tr
-                    key={b.id}
-                    className="hover:bg-slate-50/50 transition-colors group"
+        {/* List Card */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+          <div className="divide-y divide-gray-50">
+            {filtered.map((b) => {
+              const isExpanded = expandedId === b.id;
+              return (
+                <div
+                  key={b.id}
+                  className={`transition-colors ${isExpanded ? "bg-orange-50/30" : "hover:bg-gray-50/60"}`}
+                >
+                  <div
+                    className="px-5 py-4 flex items-center gap-4 cursor-pointer"
+                    onClick={() => setExpanded(isExpanded ? null : b.id)}
                   >
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-bold text-slate-800">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center text-white text-xs font-black shrink-0">
+                      {b.customerName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900">
                         {b.customerName}
                       </p>
-                      <p className="text-[11px] text-slate-400">{b.phone}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-slate-700 line-clamp-1">
+                      <p className="text-xs text-gray-400 truncate">
                         {b.tourName}
                       </p>
-                      <p className="text-[11px] text-orange-500 font-bold">
-                        📅 {fmtDate(b.departureDate)}
+                    </div>
+                    <div className="hidden md:block shrink-0 text-right">
+                      <p className="text-xs font-semibold text-gray-700">
+                        {fmtDate(b.departureDate)}
                       </p>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-black text-slate-800">
-                      {fmt(b.totalPrice)}
-                    </td>
-                    <td className="px-6 py-4 text-center">
+                      <p className="text-[10px] text-gray-400 uppercase">
+                        Khởi hành
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-black text-orange-600">
+                        {fmt(b.totalPrice)}
+                      </p>
                       <StatusBadge status={b.status} />
-                    </td>
-                    <td className="px-6 py-4 text-right">
+                    </div>
+                    <div
+                      className="shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <select
                         value={b.status}
                         onChange={(e) =>
                           handleUpdateStatus(b.id, e.target.value)
                         }
-                        className="bg-white border border-slate-200 rounded-lg text-[11px] font-bold p-1.5 outline-none focus:ring-2 focus:ring-orange-500/20"
+                        className="text-[11px] p-1.5 border rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
                       >
                         <option value="pending">Chờ TT</option>
                         <option value="confirmed">Xác nhận</option>
                         <option value="paid">Đã thanh toán</option>
                         <option value="cancelled">Hủy đơn</option>
                       </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="px-5 pb-5 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="bg-white rounded-xl border border-gray-100 p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs shadow-inner">
+                        <div>
+                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">
+                            Liên hệ
+                          </p>
+                          <p className="font-medium text-slate-700">
+                            {b.email}
+                          </p>
+                          <p className="font-medium text-slate-700">
+                            {b.phone}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">
+                            Số lượng khách
+                          </p>
+                          <p className="text-slate-700">{b.adults} Người lớn</p>
+                          {b.children > 0 && (
+                            <p className="text-slate-700">
+                              {b.children} Trẻ em
+                            </p>
+                          )}
+                          {b.singleRooms > 0 && (
+                            <p className="text-slate-700">
+                              +{b.singleRooms} Phòng đơn
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">
+                            Ngày đặt đơn
+                          </p>
+                          <p className="text-slate-700">
+                            {fmtDate(b.createdAt)}
+                          </p>
+                        </div>
+                        <div className="flex flex-col justify-center gap-1">
+                          <p className="text-gray-400 font-bold uppercase text-[9px]">
+                            Mã đơn hàng
+                          </p>
+                          <code className="text-[10px] bg-gray-100 p-1 rounded text-gray-600">
+                            {b.id}
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          {filtered.length === 0 && !loading && (
-            <div className="py-20 text-center">
-              <p className="text-slate-400 text-sm font-medium">
-                Không tìm thấy dữ liệu nào phù hợp.
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>
