@@ -279,7 +279,7 @@ export default function BookingPage() {
     if (!token) return alert("Vui lòng đăng nhập!");
 
     try {
-      const res = await fetch(`${API}/bookings/${id}`, {
+      const res = await fetch(`${API}/bookings/admin/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
