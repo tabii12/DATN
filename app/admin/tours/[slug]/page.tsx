@@ -12,7 +12,7 @@ import TourTrips from "./TourTrips";
 const API = "https://db-pickyourway.vercel.app/api";
 
 export default function TourDetailPage() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const [tour, setTour] = useState<any>(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ export default function TourDetailPage() {
   const fetchTourData = useCallback(async () => {
     try {
       // 1. Fetch chi tiết tour
-      const tourRes = await fetch(`${API}/tours/detail/${id}`);
+      const tourRes = await fetch(`${API}/tours/detail/${slug}`);
       const tourData = await tourRes.json();
 
       // 2. Fetch danh mục (cần cho TourInfo)
@@ -35,7 +35,7 @@ export default function TourDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [slug]);
 
   useEffect(() => {
     fetchTourData();
