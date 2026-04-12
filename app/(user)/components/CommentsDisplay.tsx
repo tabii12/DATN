@@ -75,7 +75,7 @@ export default function CommentsDisplay({
 
     try {
       const response = await fetch(
-        `https://db-pickyourway.vercel.app/api/comments?tour_id=${tourId}&status=approved`,
+        `https://db-pickyourway.vercel.app/api/comments/tour/${tourId}`,
         {
           headers: {
             "Content-Type": "application/json",
