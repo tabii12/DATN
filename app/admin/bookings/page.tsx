@@ -296,12 +296,14 @@ export default function BookingPage() {
               ? {
                   ...b,
                   status: newStatus,
-                  paymentStatus: newStatus as any,
+                  paymentStatus:
+                    newStatus === "paid" ? "paid" : b.paymentStatus,
                   completed: newStatus === "paid",
                 }
               : b,
           ),
         );
+        alert("Cập nhật trạng thái thành công!");
       } else {
         alert(data.message || "Không thể cập nhật trạng thái");
       }
