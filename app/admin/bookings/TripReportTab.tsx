@@ -21,7 +21,7 @@ export function TripReportTab() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        "https://db-pickyourway.vercel.app/api/trips/admin/status-report",
+        "https://db-pickyourway.vercel.app/api/bookings/admin/status-report",
         {
           headers: { Authorization: `Bearer ${token}` },
         },
