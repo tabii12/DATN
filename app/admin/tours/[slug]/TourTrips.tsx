@@ -2,45 +2,17 @@
 
 import { useState, useEffect, useMemo } from "react";
 
-// --- Interfaces ---
-interface TripService {
-  service_id: string | any;
-  unit_price: number;
-  quantity: number;
-  note?: string;
-}
-
-export interface Trip {
-  _id: string;
-  tour_id: string;
-  start_date: string;
-  end_date: string;
-  services: TripService[];
-  base_price: number;
-  price: number;
-  min_people: number;
-  max_people: number;
-  booked_people: number;
-  status: "open" | "closed" | "full" | "deleted";
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-interface Props {
-  tourId: string;
-  trips: Trip[];
-  onRefresh: () => void;
-}
-
-interface GlobalService {
-  _id: string;
-  serviceName: string;
-  basePrice: number;
-  unit: string;
-  type: string;
-}
-
 const API = "https://db-pickyourway.vercel.app/api";
+
+interface TripService { service_id: string | any; unit_price: number; quantity: number; note?: string }
+export interface Trip {
+  _id: string; tour_id: string; start_date: string; end_date: string;
+  services: TripService[]; base_price: number; price: number;
+  min_people: number; max_people: number; booked_people: number;
+  status: "open" | "closed" | "full" | "deleted";
+}
+interface GlobalService { _id: string; serviceName: string; basePrice: number; unit: string; type: string }
+interface Props { tourId: string; trips: Trip[]; onRefresh: () => void }
 
 const SERVICE_TYPES = [
   { value: "all", label: "Tất cả loại" },
@@ -52,467 +24,340 @@ const SERVICE_TYPES = [
   { value: "other", label: "Khác" },
 ];
 
-export default function TourTrips({ tourId, trips, onRefresh }: Props) {
-  // --- States ---
-  const [loading, setLoading] = useState(false);
-  const [globalServices, setGlobalServices] = useState<GlobalService[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
-  const [editingTripId, setEditingTripId] = useState<string | null>(null);
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{children}</p>;
+}
 
+const CheckedIcon = () => (
+  <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shrink-0 shadow-md shadow-orange-200">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+);
+
+export default function TourTrips({ tourId, trips, onRefresh }: Props) {
+  const today = new Date().toISOString().split("T")[0];
+
+  // ── Services ──
+  const [globalServices, setGlobalServices] = useState<GlobalService[]>([]);
+  const [searchTerm, setSearchTerm]         = useState("");
+  const [filterType, setFilterType]         = useState("all");
+
+  // ── Form (dùng cho cả tạo và sửa) ──
+  const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const [loading, setLoading]             = useState(false);
   const [tripForm, setTripForm] = useState({
-    start_date: "",
-    end_date: "",
-    min_people: 1,
-    max_people: 10,
-    selected_services: [] as {
-      service_id: string;
-      quantity: number;
-      note: string;
-    }[],
+    start_date: "", end_date: "", min_people: 1, max_people: 10,
+    selected_services: [] as { service_id: string; quantity: number; note: string }[],
   });
 
-  // --- Fetch Initial Data ---
+  // Local state for trips to allow immediate updates
+  const [localTrips, setLocalTrips] = useState(trips);
+  useEffect(() => setLocalTrips(trips), [trips]);
+
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const res = await fetch(`${API}/services/all`);
-        const result = await res.json();
-        if (result.success) {
-          setGlobalServices(result.data);
-        }
-      } catch (error) {
-        console.error("Lỗi lấy danh sách service:", error);
-      }
-    };
-    fetchServices();
+    fetch(`${API}/services/all`).then(r => r.json()).then(res => {
+      if (res.success) setGlobalServices(res.data);
+    }).catch(console.error);
   }, []);
 
-  // --- Search & Filter Logic ---
-  const filteredServices = useMemo(() => {
-    return globalServices.filter((service) => {
-      const matchName = service.serviceName
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      const matchType = filterType === "all" || service.type === filterType;
+  const filteredServices = useMemo(() =>
+    globalServices.filter(s => {
+      const matchName = s.serviceName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchType = filterType === "all" || s.type === filterType;
       return matchName && matchType;
-    });
-  }, [globalServices, searchTerm, filterType]);
+    }),
+  [globalServices, searchTerm, filterType]);
 
-  // --- Form Handlers ---
+  // ── Service handlers ──
   const toggleService = (service: GlobalService) => {
-    setTripForm((prev) => {
-      const isExisted = prev.selected_services.find(
-        (s) => s.service_id === service._id,
-      );
-      if (isExisted) {
-        return {
-          ...prev,
-          selected_services: prev.selected_services.filter(
-            (s) => s.service_id !== service._id,
-          ),
-        };
-      } else {
-        return {
-          ...prev,
-          selected_services: [
-            ...prev.selected_services,
-            {
-              service_id: service._id,
-              quantity: 1,
-              note: service.serviceName,
-            },
-          ],
-        };
-      }
+    setTripForm(prev => {
+      const exists = prev.selected_services.find(s => s.service_id === service._id);
+      return exists
+        ? { ...prev, selected_services: prev.selected_services.filter(s => s.service_id !== service._id) }
+        : { ...prev, selected_services: [...prev.selected_services, { service_id: service._id, quantity: 1, note: service.serviceName }] };
     });
   };
 
   const updateServiceQty = (serviceId: string, qty: number) => {
-    setTripForm((prev) => ({
+    setTripForm(prev => ({
       ...prev,
-      selected_services: prev.selected_services.map((s) =>
-        s.service_id === serviceId ? { ...s, quantity: Math.max(1, qty) } : s,
+      selected_services: prev.selected_services.map(s =>
+        s.service_id === serviceId ? { ...s, quantity: Math.max(1, qty) } : s
       ),
     }));
   };
 
+  // ── Edit trip ──
   const handleEditClick = (trip: Trip) => {
     setEditingTripId(trip._id);
-
-    // Convert ISO date to YYYY-MM-DD for input fields
-    const formatDate = (dateStr: string) => {
-      if (!dateStr) return "";
-      return new Date(dateStr).toISOString().split("T")[0];
-    };
-
+    const fmtDate = (d: string) => d ? new Date(d).toISOString().split("T")[0] : "";
     setTripForm({
-      start_date: formatDate(trip.start_date),
-      end_date: formatDate(trip.end_date),
+      start_date: fmtDate(trip.start_date),
+      end_date:   fmtDate(trip.end_date),
       min_people: trip.min_people,
       max_people: trip.max_people,
-      selected_services: trip.services.map((s) => ({
-        service_id:
-          typeof s.service_id === "string" ? s.service_id : s.service_id._id,
+      selected_services: trip.services.map(s => ({
+        service_id: typeof s.service_id === "string" ? s.service_id : s.service_id._id,
         quantity: s.quantity,
         note: s.note || "",
       })),
     });
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const resetForm = () => {
     setEditingTripId(null);
-    setTripForm({
-      start_date: "",
-      end_date: "",
-      min_people: 1,
-      max_people: 10,
-      selected_services: [],
-    });
+    setTripForm({ start_date: "", end_date: "", min_people: 1, max_people: 10, selected_services: [] });
   };
 
+  // ── Submit (tạo hoặc sửa) ──
   const handleSubmitTrip = async () => {
-    if (!tripForm.start_date || !tripForm.end_date)
-      return alert("Vui lòng chọn ngày");
-    if (tripForm.selected_services.length === 0)
-      return alert("Vui lòng chọn ít nhất 1 dịch vụ");
-
+    if (!tripForm.start_date || !tripForm.end_date) return alert("Vui lòng chọn ngày");
+    if (tripForm.selected_services.length === 0) return alert("Vui lòng chọn ít nhất 1 dịch vụ");
+    setLoading(true);
     try {
-      setLoading(true);
       const isEdit = !!editingTripId;
-      const url = isEdit
-        ? `${API}/trips/${editingTripId}`
-        : `${API}/trips/create`;
-      const method = isEdit ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(isEdit ? `${API}/trips/${editingTripId}` : `${API}/trips/create`, {
+        method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tour_id: tourId,
-          start_date: tripForm.start_date,
-          end_date: tripForm.end_date,
-          min_people: tripForm.min_people,
-          max_people: tripForm.max_people,
+          start_date: tripForm.start_date, end_date: tripForm.end_date,
+          min_people: tripForm.min_people, max_people: tripForm.max_people,
           services: tripForm.selected_services,
         }),
       });
+      if (res.ok) { alert(isEdit ? "Cập nhật thành công!" : "Thêm chuyến thành công!"); resetForm(); onRefresh(); }
+      else { const err = await res.json(); alert("Lỗi: " + err.message); }
+    } catch { alert("Lỗi server"); }
+    finally { setLoading(false); }
+  };
 
+  const toggleStatus = async (trip: Trip) => {
+    if (trip.status === "full") return;
+    const newStatus = trip.status === "open" ? "closed" : "open";
+    await fetch(`${API}/trips/${trip._id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }) });
+    onRefresh();
+  };
+
+  const deleteTrip = async (id: string) => {
+    if (!confirm("Xoá chuyến đi này?")) return;
+    try {
+      const res = await fetch(`${API}/trips/${id}`, { method: "DELETE" });
+      console.log("Delete response:", res.status, res.statusText);
+      const data = await res.json();
+      console.log("Delete data:", data);
       if (res.ok) {
-        alert(
-          isEdit ? "Cập nhật chuyến đi thành công!" : "Thêm chuyến thành công!",
-        );
-        resetForm();
-        onRefresh();
+        alert("Đã xoá chuyến đi!");
+        setLocalTrips(prev => prev.filter(t => t._id !== id));
+        // onRefresh(); // Không cần vì đã cập nhật local
       } else {
-        const err = await res.json();
-        alert("Lỗi: " + err.message);
+        alert("Lỗi xoá: " + (data.message || "Không thể xoá"));
       }
     } catch (error) {
-      console.error(error);
-      alert("Cạn kiệt tài nguyên hoặc lỗi server");
-    } finally {
-      setLoading(false);
+      console.error("Delete error:", error);
+      alert("Lỗi server khi xoá chuyến đi");
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* FORM THIẾT LẬP (Dùng cho cả tạo và sửa) */}
-      <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-        <div className="flex justify-between items-start mb-8">
+    <div className="space-y-4">
+
+      {/* ── Form tạo/sửa ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl uppercase tracking-tight text-gray-800 font-black">
-              {editingTripId ? "Cập nhật chuyến đi" : "Thiết lập chuyến đi mới"}
-            </h2>
-            <p className="text-xs text-gray-400 font-bold">
-              {editingTripId
-                ? `Đang chỉnh sửa bản ghi: ${editingTripId}`
-                : "Cấu hình thời gian, số lượng khách và dịch vụ"}
-            </p>
+            <SectionTitle>{editingTripId ? "Cập nhật chuyến đi" : "Thêm chuyến đi"}</SectionTitle>
+            {editingTripId && <p className="text-[11px] text-orange-500 -mt-2 mb-2 font-semibold">Đang chỉnh sửa: {editingTripId}</p>}
           </div>
-          {editingTripId && (
-            <button
-              onClick={resetForm}
-              className="px-4 py-2 text-[10px] font-black uppercase text-red-500 bg-red-50 rounded-xl hover:bg-red-100 transition"
-            >
-              Hủy chỉnh sửa
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="space-y-2">
-            <label className="text-[10px] text-gray-400 uppercase tracking-wider ml-1">
-              Ngày bắt đầu
-            </label>
-            <input
-              type="date"
-              className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm text-gray-700 focus:ring-2 focus:ring-[#F26F21] outline-none"
-              value={tripForm.start_date}
-              onChange={(e) =>
-                setTripForm({ ...tripForm, start_date: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] text-gray-400 uppercase tracking-wider ml-1">
-              Ngày kết thúc
-            </label>
-            <input
-              type="date"
-              className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm text-gray-700 focus:ring-2 focus:ring-[#F26F21] outline-none"
-              value={tripForm.end_date}
-              onChange={(e) =>
-                setTripForm({ ...tripForm, end_date: e.target.value })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] text-gray-400 uppercase tracking-wider ml-1">
-              Khách tối thiểu
-            </label>
-            <input
-              type="number"
-              className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm text-gray-700 focus:ring-2 focus:ring-[#F26F21] outline-none"
-              value={tripForm.min_people}
-              onChange={(e) =>
-                setTripForm({ ...tripForm, min_people: Number(e.target.value) })
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] text-gray-400 uppercase tracking-wider ml-1">
-              Khách tối đa
-            </label>
-            <input
-              type="number"
-              className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl text-sm text-gray-700 focus:ring-2 focus:ring-[#F26F21] outline-none"
-              value={tripForm.max_people}
-              onChange={(e) =>
-                setTripForm({ ...tripForm, max_people: Number(e.target.value) })
-              }
-            />
+          <div className="flex gap-2">
+            {editingTripId && (
+              <button onClick={resetForm} className="text-xs font-bold px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 text-red-500 cursor-pointer hover:bg-red-100 transition-colors">✕ Huỷ sửa</button>
+            )}
           </div>
         </div>
 
-        {/* CHỌN DỊCH VỤ VỚI TÌM KIẾM */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <label className="text-[10px] text-gray-400 uppercase tracking-[0.15em] ml-1 block">
-              Dịch vụ đi kèm ({filteredServices.length})
-            </label>
+        {/* Ngày & số người */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày đi</label>
+            <input type="date" value={tripForm.start_date} min={!editingTripId ? today : undefined}
+              onChange={e => setTripForm(f => ({ ...f, start_date: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày về</label>
+            <input type="date" value={tripForm.end_date} min={tripForm.start_date}
+              onChange={e => setTripForm(f => ({ ...f, end_date: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Tối thiểu (người)</label>
+            <input type="number" min={1} value={tripForm.min_people}
+              onChange={e => setTripForm(f => ({ ...f, min_people: Number(e.target.value) }))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Tối đa (người)</label>
+            <input type="number" min={1} value={tripForm.max_people}
+              onChange={e => setTripForm(f => ({ ...f, max_people: Number(e.target.value) }))}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+          </div>
+        </div>
+
+        {/* Info tối thiểu */}
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 text-xs text-blue-700 mb-4 flex items-start gap-2">
+          <span className="shrink-0">ℹ️</span>
+          <span>Tour vẫn khởi hành kể cả khi chưa đủ tối đa, miễn là đạt số tối thiểu. Nếu chưa đủ tối thiểu có thể huỷ hoặc dời chuyến.</span>
+        </div>
+
+        {/* ── Chọn dịch vụ ── */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Dịch vụ đi kèm ({filteredServices.length})</p>
             <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Tìm tên dịch vụ..."
-                className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#F26F21] w-full md:w-48"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <select
-                className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#F26F21] text-gray-600"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-              >
-                {SERVICE_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
+              <input type="text" placeholder="Tìm dịch vụ..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-orange-400 w-40"/>
+              <select value={filterType} onChange={e => setFilterType(e.target.value)} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-orange-400 cursor-pointer">
+                {SERVICE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-h-87.5 overflow-y-auto p-1 pr-2 custom-scrollbar">
-            {filteredServices.map((service) => {
-              const selected = tripForm.selected_services.find(
-                (s) => s.service_id === service._id,
-              );
-              return (
-                <div
-                  key={service._id}
-                  onClick={() => toggleService(service)}
-                  className={`p-4 rounded-2xl cursor-pointer transition-all border-2 ${
-                    selected
-                      ? "border-[#F26F21] bg-orange-50/50"
-                      : "border-transparent bg-gray-50 hover:bg-gray-100"
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 pr-2">
-                      <span className="text-[8px] bg-white border border-gray-200 px-1 rounded text-gray-400 uppercase mb-1 block w-fit">
-                        {service.type}
-                      </span>
-                      <p className="text-[11px] font-bold uppercase tracking-tight text-gray-700 leading-tight">
-                        {service.serviceName}
-                      </p>
-                      <p className="text-[10px] text-[#F26F21] font-bold mt-1">
-                        {service.basePrice.toLocaleString()}₫{" "}
-                        <span className="text-gray-400 font-normal">
-                          / {service.unit}
-                        </span>
-                      </p>
-                    </div>
-                    {selected && <CheckedIcon />}
-                  </div>
-                  {selected && (
-                    <div
-                      className="mt-3 pt-3 border-t border-[#F26F21]/10"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] text-gray-400 font-bold uppercase">
-                          Qty:
-                        </span>
-                        <input
-                          type="number"
-                          className="flex-1 p-1.5 bg-white border border-orange-100 rounded-lg text-center text-xs text-[#F26F21] font-black outline-none"
-                          value={selected.quantity}
-                          onChange={(e) =>
-                            updateServiceQty(
-                              service._id,
-                              Number(e.target.value),
-                            )
-                          }
-                        />
+          {globalServices.length === 0 ? (
+            <div className="py-8 text-center border-2 border-dashed border-gray-100 rounded-xl">
+              <p className="text-xs text-gray-400">Không tìm thấy dịch vụ nào. Kiểm tra API <code>/services/all</code></p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 max-h-72 overflow-y-auto pr-1">
+              {filteredServices.map(service => {
+                const selected = tripForm.selected_services.find(s => s.service_id === service._id);
+                return (
+                  <div key={service._id} onClick={() => toggleService(service)}
+                    className={`p-4 rounded-xl cursor-pointer transition-all border-2 ${selected ? "border-orange-400 bg-orange-50/50" : "border-transparent bg-gray-50 hover:bg-gray-100"}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-2">
+                        <span className="text-[9px] bg-white border border-gray-200 px-1.5 rounded text-gray-400 uppercase mb-1 block w-fit">{service.type}</span>
+                        <p className="text-xs font-bold text-gray-700 leading-tight">{service.serviceName}</p>
+                        <p className="text-[10px] text-orange-500 font-bold mt-1">{service.basePrice.toLocaleString()}₫ <span className="text-gray-400 font-normal">/ {service.unit}</span></p>
                       </div>
+                      {selected && <CheckedIcon/>}
                     </div>
-                  )}
+                    {selected && (
+                      <div className="mt-2 pt-2 border-t border-orange-100" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] text-gray-400 font-bold uppercase">Qty:</span>
+                          <input type="number" className="flex-1 p-1.5 bg-white border border-orange-100 rounded-lg text-center text-xs text-orange-500 font-black outline-none"
+                            value={selected.quantity} onChange={e => updateServiceQty(service._id, Number(e.target.value))}/>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Selected services summary */}
+          {tripForm.selected_services.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {tripForm.selected_services.map(s => {
+                const svc = globalServices.find(g => g._id === s.service_id);
+                return svc ? (
+                  <span key={s.service_id} className="text-[10px] bg-orange-100 text-orange-700 font-semibold px-2 py-0.5 rounded-full">
+                    {svc.serviceName} ×{s.quantity}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Submit button */}
+        <button
+          onClick={handleSubmitTrip}
+          disabled={loading}
+          className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold border-none cursor-pointer transition-colors disabled:opacity-60">
+          {loading ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Đang xử lý...</span>
+            : editingTripId ? "💾 Lưu cập nhật"
+            : "+ Thêm chuyến"}
+        </button>
+      </div>
+
+      {/* ── Danh sách chuyến ── */}
+      {localTrips.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center text-gray-400">
+          <p className="text-4xl mb-3">🚀</p><p className="font-semibold text-sm">Chưa có chuyến đi nào</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{localTrips.filter(t => t.status !== "deleted").length} chuyến đi</span>
+            <span className="text-xs text-gray-400">{localTrips.filter(t => t.status === "open").length} đang mở · {localTrips.filter(t => new Date(t.end_date) < new Date() && t.status !== "deleted").length} đã qua</span>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {[...localTrips.filter(t => t.status !== "deleted")].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()).map(trip => {
+              const start      = new Date(trip.start_date);
+              const end        = new Date(trip.end_date);
+              const slotsLeft  = trip.max_people - trip.booked_people;
+              const isPast     = end < new Date();
+              const nights     = Math.ceil((end.getTime() - start.getTime()) / 86400000);
+              const dayLabels  = ["CN","T2","T3","T4","T5","T6","T7"];
+              const minPeople  = trip.min_people ?? 1;
+              const reachedMin = trip.booked_people >= minPeople;
+              return (
+                <div key={trip._id} className={`px-5 py-4 ${isPast ? "opacity-40" : ""}`}>
+                  <div className="flex items-start gap-4">
+                    {/* Date badge */}
+                    <div className="shrink-0 text-center bg-orange-50 rounded-xl px-3 py-2 min-w-[60px]">
+                      <p className="text-[10px] font-bold text-orange-400">{dayLabels[start.getDay()]}</p>
+                      <p className="text-lg font-black text-orange-600 leading-none">{String(start.getDate()).padStart(2, "0")}</p>
+                      <p className="text-[10px] text-orange-400 font-semibold">T{start.getMonth() + 1}</p>
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="text-sm font-bold text-gray-800">{start.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                        <span className="text-gray-400 text-xs">→</span>
+                        <span className="text-sm font-bold text-gray-800">{end.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                        <span className="text-[11px] text-gray-400">({nights + 1} ngày {nights} đêm)</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap mb-2">
+                        <span className="text-[11px] font-black text-orange-500">{(trip.price || trip.base_price || 0).toLocaleString("vi-VN")}đ</span>
+                        <span className="text-[11px] text-gray-400">{trip.booked_people}/{trip.max_people} · còn <span className={slotsLeft <= 3 ? "text-red-500 font-bold" : "text-emerald-600 font-semibold"}>{slotsLeft} chỗ</span></span>
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${reachedMin ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
+                          {reachedMin ? "✓" : "⚠"} Tối thiểu {minPeople} {reachedMin ? "(đạt)" : `(cần thêm ${minPeople - trip.booked_people})`}
+                        </span>
+                      </div>
+                      {/* Services */}
+                      {trip.services?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {trip.services.map((s, idx) => (
+                            <span key={idx} className="text-[9px] font-bold bg-gray-50 text-gray-400 px-2 py-0.5 rounded-lg border border-gray-100">
+                              {s.note || "Dịch vụ"} ×{s.quantity}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => toggleStatus(trip)} disabled={trip.status === "full"}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border cursor-pointer transition-colors disabled:cursor-not-allowed ${trip.status === "open" ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" : trip.status === "full" ? "bg-red-50 text-red-400 border-red-200" : "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"}`}>
+                        {trip.status === "open" ? "Mở" : trip.status === "full" ? "Đầy" : "Đóng"}
+                      </button>
+                      <button onClick={() => handleEditClick(trip)} className="text-xs text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold">Sửa</button>
+                      <button onClick={() => deleteTrip(trip._id)} className="text-xs text-red-400 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold">Xoá</button>
+                    </div>
+                  </div>
                 </div>
               );
             })}
           </div>
         </div>
-
-        <button
-          onClick={handleSubmitTrip}
-          disabled={loading}
-          className="w-full py-4 bg-[#F26F21] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:opacity-90 transition shadow-xl shadow-orange-100 disabled:bg-gray-200"
-        >
-          {loading
-            ? "Đang xử lý..."
-            : editingTripId
-              ? "Lưu cập nhật chuyến đi"
-              : "Xác nhận tạo chuyến đi"}
-        </button>
-      </div>
-
-      {/* DANH SÁCH CHUYẾN ĐI */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {trips.map((trip) => (
-          <div
-            key={trip._id}
-            className="bg-white p-6 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 relative group transition-all hover:shadow-md hover:border-orange-100"
-          >
-            <div className="flex justify-between items-start mb-6">
-              <div className="bg-orange-50 text-[#F26F21] px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-orange-100 shadow-sm">
-                {new Date(trip.start_date).toLocaleDateString("vi-VN")}
-              </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                <button
-                  onClick={() => handleEditClick(trip)}
-                  className="p-2 bg-gray-50 hover:bg-white hover:shadow-sm rounded-xl text-gray-400 hover:text-[#F26F21] transition border border-transparent hover:border-gray-100"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-1">
-                  Giá bán tour
-                </p>
-                <p className="text-2xl font-black text-gray-800 tracking-tighter">
-                  {trip.price?.toLocaleString()}
-                  <span className="text-sm ml-1 text-[#F26F21]">₫</span>
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-t border-gray-50 pt-4">
-                <div>
-                  <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">
-                    Booked / Max
-                  </p>
-                  <div className="text-sm text-gray-700 font-bold">
-                    <span className="text-[#F26F21]">
-                      {trip.booked_people || 0}
-                    </span>
-                    <span className="text-gray-200 mx-1">/</span>
-                    <span>{trip.max_people}</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">
-                    Trạng thái
-                  </p>
-                  <span
-                    className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg border ${
-                      trip.status === "open"
-                        ? "bg-green-50 text-green-600 border-green-100"
-                        : "bg-red-50 text-red-500 border-red-100"
-                    }`}
-                  >
-                    ● {trip.status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-2 flex flex-wrap gap-1.5">
-                {trip.services?.length > 0 ? (
-                  trip.services.map((s, idx) => (
-                    <span
-                      key={idx}
-                      className="text-[9px] font-bold bg-gray-50 text-gray-400 px-2 py-1 rounded-lg uppercase border border-gray-100"
-                    >
-                      {s.note || "Dịch vụ"} x{s.quantity}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-[9px] text-gray-300 italic">
-                    Không có dịch vụ
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-        {trips.length === 0 && (
-          <div className="col-span-full text-center py-20 bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100">
-            <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">
-              Chưa có chuyến đi nào
-            </p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
-
-const CheckedIcon = () => (
-  <div className="w-5 h-5 bg-[#F26F21] rounded-full flex items-center justify-center shrink-0 shadow-md shadow-orange-200">
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="white"
-      strokeWidth="4"
-    >
-      <polyline points="20 6 9 17 4 12"></polyline>
-    </svg>
-  </div>
-);

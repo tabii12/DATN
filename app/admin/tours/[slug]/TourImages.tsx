@@ -1,169 +1,67 @@
 "use client";
-
 import { useState } from "react";
 
-interface TourImage {
-  _id: string;
-  tour_id: string;
-  image_url: string;
-  public_id: string;
-}
-
-interface Props {
-  slug: string;
-  images: TourImage[];
-  onRefresh: () => void;
-}
-
 const API = "https://db-pickyourway.vercel.app/api";
+type TourImage = { _id: string; tour_id: string; image_url: string; public_id: string };
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{children}</p>;
+}
+
+interface Props { slug: string; images: TourImage[]; onRefresh: () => void; }
 
 export default function TourImages({ slug, images, onRefresh }: Props) {
   const [uploading, setUploading] = useState(false);
 
-  // 1. Xử lý Upload ảnh
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const formData = new FormData();
-    // Không nhất thiết phải append tour_id vào body nếu Backend đã lấy từ URL Params
-
-    for (let i = 0; i < files.length; i++) {
-      formData.append("images", files[i]);
-    }
-
-    try {
-      setUploading(true);
-
-      // SỬA TẠI ĐÂY: Thêm slug vào cuối URL để khớp với Route Backend: /upload/:slug
-      const res = await fetch(`${API}/tours/upload-images/${slug}`, {
-        method: "POST",
-        body: formData, // FormData chứa danh sách file
-      });
-
-      if (res.ok) {
-        alert("Upload ảnh thành công!");
-        onRefresh();
-      } else {
-        const errorData = await res.json();
-        alert(`Lỗi: ${errorData.message || "Không thể upload ảnh"}`);
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Đã có lỗi xảy ra trong quá trình upload");
-    } finally {
-      setUploading(false);
-      // Reset input file để có thể chọn lại cùng 1 file nếu cần
-      e.target.value = "";
-    }
+  const uploadImage = async (file: File) => {
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("images", file);
+    const res = await fetch(`${API}/tours/upload-images/${slug}`, { method:"POST", body:fd });
+    if (!res.ok) alert("Upload lỗi 😭");
+    else onRefresh();
+    setUploading(false);
   };
 
-  // 2. Xử lý Xóa ảnh
-  const handleDelete = async (imageId: string) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa ảnh này?")) return;
-
-    try {
-      const res = await fetch(`${API}/tours/image/${imageId}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error("Delete error:", error);
-    }
+  const deleteImage = async (imageId: string) => {
+    if (!confirm("Xoá ảnh này?")) return;
+    await fetch(`${API}/tours/image/${imageId}`, { method:"DELETE" });
+    onRefresh();
   };
 
   return (
-    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-xl uppercase tracking-tight text-gray-800 font-black">
-            Thư viện hình ảnh
-          </h2>
-          <p className="text-xs text-gray-400">
-            Quản lý các hình ảnh hiển thị trong gallery của tour
-          </p>
-        </div>
-
-        <label
-          className={`cursor-pointer px-6 py-3 rounded-2xl text-xs uppercase tracking-widest transition shadow-lg ${
-            uploading
-              ? "bg-gray-100 text-gray-400"
-              : "bg-[#F26F21] text-white hover:opacity-90 shadow-orange-100"
-          }`}
-        >
-          {uploading ? "Đang tải lên..." : "+ Tải ảnh lên"}
-          <input
-            type="file"
-            multiple
-            hidden
-            accept="image/*"
-            disabled={uploading}
-            onChange={handleUpload}
-          />
+    <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <SectionTitle>Hình ảnh tour</SectionTitle>
+        <label className={`flex items-center gap-1.5 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer transition-colors ${uploading?"bg-gray-300":"bg-orange-500 hover:bg-orange-600"}`}>
+          {uploading ? "Đang tải..." : "+ Thêm ảnh"}
+          <input type="file" accept="image/*" className="hidden" disabled={uploading}
+            onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])}/>
         </label>
       </div>
-
-      {/* Danh sách ảnh */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {images.length === 0 && !uploading && (
-          <div className="col-span-full py-16 text-center border-2 border-dashed border-gray-50 rounded-3xl">
-            <p className="text-gray-400 text-xs uppercase tracking-widest">
-              Chưa có hình ảnh nào được tải lên
-            </p>
-          </div>
-        )}
-
-        {images.map((img) => (
-          <div
-            key={img._id}
-            className="group relative aspect-square bg-gray-50 rounded-2xl overflow-hidden transition-all hover:shadow-xl"
-          >
-            <img
-              src={img.image_url}
-              alt="Tour gallery"
-              className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
-            />
-
-            {/* Lớp overlay khi hover */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-              <button
-                onClick={() => handleDelete(img._id)}
-                className="bg-white hover:bg-red-500 hover:text-white text-red-500 p-3 rounded-2xl transition-all shadow-xl transform translate-y-4 group-hover:translate-y-0"
-                title="Xóa ảnh"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 6h18"></path>
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                </svg>
-              </button>
+      {images.length===0 ? (
+        <div className="py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl">
+          <p className="text-4xl mb-3">🖼️</p>
+          <p className="text-sm text-gray-400 font-semibold">Chưa có ảnh nào</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {images.map((img,i)=>(
+            <div key={img._id} className="group relative rounded-xl overflow-hidden bg-gray-100 aspect-video">
+              <img src={img.image_url} className="w-full h-full object-cover"/>
+              {i===0&&<div className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Ảnh bìa</div>}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <button onClick={()=>deleteImage(img._id)} className="bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg border-none cursor-pointer">Xoá</button>
+              </div>
             </div>
-          </div>
-        ))}
-
-        {/* Loading placeholder */}
-        {uploading && (
-          <div className="aspect-square bg-gray-50 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-[#F26F21]/20 animate-pulse">
-            <div className="w-6 h-6 border-2 border-[#F26F21] border-t-transparent rounded-full animate-spin mb-2"></div>
-            <span className="text-[10px] text-[#F26F21] uppercase tracking-tighter">
-              Đang tải
-            </span>
-          </div>
-        )}
-      </div>
+          ))}
+          {uploading&&(
+            <div className="aspect-video bg-gray-50 rounded-xl flex items-center justify-center border-2 border-dashed border-orange-200 animate-pulse">
+              <span className="w-5 h-5 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin"/>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

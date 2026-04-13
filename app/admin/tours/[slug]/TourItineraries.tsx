@@ -2,469 +2,266 @@
 
 import { useState, useEffect } from "react";
 
-// --- INTERFACES ---
-interface Place {
-  _id: string;
-  title: string;
-  image?: string; // Đã thêm trường image
-}
-
-interface ItineraryDetail {
-  _id: string;
-  type: string;
-  title: string;
-  content: string;
-  order: number;
-  place_id?: Place | string | null;
-}
-
-interface Itinerary {
-  _id: string;
-  day_number: number;
-  title: string;
-  meal_note: string;
-  details: ItineraryDetail[];
-}
-
-interface Props {
-  tourId: string;
-  itineraries: Itinerary[];
-  onRefresh: () => void;
-}
-
 const API = "https://db-pickyourway.vercel.app/api";
 
-export default function TourItineraries({
-  tourId,
-  itineraries,
-  onRefresh,
-}: Props) {
-  const [loading, setLoading] = useState(false);
-  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
+interface Place { _id: string; title: string; content?: string; images?: { image_url: string }[] }
+interface ItineraryDetail {
+  _id: string; type: string; title: string; content: string; order: number;
+  place_id: { _id: string; title: string; content: string; images?: { image_url: string }[] } | null;
+}
+interface Itinerary { _id: string; day_number: number; title: string; meal_note: string; details: ItineraryDetail[] }
+interface Props { tourId: string; itineraries: Itinerary[]; onRefresh: () => void }
 
+const TYPE_META: Record<string, { icon: string; label: string; color: string }> = {
+  move:  { icon: "🚌", label: "Di chuyển", color: "bg-blue-50 text-blue-600" },
+  rest:  { icon: "🏨", label: "Nghỉ ngơi", color: "bg-purple-50 text-purple-600" },
+  eat:   { icon: "🍜", label: "Ăn uống",   color: "bg-amber-50 text-amber-600" },
+  visit: { icon: "📍", label: "Tham quan", color: "bg-orange-50 text-orange-600" },
+};
+
+export default function TourItineraries({ tourId, itineraries, onRefresh }: Props) {
+  const [allPlaces, setAllPlaces]               = useState<Place[]>([]);
+  const [editingDay, setEditingDay]             = useState<string | null>(null);
+  const [editingDayTitle, setEditingDayTitle]   = useState("");
+  const [editingDayMeal, setEditingDayMeal]     = useState("");
+  const [editingDetail, setEditingDetail]       = useState<string | null>(null);
+  const [editDetailTitle, setEditDetailTitle]   = useState("");
+  const [editDetailContent, setEditDetailContent] = useState("");
+  const [editDetailType, setEditDetailType]     = useState("visit");
+  const [editDetailPlaceId, setEditDetailPlaceId] = useState("");
+  const [uploadingDetailId, setUploadingDetailId] = useState<string | null>(null);
+
+  // Fetch danh sách địa điểm để gắn vào hoạt động
   useEffect(() => {
-    fetch(`${API}/places`)
-      .then((res) => res.json())
-      .then((res) => {
-        if (res.success) setAllPlaces(res.data);
-      })
-      .catch((err) => console.error("Lỗi fetch places:", err));
+    fetch(`${API}/places`).then(r => r.json()).then(res => {
+      if (res.success) setAllPlaces(res.data);
+    }).catch(console.error);
   }, []);
 
-  const handleAddDay = async () => {
+  // ── Day handlers ──
+  const addDay = async () => {
+    const nextDay = itineraries.length + 1;
+    await fetch(`${API}/itineraries/create`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tour_id: tourId, day_number: nextDay, title: `Ngày ${nextDay}`, meal_note: "" }),
+    });
+    onRefresh();
+  };
+
+  const updateDay = async (id: string) => {
+    await fetch(`${API}/itineraries/${id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: editingDayTitle, meal_note: editingDayMeal }),
+    });
+    setEditingDay(null); onRefresh();
+  };
+
+  const deleteDay = async (id: string) => {
+    if (!confirm("Xoá ngày này và tất cả hoạt động?")) return;
+    await fetch(`${API}/itineraries/${id}`, { method: "DELETE" });
+    onRefresh();
+  };
+
+  // ── Detail handlers ──
+  const addDetail = async (itineraryId: string) => {
+    const currentItinerary = itineraries.find(i => i._id === itineraryId);
+    const details = currentItinerary?.details ?? [];
+    const nextOrder = details.length > 0 ? Math.max(...details.map(d => d.order || 0)) + 1 : 1;
+    await fetch(`${API}/itinerary-details/create`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itinerary_id: itineraryId, type: "visit", title: "Hoạt động mới", content: "", order: nextOrder }),
+    });
+    onRefresh();
+  };
+
+  const updateDetail = async (id: string) => {
+    const body: any = { title: editDetailTitle, content: editDetailContent, type: editDetailType };
+    // Gắn địa điểm nếu type=visit và có chọn
+    if (editDetailType === "visit" && editDetailPlaceId) body.place_id = editDetailPlaceId;
+    else body.place_id = null;
+    await fetch(`${API}/itinerary-details/${id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    setEditingDetail(null); onRefresh();
+  };
+
+  const deleteDetail = async (id: string) => {
+    if (!confirm("Xoá hoạt động này?")) return;
+    await fetch(`${API}/itinerary-details/${id}`, { method: "DELETE" });
+    onRefresh();
+  };
+
+  // ── Upload ảnh cho detail ──
+  const uploadDetailImage = async (detailId: string, file: File) => {
+    setUploadingDetailId(detailId);
     try {
-      setLoading(true);
-      const nextDay = itineraries.length + 1;
-      const res = await fetch(`${API}/itineraries/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tour_id: tourId,
-          day_number: nextDay,
-          title: `Ngày ${nextDay}: Tiêu đề mặc định`,
-        }),
-      });
-      if (res.ok) onRefresh();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl uppercase tracking-tight text-gray-800 font-black">
-            Lịch trình chi tiết
-          </h2>
-          <p className="text-xs text-gray-400 font-bold">
-            Quản lý các hoạt động theo từng ngày của Tour
-          </p>
-        </div>
-        <button
-          onClick={handleAddDay}
-          disabled={loading}
-          className="bg-[#F26F21] text-white px-6 py-3 rounded-2xl text-[10px] uppercase tracking-widest hover:opacity-90 transition shadow-lg shadow-orange-100 disabled:bg-gray-300"
-        >
-          {loading ? "Đang xử lý..." : "+ Thêm ngày mới"}
-        </button>
-      </div>
-
-      <div className="space-y-6">
-        {itineraries
-          .sort((a, b) => a.day_number - b.day_number)
-          .map((day) => (
-            <DayItem
-              key={day._id}
-              day={day}
-              onRefresh={onRefresh}
-              allPlaces={allPlaces}
-            />
-          ))}
-
-        {itineraries.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-100">
-            <p className="text-gray-400 text-[10px] uppercase tracking-widest">
-              Chưa có lịch trình
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// --- COMPONENT: DAY ITEM ---
-function DayItem({
-  day,
-  onRefresh,
-  allPlaces,
-}: {
-  day: Itinerary;
-  onRefresh: () => void;
-  allPlaces: Place[];
-}) {
-  const [isEditingDay, setIsEditingDay] = useState(false);
-  const [dayForm, setDayForm] = useState({
-    title: day.title,
-    meal_note: day.meal_note || "",
-  });
-
-  const handleUpdateDay = async () => {
-    const res = await fetch(`${API}/itineraries/${day._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dayForm),
-    });
-    if (res.ok) {
-      setIsEditingDay(false);
+      const fd = new FormData(); fd.append("images", file);
+      const res = await fetch(`${API}/itinerary-details/upload-images/${detailId}`, { method: "POST", body: fd });
+      if (!res.ok) { alert("Upload ảnh thất bại"); return; }
       onRefresh();
-    }
+    } catch { alert("Lỗi upload ảnh"); }
+    finally { setUploadingDetailId(null); }
   };
 
-  const handleDeleteDay = async () => {
-    if (!confirm(`Xóa Ngày ${day.day_number}?`)) return;
-    await fetch(`${API}/itineraries/${day._id}`, { method: "DELETE" });
-    onRefresh();
-  };
-
-  const handleAddDetail = async () => {
-    const res = await fetch(`${API}/itinerary-details/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        itinerary_id: day._id,
-        place_id: null,
-        type: "visit",
-        title: "Hoạt động mới",
-        content: "Mô tả nội dung hoạt động...",
-        order: (day.details?.length || 0) + 1,
-      }),
-    });
-    if (res.ok) onRefresh();
+  // Mở form sửa detail
+  const openEditDetail = (dt: ItineraryDetail) => {
+    setEditingDetail(dt._id);
+    setEditDetailTitle(dt.place_id?.title ?? dt.title);
+    setEditDetailContent(dt.place_id?.content ?? dt.content);
+    setEditDetailType(dt.type);
+    setEditDetailPlaceId(dt.place_id?._id ?? "");
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
-      <div className="bg-gray-50/50 p-6 border-b border-gray-50 flex justify-between items-center">
-        {isEditingDay ? (
-          <div className="flex flex-1 gap-3 mr-4">
-            <input
-              className="flex-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm"
-              value={dayForm.title}
-              onChange={(e) =>
-                setDayForm({ ...dayForm, title: e.target.value })
-              }
-            />
-            <input
-              className="flex-1 px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm"
-              placeholder="Bữa ăn..."
-              value={dayForm.meal_note}
-              onChange={(e) =>
-                setDayForm({ ...dayForm, meal_note: e.target.value })
-              }
-            />
-            <button
-              onClick={handleUpdateDay}
-              className="bg-[#F26F21] text-white px-6 rounded-xl text-[10px] uppercase"
-            >
-              Lưu
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            <div className="bg-[#F26F21] text-white px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-widest">
-              NGÀY {day.day_number}
-            </div>
-            <h4 className="text-gray-900 text-sm uppercase tracking-tight">
-              {day.title}
-            </h4>
-            {day.meal_note && (
-              <span className="text-[10px] font-bold bg-white text-[#F26F21] px-3 py-1 rounded-full border border-orange-100">
-                🍴 {day.meal_note}
-              </span>
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <button onClick={addDay} className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold border-none cursor-pointer transition-colors">+ Thêm ngày</button>
+      </div>
+
+      {itineraries.length === 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center text-gray-400">
+          <p className="text-4xl mb-3">🗓️</p><p className="font-semibold text-sm">Chưa có ngày nào</p>
+        </div>
+      )}
+
+      {[...itineraries].sort((a, b) => a.day_number - b.day_number).map(day => (
+        <div key={day._id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+
+          {/* ── Day header ── */}
+          <div className="px-5 py-3.5 flex items-center justify-between gap-2 border-b border-gray-100 bg-gray-50/60">
+            {editingDay === day._id ? (
+              <div className="flex-1 flex flex-col gap-2">
+                <input value={editingDayTitle} onChange={e => setEditingDayTitle(e.target.value)} placeholder="Tiêu đề ngày" className="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full outline-none focus:border-orange-400"/>
+                <input value={editingDayMeal} onChange={e => setEditingDayMeal(e.target.value)} placeholder="Ghi chú bữa ăn" className="border border-gray-200 rounded-xl px-3 py-2 text-sm w-full outline-none focus:border-orange-400"/>
+                <div className="flex gap-2">
+                  <button onClick={() => updateDay(day._id)} className="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer">Lưu</button>
+                  <button onClick={() => setEditingDay(null)} className="text-gray-500 text-xs px-4 py-2 rounded-lg border border-gray-200 cursor-pointer bg-white">Huỷ</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex-1 flex items-center gap-3">
+                  <span className="bg-orange-500 text-white text-xs font-black px-3 py-1.5 rounded-xl shrink-0">Ngày {day.day_number}</span>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">{day.title}</p>
+                    {day.meal_note && <p className="text-[11px] text-amber-600 mt-0.5">🍽️ {day.meal_note}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[11px] text-gray-400 mr-2">{day.details.length} hoạt động</span>
+                  <button onClick={() => { setEditingDay(day._id); setEditingDayTitle(day.title); setEditingDayMeal(day.meal_note); }} className="text-xs font-semibold text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent">Sửa</button>
+                  <button onClick={() => deleteDay(day._id)} className="text-xs font-semibold text-red-400 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent">Xoá</button>
+                </div>
+              </>
             )}
           </div>
-        )}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsEditingDay(!isEditingDay)}
-            className="p-2 bg-white rounded-xl shadow-sm text-gray-400 hover:text-[#F26F21]"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-            >
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-          </button>
-          <button
-            onClick={handleDeleteDay}
-            className="p-2 bg-white rounded-xl shadow-sm text-gray-400 hover:text-red-500"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-            >
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
 
-      <div className="p-6 space-y-4 bg-white">
-        {day.details
-          ?.sort((a, b) => a.order - b.order)
-          .map((detail) => (
-            <DetailItem
-              key={detail._id}
-              detail={detail}
-              onRefresh={onRefresh}
-              allPlaces={allPlaces}
-            />
-          ))}
-        <button
-          onClick={handleAddDetail}
-          className="w-full py-4 border-2 border-dashed border-gray-100 rounded-3xl text-gray-400 text-[10px] uppercase tracking-[0.2em] hover:bg-gray-50 hover:text-[#F26F21] transition-all"
-        >
-          + Thêm hoạt động chi tiết
-        </button>
-      </div>
-    </div>
-  );
-}
+          {/* ── Details ── */}
+          <div className="p-4 space-y-2">
+            {[...day.details].sort((a, b) => a.order - b.order).map(dt => {
+              const meta         = TYPE_META[dt.type] ?? TYPE_META.visit;
+              const displayTitle   = dt.place_id?.title   ?? dt.title;
+              const displayContent = dt.place_id?.content ?? dt.content;
+              const detailImages   = dt.place_id?.images  ?? [];
 
-// --- COMPONENT: DETAIL ITEM ---
-function DetailItem({
-  detail,
-  onRefresh,
-  allPlaces,
-}: {
-  detail: ItineraryDetail;
-  onRefresh: () => void;
-  allPlaces: Place[];
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [form, setForm] = useState({
-    type: detail.type,
-    title: detail.title,
-    content: detail.content,
-    place_id: (detail.place_id as any)?._id || detail.place_id || "",
-  });
+              return (
+                <div key={dt._id} className="border border-gray-100 rounded-xl overflow-hidden group/detail">
+                  {editingDetail === dt._id ? (
+                    /* ── Edit form ── */
+                    <div className="p-4 space-y-3 bg-orange-50/30">
 
-  const handleUpdate = async () => {
-    const res = await fetch(`${API}/itinerary-details/${detail._id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setIsEditing(false);
-      onRefresh();
-    }
-  };
+                      {/* Type selector */}
+                      <div className="flex gap-2 flex-wrap">
+                        {Object.entries(TYPE_META).map(([v, m]) => (
+                          <button key={v} type="button" onClick={() => { setEditDetailType(v); if (v !== "visit") setEditDetailPlaceId(""); }}
+                            className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl border-2 cursor-pointer transition-all ${editDetailType === v ? "border-orange-400 bg-orange-50 text-orange-600" : "border-gray-100 bg-white text-gray-500"}`}>
+                            {m.icon} {m.label}
+                          </button>
+                        ))}
+                      </div>
 
-  const handleDelete = async () => {
-    if (!confirm("Xóa hoạt động này?")) return;
-    await fetch(`${API}/itinerary-details/${detail._id}`, { method: "DELETE" });
-    onRefresh();
-  };
+                      {/* Gắn địa điểm — chỉ khi type = visit */}
+                      {editDetailType === "visit" && (
+                        <div>
+                          <label className="text-xs font-semibold text-gray-500 block mb-1">Gắn địa điểm (tuỳ chọn)</label>
+                          <select value={editDetailPlaceId}
+                            onChange={e => {
+                              const selectedPlace = allPlaces.find(p => p._id === e.target.value);
+                              setEditDetailPlaceId(e.target.value);
+                              // Tự điền title từ địa điểm
+                              if (selectedPlace) setEditDetailTitle(selectedPlace.title);
+                            }}
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 bg-white cursor-pointer">
+                            <option value="">-- Gắn địa điểm --</option>
+                            {allPlaces.map(p => <option key={p._id} value={p._id}>{p.title}</option>)}
+                          </select>
+                          {editDetailPlaceId && (
+                            <p className="text-[11px] text-blue-500 mt-1">✓ Đã gắn địa điểm — tiêu đề & ảnh sẽ lấy từ địa điểm</p>
+                          )}
+                        </div>
+                      )}
 
-  const typeMap: Record<string, string> = {
-    visit: "Tham quan",
-    eat: "Ăn uống",
-    move: "Di chuyển",
-    rest: "Nghỉ ngơi",
-    other: "Khác",
-  };
+                      <input value={editDetailTitle} onChange={e => setEditDetailTitle(e.target.value)} placeholder="Tiêu đề hoạt động" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400"/>
+                      <textarea value={editDetailContent} onChange={e => setEditDetailContent(e.target.value)} rows={3} placeholder="Mô tả chi tiết..." className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 resize-none"/>
 
-  // Lấy thông tin địa điểm (đã được populate)
-  const placeData =
-    typeof detail.place_id === "object" ? (detail.place_id as Place) : null;
+                      {/* Upload ảnh (chỉ khi không gắn địa điểm) */}
+                      {!editDetailPlaceId && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 mb-2">Hình ảnh hoạt động</p>
+                          <div className="flex flex-wrap gap-2">
+                            {detailImages.map((img, k) => (
+                              <div key={k} className="relative w-20 h-16 rounded-lg overflow-hidden bg-gray-100">
+                                <img src={img.image_url} className="w-full h-full object-cover"/>
+                              </div>
+                            ))}
+                            <label className={`w-20 h-16 rounded-lg border-2 border-dashed border-gray-200 hover:border-orange-400 flex flex-col items-center justify-center cursor-pointer transition-colors hover:bg-orange-50/30 ${uploadingDetailId === dt._id ? "opacity-50 pointer-events-none" : ""}`}>
+                              {uploadingDetailId === dt._id
+                                ? <span className="w-4 h-4 border-2 border-orange-300 border-t-orange-500 rounded-full animate-spin"/>
+                                : <><span className="text-lg text-gray-300">📷</span><span className="text-[10px] text-gray-400 mt-0.5">Thêm ảnh</span></>}
+                              <input type="file" accept="image/*" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) uploadDetailImage(dt._id, file); e.target.value = ""; }}/>
+                            </label>
+                          </div>
+                        </div>
+                      )}
 
-  if (isEditing) {
-    return (
-      <div className="p-5 bg-orange-50/30 rounded-3xl border-2 border-[#F26F21]/20 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <select
-            className="px-3 py-2 bg-white border border-gray-100 rounded-xl text-[10px] uppercase"
-            value={form.type}
-            onChange={(e) => setForm({ ...form, type: e.target.value })}
-          >
-            <option value="visit">Tham quan</option>
-            <option value="eat">Ăn uống</option>
-            <option value="move">Di chuyển</option>
-            <option value="rest">Nghỉ ngơi</option>
-            <option value="other">Khác</option>
-          </select>
-          {form.type === "visit" && (
-            <select
-              className="px-3 py-2 bg-white border border-gray-100 rounded-xl text-[10px] uppercase"
-              value={form.place_id as string}
-              onChange={(e) => {
-                const selected = allPlaces.find(
-                  (p) => p._id === e.target.value,
-                );
-                setForm({
-                  ...form,
-                  place_id: e.target.value,
-                  title: selected ? selected.title : form.title,
-                });
-              }}
-            >
-              <option value="">-- Gắn địa điểm --</option>
-              {allPlaces.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.title}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-        <input
-          className="w-full px-4 py-2 bg-white border border-gray-100 rounded-xl text-sm"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-        />
-        <textarea
-          className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl text-sm"
-          rows={3}
-          value={form.content}
-          onChange={(e) => setForm({ ...form, content: e.target.value })}
-        />
-        <div className="flex gap-2">
-          <button
-            onClick={handleUpdate}
-            className="flex-1 bg-[#F26F21] text-white py-2 rounded-xl text-[10px] uppercase"
-          >
-            Lưu
-          </button>
-          <button
-            onClick={() => setIsEditing(false)}
-            className="px-4 bg-white border border-gray-200 text-gray-400 py-2 rounded-xl text-[10px] uppercase"
-          >
-            Hủy
-          </button>
-        </div>
-      </div>
-    );
-  }
+                      <div className="flex gap-2">
+                        <button onClick={() => updateDetail(dt._id)} className="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer">Lưu</button>
+                        <button onClick={() => setEditingDetail(null)} className="text-gray-500 text-xs px-4 py-2 rounded-lg border border-gray-200 cursor-pointer bg-white">Huỷ</button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Display ── */
+                    <div className="p-3.5 flex items-start gap-3">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 ${meta.color}`}>{meta.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${meta.color}`}>{meta.label}</span>
+                          {dt.place_id && <span className="text-[10px] font-semibold bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">📍 {dt.place_id.title}</span>}
+                          {detailImages.length > 0 && <span className="text-[10px] font-semibold bg-gray-50 text-gray-400 px-2 py-0.5 rounded-full">{detailImages.length} ảnh</span>}
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800">{displayTitle}</p>
+                        {displayContent && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{displayContent}</p>}
+                        {detailImages.length > 0 && (
+                          <div className="flex gap-1.5 mt-2">
+                            {detailImages.slice(0, 3).map((img, k) => <img key={k} src={img.image_url} className="h-12 w-16 object-cover rounded-lg"/>)}
+                            {detailImages.length > 3 && <div className="h-12 w-16 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-400 font-semibold">+{detailImages.length - 3}</div>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0 opacity-0 group-hover/detail:opacity-100 transition-opacity">
+                        <button onClick={() => openEditDetail(dt)} className="text-xs text-blue-500 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold">Sửa</button>
+                        <button onClick={() => deleteDetail(dt._id)} className="text-xs text-red-400 hover:bg-red-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent font-semibold">Xoá</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
-  return (
-    <div className="flex gap-5 p-5 bg-gray-50/50 rounded-3xl border border-gray-50 group relative hover:border-orange-100 transition-all">
-      {/* KHỐI HÌNH ẢNH HOẶC SỐ THỨ TỰ */}
-      <div className="relative shrink-0">
-        {placeData?.image ? (
-          <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white shadow-sm">
-            <img
-              src={placeData.image}
-              alt={placeData.title}
-              className="w-full h-full object-cover"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-            />
-          </div>
-        ) : (
-          <div className="w-8 h-8 bg-[#F26F21] text-white rounded-full flex items-center justify-center text-[10px] shadow-md shadow-orange-100">
-            {detail.order}
-          </div>
-        )}
-
-        {/* Badge số thứ tự nhỏ hiển thị đè lên ảnh nếu có ảnh */}
-        {placeData?.image && (
-          <div className="absolute -top-2 -left-2 w-6 h-6 bg-[#F26F21] text-white rounded-full flex items-center justify-center text-[8px] border-2 border-white font-bold">
-            {detail.order}
-          </div>
-        )}
-      </div>
-
-      <div className="flex-1">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[9px] text-[#F26F21] uppercase tracking-widest font-bold">
-              {typeMap[detail.type] || detail.type}
-            </span>
-
-            {placeData && (
-              <span className="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
-                📍 {placeData.title}
-              </span>
-            )}
-
-            <h5 className="text-gray-900 text-sm uppercase tracking-tight font-bold">
-              {detail.title}
-            </h5>
-          </div>
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-            <button
-              onClick={() => setIsEditing(true)}
-              className="p-1.5 text-gray-400 hover:text-[#F26F21]"
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-              >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-            </button>
-            <button
-              onClick={handleDelete}
-              className="p-1.5 text-gray-400 hover:text-red-500"
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-              >
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-            </button>
+            <button onClick={() => addDetail(day._id)} className="w-full py-2.5 border-2 border-dashed border-gray-200 hover:border-orange-300 hover:bg-orange-50/40 text-gray-400 hover:text-orange-500 text-xs font-semibold rounded-xl bg-transparent cursor-pointer transition-all">+ Thêm hoạt động</button>
           </div>
         </div>
-        <p className="text-gray-500 text-xs leading-relaxed font-medium whitespace-pre-wrap">
-          {detail.content}
-        </p>
-      </div>
+      ))}
     </div>
   );
 }
