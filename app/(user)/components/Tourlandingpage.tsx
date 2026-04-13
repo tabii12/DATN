@@ -11,22 +11,24 @@ interface TourAPI {
   images: { image_url: string }[];
   descriptions: { title: string; content: string }[];
 }
-type TripMin = { tour_id: string; price: number; start_date: string; status: string; booked_people: number; max_people: number };
-
+type TripMin = {
+  tour_id: string; price: number; base_price: number;
+  start_date: string; status: string; booked_people: number; max_people: number;
+};
 
 const REGIONS = [
-  { label: "Miền Bắc", cities: ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình"], img: "https://images.unsplash.com/photo-1509030450996-dd1a26dda07a?w=600&q=80" },
-  { label: "Miền Trung", cities: ["Đà Nẵng", "Hội An", "Huế", "Quảng Bình"], img: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=600&q=80" },
-  { label: "Miền Nam", cities: ["TP. HCM", "Vũng Tàu", "Cần Thơ", "Phú Quốc"], img: "https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80" },
-  { label: "Tây Nguyên", cities: ["Đà Lạt", "Buôn Ma Thuột", "Pleiku"], img: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=600&q=80" },
+  { label: "Miền Bắc",   cities: ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình"],         img: "https://images.unsplash.com/photo-1509030450996-dd1a26dda07a?w=600&q=80" },
+  { label: "Miền Trung", cities: ["Đà Nẵng", "Hội An", "Huế", "Quảng Bình"],          img: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=600&q=80" },
+  { label: "Miền Nam",   cities: ["TP. HCM", "Vũng Tàu", "Cần Thơ", "Phú Quốc"],     img: "https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80" },
+  { label: "Tây Nguyên", cities: ["Đà Lạt", "Buôn Ma Thuột", "Pleiku"],               img: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=600&q=80" },
 ];
-
-function scoreFromRating(r: number) {
-  return Math.min(9.9, parseFloat((r * 1.8 + 0.8).toFixed(1)));
-}
 
 function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?: TripMin }) {
   const img = tour.images?.[0]?.image_url;
+
+  // Giá ưu tiên: price (đã tính sale) → base_price → null
+  const price = trip ? (trip.price || trip.base_price || 0) : null;
+
   const startDate = trip?.start_date
     ? new Date(trip.start_date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
     : null;
@@ -35,9 +37,9 @@ function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?:
     <a href={`/tours/${tour.slug}`} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col no-underline border border-gray-100">
       <div className="relative overflow-hidden aspect-video">
         {img ? (
-          <img src={img} alt={tour.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+          <img src={img} alt={tour.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy"/>
         ) : (
-          <div className="w-full h-full  from-orange-100 to-amber-50 flex items-center justify-center">
+          <div className="w-full h-full bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center">
             <span className="text-4xl">🏖️</span>
           </div>
         )}
@@ -46,9 +48,13 @@ function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?:
             {badge}
           </div>
         )}
-        <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-0.5 rounded-full">
-        </div>
+        {startDate && (
+          <div className="absolute bottom-2 left-2 bg-orange-500 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            🗓 {startDate}
+          </div>
+        )}
       </div>
+
       <div className="p-3.5 flex flex-col gap-1.5 flex-1">
         {tour.category_id && (
           <span className="text-[10px] font-semibold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full w-fit">
@@ -58,17 +64,22 @@ function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?:
         <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-orange-500 transition-colors">
           {tour.name}
         </h3>
-        <p className="text-[11px] text-gray-400 flex items-center gap-1">
-          <span>📍</span>
-        </p>
+
         <div className="mt-auto pt-2 flex items-center justify-between border-t border-gray-50">
           <div>
-            <p className="text-[10px] text-gray-400">{startDate ? `Khởi hành ${startDate}` : "Giá từ"}</p>
-            <p className="text-sm font-black text-orange-500">
-              <span className="text-[10px] font-normal text-gray-400">/người</span>
+            <p className="text-[10px] text-gray-400 leading-none mb-0.5">
+              {startDate ? `Khởi hành ${startDate}` : "Giá từ"}
             </p>
+            {price ? (
+              <p className="text-sm font-black text-orange-500 leading-tight">
+                {price.toLocaleString("vi-VN")}
+                <span className="text-[10px] font-normal text-gray-400">đ/người</span>
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400 italic">Chưa có lịch khởi hành</p>
+            )}
           </div>
-          <span className="text-[11px] bg-orange-500 text-white font-semibold px-3 py-1 rounded-full">
+          <span className="text-[11px] bg-orange-500 text-white font-semibold px-3 py-1 rounded-full shrink-0">
             Đặt ngay
           </span>
         </div>
@@ -80,19 +91,19 @@ function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?:
 function SkeletonCard() {
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 animate-pulse">
-      <div className="aspect-video bg-gray-200" />
+      <div className="aspect-video bg-gray-200"/>
       <div className="p-3.5 space-y-2">
-        <div className="h-3 bg-gray-200 rounded w-1/3" />
-        <div className="h-4 bg-gray-200 rounded w-full" />
-        <div className="h-4 bg-gray-200 rounded w-3/4" />
-        <div className="h-3 bg-gray-200 rounded w-1/2 mt-2" />
+        <div className="h-3 bg-gray-200 rounded w-1/3"/>
+        <div className="h-4 bg-gray-200 rounded w-full"/>
+        <div className="h-4 bg-gray-200 rounded w-3/4"/>
+        <div className="h-3 bg-gray-200 rounded w-1/2 mt-2"/>
       </div>
     </div>
   );
 }
 
 export default function ToursLandingPage() {
-  const [tours, setTours] = useState<TourAPI[]>([]);
+  const [tours, setTours]     = useState<TourAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [tripMap, setTripMap] = useState<Record<string, TripMin>>({});
   const [saleIds, setSaleIds] = useState<Set<string>>(new Set());
@@ -110,7 +121,7 @@ export default function ToursLandingPage() {
         setTours(tourList);
         setLoading(false);
 
-        // Fetch trips sau — không ảnh hưởng loading
+        // Fetch trips per-tour (dùng slug endpoint — trả về đúng trips cho tour đó)
         try {
           const results = await Promise.allSettled(
             tourList.map(t =>
@@ -121,32 +132,40 @@ export default function ToursLandingPage() {
           );
 
           const map: Record<string, TripMin> = {};
+          const now = new Date();
+          now.setHours(0, 0, 0, 0);
+
           results.forEach(r => {
             if (r.status !== "fulfilled") return;
             const { tourId, trips } = r.value;
-            const now = new Date();
             const upcoming = (trips as any[])
-              .filter(t => t.status === "open" && t.booked_people < t.max_people && new Date(t.start_date) >= now)
-              .sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+              .filter(t => {
+                if (t.status !== "open") return false;
+                if (t.booked_people >= t.max_people) return false;
+                const start = new Date(t.start_date);
+                start.setHours(0, 0, 0, 0);
+                return start >= now;
+              })
+              .sort((a: any, b: any) =>
+                new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+              );
             if (upcoming.length > 0) map[tourId] = upcoming[0];
           });
+
           setTripMap(map);
-        } catch { /* trips fail thì thôi, tour vẫn hiện */ }
+        } catch { /* trips fail thì tour vẫn hiện, không có giá */ }
       })
-      .catch(() => { })
-      .finally(() => setLoading(false)); // ✅ fallback nếu tours fetch fail
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-
-  // Nhóm tour
-  const saleTours = tours.filter(t => saleIds.has(t._id));
-  const dealTours = saleTours.length > 0 ? saleTours.slice(0, 4) : tours.slice(0, 4);
+  const saleTours   = tours.filter(t => saleIds.has(t._id));
+  const dealTours   = saleTours.length > 0 ? saleTours.slice(0, 4) : tours.slice(0, 4);
   const popularTours = tours.slice(0, 8);
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
 
-      {/* ── HERO ── */}
       <HeroBanner
         title="Hành trình đáng nhớ bắt đầu từ đây"
         subtitle="Hơn 100 tour du lịch trong nước, giá tốt nhất, dịch vụ chuyên nghiệp"
@@ -156,61 +175,35 @@ export default function ToursLandingPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-10 space-y-12">
 
-        {/* ── TOUR ƯU ĐÃI TỐT NHẤT HÔM NAY ── */}
+        {/* ── TOUR ƯU ĐÃI ── */}
         <section>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-7 bg-orange-500 rounded-full" />
+              <div className="w-1 h-7 bg-orange-500 rounded-full"/>
               <div>
-                <h2 className="text-xl font-black text-gray-900">🔥 Tour Ưu Đãi Tốt Nhất Hôm Nay</h2>
+                <h2 className="text-xl font-black text-gray-900">🔥 Tour Ưu Đãi Tốt Nhất</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Giá đặc biệt, số lượng có hạn</p>
               </div>
             </div>
             <a href="/tours/search?sale=1" className="text-sm text-orange-500 font-semibold hover:underline no-underline">Xem tất cả →</a>
           </div>
-
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i}/>)}</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {dealTours.map((t, i) => (
-                <TourCard key={t._id} tour={t} trip={tripMap[t._id]} badge={i === 0 ? "🔥 Hot Deal" : i === 1 ? "⚡ Flash Sale" : undefined} />
+                <TourCard key={t._id} tour={t} trip={tripMap[t._id]}
+                  badge={i === 0 ? "🔥 Hot Deal" : i === 1 ? "⚡ Flash Sale" : undefined}/>
               ))}
             </div>
           )}
         </section>
 
-        {/* ── TOUR DỊP LỄ ── */}
-        {/* <section>
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-1 h-7 bg-orange-500 rounded-full" />
-            <div>
-              <h2 className="text-xl font-black text-gray-900">🎊 Tour Dịp Lễ</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Kế hoạch sớm, giá tốt hơn</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {HOLIDAYS.map(h => (
-              <a key={h.label} href={`/tours/search?q=${encodeURIComponent(h.label)}`}
-                className="group relative bg-white rounded-2xl overflow-hidden border border-gray-100 p-5 text-center hover:shadow-lg hover:border-orange-200 transition-all duration-300 no-underline">
-                <div className="text-4xl mb-3">{h.emoji}</div>
-                <p className="text-sm font-bold text-gray-900 group-hover:text-orange-500 transition-colors">{h.label}</p>
-                <p className="text-[11px] text-gray-400 mt-1">{h.date}</p>
-                <div className="mt-3 text-[11px] font-semibold text-orange-500 bg-orange-50 rounded-full px-3 py-1">
-                  Xem tour →
-                </div>
-              </a>
-            ))}
-          </div>
-        </section> */}
-
         {/* ── TOUR PHỔ BIẾN ── */}
         <section>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-7 bg-orange-500 rounded-full" />
+              <div className="w-1 h-7 bg-orange-500 rounded-full"/>
               <div>
                 <h2 className="text-xl font-black text-gray-900">⭐ Tour Du Lịch Phổ Biến</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Được khách hàng yêu thích nhất</p>
@@ -218,14 +211,11 @@ export default function ToursLandingPage() {
             </div>
             <a href="/tours/search?q=" className="text-sm text-orange-500 font-semibold hover:underline no-underline">Xem tất cả →</a>
           </div>
-
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i}/>)}</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {popularTours.map(t => <TourCard key={t._id} tour={t} trip={tripMap[t._id]} />)}
+              {popularTours.map(t => <TourCard key={t._id} tour={t} trip={tripMap[t._id]}/>)}
             </div>
           )}
         </section>
@@ -233,7 +223,7 @@ export default function ToursLandingPage() {
         {/* ── KHÁM PHÁ THEO VÙNG ── */}
         <section>
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-1 h-7 bg-orange-500 rounded-full" />
+            <div className="w-1 h-7 bg-orange-500 rounded-full"/>
             <div>
               <h2 className="text-xl font-black text-gray-900">🗺️ Khám Phá Theo Vùng</h2>
               <p className="text-xs text-gray-400 mt-0.5">Chọn điểm đến theo miền</p>
@@ -243,8 +233,8 @@ export default function ToursLandingPage() {
             {REGIONS.map(r => (
               <a key={r.label} href={`/tours/search?q=${encodeURIComponent(r.label)}`}
                 className="group relative rounded-2xl overflow-hidden h-40 no-underline shadow-sm hover:shadow-lg transition-all duration-300">
-                <img src={r.img} alt={r.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute inset-0  from-black/70 via-black/20 to-transparent" />
+                <img src={r.img} alt={r.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"/>
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white font-black text-sm">{r.label}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -263,10 +253,10 @@ export default function ToursLandingPage() {
           <h2 className="text-xl font-black text-gray-900 text-center mb-6">Tại sao chọn Pick Your Way?</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
-              ["🛡️", "An toàn tuyệt đối", "Bảo hiểm toàn hành trình"],
-              ["💰", "Giá tốt nhất", "Cam kết hoàn tiền nếu rẻ hơn"],
-              ["⭐", "Hướng dẫn viên 5 sao", "Đào tạo chuyên nghiệp"],
-              ["📞", "Hỗ trợ 24/7", "Hotline 0336323498"],
+              ["🛡️", "An toàn tuyệt đối",      "Bảo hiểm toàn hành trình"],
+              ["💰", "Giá tốt nhất",             "Cam kết hoàn tiền nếu rẻ hơn"],
+              ["⭐", "Hướng dẫn viên 5 sao",    "Đào tạo chuyên nghiệp"],
+              ["📞", "Hỗ trợ 24/7",              "Hotline 0336323498"],
             ].map(([icon, title, sub]) => (
               <div key={title as string}>
                 <div className="text-3xl mb-2">{icon}</div>

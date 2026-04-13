@@ -1,5 +1,5 @@
 import { use } from "react";
-import HotelDetailPage from "../../components/hotels/HotelDetailPage";
+import HotelDetailPage from "../../components/tours/TourslDetailPage";
 export default function TourDetailPage({
   params,
 }: {

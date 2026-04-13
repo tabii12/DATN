@@ -1,4 +1,4 @@
-import HomePage from "./components/hotels/TravelHomepage ";
+import HomePage from "./components/tours/TravelHomepage ";
 
 export default function Home() {
     return (

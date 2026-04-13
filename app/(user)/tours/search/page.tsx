@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import HotelListingPage from "../../components/hotels/HotelListingPage";
+import HotelListingPage from "../../components/tours/ToursListingPage";
 
 function SearchContent() {
   return <HotelListingPage />;

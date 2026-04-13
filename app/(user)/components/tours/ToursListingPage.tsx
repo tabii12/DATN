@@ -24,7 +24,7 @@ interface TourAPI {
 
 interface TripAPI {
     _id: string;
-    tour_id: string;
+    tour_id: string | { _id: string };  
     start_date: string;
     end_date: string;
     price: number;
@@ -66,8 +66,10 @@ function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[]): Hotel {
     const route = routeMatch ? routeMatch[1].trim() : "TP.HCM";
 
     // Join trips thuộc tour này
-    const trips = allTrips.filter(t => t.tour_id === tour._id);
-
+    const trips = allTrips.filter(t => {
+        const tid = typeof t.tour_id === "object" ? (t.tour_id as any)?._id : t.tour_id;
+        return tid === tour._id;
+    });
     return {
         id: tour._id,
         slug: tour.slug,
@@ -206,11 +208,6 @@ function HotelCard({ hotel, isSale }: { hotel: Hotel; isSale?: boolean }) {
                         <span className="text-gray-300 text-xs">Chưa có ảnh</span>
                     </div>
                 )}
-                {hotel.days > 0 && (
-                    <span className="absolute top-2 right-2 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {hotel.days} ngày
-                    </span>
-                )}
                 {isSale && (
                     <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
                         🔥 SALE
@@ -230,14 +227,54 @@ function HotelCard({ hotel, isSale }: { hotel: Hotel; isSale?: boolean }) {
                     <span className="text-xs font-semibold text-green-600">{hotel.ratingLabel}</span>
                     <span className="text-xs text-gray-400">({hotel.reviewCount})</span>
                 </div>
-                <div className="flex items-start gap-1">
-                    <span className="text-orange-400 text-xs shrink-0 mt-0.5">📍</span>
-                    <span className="text-[11px] text-gray-500 line-clamp-1">{hotel.address}</span>
+
+                <div className="flex flex-col gap-1">
+                    {nextTrip ? (
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-orange-400 text-xs shrink-0">🗓</span>
+                            <span className="text-[11px] text-gray-600 font-semibold">
+                                {new Date(nextTrip.start_date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                            </span>
+                            {hotel.trips.filter(t => t.status === "open" && new Date(t.start_date) >= new Date()).length > 1 && (
+                                <span className="text-[10px] text-gray-400">
+                                    +{hotel.trips.filter(t => t.status === "open" && new Date(t.start_date) >= new Date()).length - 1} lịch khác
+                                </span>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-gray-300 text-xs shrink-0">🗓</span>
+                            <span className="text-[11px] text-gray-400 italic">Chưa có lịch khởi hành</span>
+                        </div>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-orange-400 text-xs shrink-0">📍</span>
+                        <span className="text-[11px] text-gray-500 line-clamp-1">Từ {hotel.route}</span>
+                    </div>
                 </div>
-                <div className="flex flex-wrap gap-1 mt-auto pt-1">
-                    {hotel.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="text-[10px] text-gray-500 bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded-full">{tag}</span>
-                    ))}
+
+                {/* Giá + danh mục */}
+                <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-50">
+                    <div>
+                        <div>
+                            <p className="text-[10px] text-gray-400 leading-none mb-0.5">
+                                {nextTrip
+                                    ? `Khởi hành ${new Date(nextTrip.start_date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}`
+                                    : "Giá từ"}
+                            </p>
+                            <p className="text-sm font-black text-orange-500">
+                                {nextTrip
+                                    ? <>{(nextTrip.price || 0).toLocaleString("vi-VN")}<span className="text-[10px] font-normal text-gray-400">đ/người</span></>
+                                    : <span className="text-gray-300 text-xs font-normal italic">Chưa có lịch</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                    {hotel.tags[1] && (
+                        <span className="text-[10px] text-orange-500 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full font-semibold shrink-0 ml-2 max-w-[100px] truncate">
+                            {hotel.tags[1]}
+                        </span>
+                    )}
                 </div>
             </div>
         </a>
@@ -312,21 +349,7 @@ function Sidebar({
                 </div>
             </div>
 
-            {/* Hạng sao */}
-            <div className="px-4 py-3 border-b border-gray-50">
-                <p className="text-xs font-bold text-gray-700 mb-2">⭐ Hạng sao khách sạn</p>
-                <div className="flex flex-col gap-1.5">
-                    {[5, 4, 3, 2, 1].map(s => (
-                        <label key={s} className="flex items-center gap-2 cursor-pointer group">
-                            <input type="checkbox" checked={selectedStars.includes(s)} onChange={() => toggleStar(s)} className="w-3.5 h-3.5 accent-orange-500 cursor-pointer" />
-                            <div className="flex items-center gap-1">
-                                <StarRating count={s} />
-                                <span className="text-[11px] text-gray-500 group-hover:text-orange-500 transition-colors">{s} sao</span>
-                            </div>
-                        </label>
-                    ))}
-                </div>
-            </div>
+            
         </div>
     );
 }
@@ -391,10 +414,11 @@ function HotelListingContent() {
 
     // Suggestions: tìm theo tên tour + city, max 9
     const suggestions = searchInput.trim().length >= 1
-        ? hotels.filter(h =>
-            h.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-            h.city.toLowerCase().includes(searchInput.toLowerCase())
-        ).slice(0, 9)
+        ? hotels.filter(h => {
+            const keyword = searchInput.toLowerCase();
+            return (h.name ?? "").toLowerCase().includes(keyword) ||
+                (h.city ?? "").toLowerCase().includes(keyword);
+        }).slice(0, 9)
         : [];
 
     // Click outside để đóng dropdown
@@ -416,12 +440,15 @@ function HotelListingContent() {
             const q = searchName.toLowerCase();
             const regionCitiesForQ = Object.entries(REGION_MAP).find(([key]) => key.toLowerCase() === q)?.[1] ?? [];
             const isCategoryQuery = CATEGORY_NAMES.some(c => c === q);
+            const hotelName = (h.name ?? "").toLowerCase();
+            const hotelCity = (h.city ?? "").toLowerCase();
+            const hotelTags = Array.isArray(h.tags) ? h.tags : [];
             if (regionCitiesForQ.length > 0) {
-                if (!regionCitiesForQ.some(c => h.city.toLowerCase().includes(c.toLowerCase()))) return false;
+                if (!regionCitiesForQ.some(c => hotelCity.includes(c.toLowerCase()))) return false;
             } else if (isCategoryQuery) {
-                if (!h.tags.some(t => t.toLowerCase().includes(q))) return false;
+                if (!hotelTags.some(t => (t ?? "").toLowerCase().includes(q))) return false;
             } else {
-                if (!h.name.toLowerCase().includes(q) && !h.city.toLowerCase().includes(q)) return false;
+                if (!hotelName.includes(q) && !hotelCity.includes(q)) return false;
             }
         }
 

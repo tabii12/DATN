@@ -8,7 +8,7 @@ export default function AdminBookingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="mx-auto space-y-6">
         {/* Header chung */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">

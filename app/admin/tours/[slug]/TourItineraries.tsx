@@ -240,7 +240,7 @@ export default function TourItineraries({ tourId, itineraries, onRefresh }: Prop
                           {detailImages.length > 0 && <span className="text-[10px] font-semibold bg-gray-50 text-gray-400 px-2 py-0.5 rounded-full">{detailImages.length} ảnh</span>}
                         </div>
                         <p className="text-sm font-semibold text-gray-800">{displayTitle}</p>
-                        {displayContent && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{displayContent}</p>}
+                        {displayContent && <p className="text-xs text-gray-500 mt-0.5 leading-relaxed whitespace-pre-line">{displayContent}</p>}
                         {detailImages.length > 0 && (
                           <div className="flex gap-1.5 mt-2">
                             {detailImages.slice(0, 3).map((img, k) => <img key={k} src={img.image_url} className="h-12 w-16 object-cover rounded-lg"/>)}

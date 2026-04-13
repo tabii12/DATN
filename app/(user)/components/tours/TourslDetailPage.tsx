@@ -844,7 +844,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                             </div>
                             <div className="flex-1 pb-2">
                               <p className="text-sm font-semibold text-gray-800 mb-0.5">{title}</p>
-                              {content && <p className="text-[13px] text-gray-500 leading-relaxed">{content}</p>}
+                              {content && <ContentLines text={content} />}
                               {imgs.length > 0 && (
                                 <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
                                   {imgs.slice(0, 4).map((img, k) => (
