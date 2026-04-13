@@ -298,16 +298,16 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const scrollToReview = () => reviewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   // ── Derived data ──
-const today = new Date();
-today.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-const departureDates = (tour?.trips ?? [])
-  .filter((t) =>
-    t.status === "open" &&
-    t.booked_people < t.max_people &&
-    new Date(t.start_date) >= today
-  )
-  .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+  const departureDates = (tour?.trips ?? [])
+    .filter((t) =>
+      t.status === "open" &&
+      t.booked_people < t.max_people &&
+      new Date(t.start_date) >= today
+    )
+    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
   const selectedTrip = departureDates.find((t) => t._id === selectedTripId);
   const minPrice = departureDates.length > 0
@@ -373,7 +373,7 @@ const departureDates = (tour?.trips ?? [])
     if (!selectedTripId) return;
     const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("token");
     const trip = departureDates.find((t) => t._id === selectedTripId);
-    
+
     // ✅ SAVE TO LOCALSTORAGE
     const bookingData = {
       trip_id: selectedTripId,
@@ -391,12 +391,12 @@ const departureDates = (tour?.trips ?? [])
       departureDate: trip ? new Date(trip.start_date).toLocaleDateString("vi-VN") : "",
     };
     localStorage.setItem("booking_data", JSON.stringify(bookingData));
-    
+
     const params = new URLSearchParams({
       tourSlug: slug,  // Chỉ cần slug để identify
     });
     const checkoutUrl = `/checkout?${params.toString()}`;
-    
+
     if (!isLoggedIn) {
       const currentUrl = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
       router.push(`/auth/login?redirect=${encodeURIComponent(currentUrl)}`);
@@ -604,17 +604,12 @@ const departureDates = (tour?.trips ?? [])
 
                 {/* Rating */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Hạng sao</span>
-                  <StarRating count={hotel.rating} />
+                  <span className="text-sm text-black-400 font-bold">Lịch Trình và Giá Tour</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Đánh giá</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-xs font-black text-white ${scoreColor} px-1.5 py-0.5 rounded`}>{score.toFixed(1)}</span>
-                    <span className="text-xs font-semibold text-green-600">{label}</span>
-                  </div>
+                  <span className="text-xs text-gray-400">Chọn Lịch Trình và Xem Giá:
+                  </span>
                 </div>
-
                 {/* Giá hiển thị */}
                 <div className="h-px bg-gray-100" />
                 <div className="flex items-center justify-between">
