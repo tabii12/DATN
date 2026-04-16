@@ -59,7 +59,7 @@ export default function AdminContacts() {
             <thead className="bg-slate-50 text-left text-xs uppercase tracking-[0.2em] text-slate-500">
               <tr>
                 <th className="px-4 py-4">Khách hàng</th>
-                <th className="px-4 py-4">Tour</th>
+                <th className="px-4 py-4">Tour ID</th>
                 <th className="px-4 py-4">Email</th>
                 <th className="px-4 py-4">Phone</th>
                 <th className="px-4 py-4">Nội dung</th>
@@ -92,7 +92,7 @@ export default function AdminContacts() {
                       <p className="font-semibold text-slate-900">{contact.name}</p>
                     </td>
                     <td className="px-4 py-4 align-top">
-                      <p className="font-medium text-slate-800">{contact.tourName || "Không chọn tour"}</p>
+                      <p className="font-medium text-slate-800">{contact.tour || "Không chọn tour"}</p>
                     </td>
                     <td className="px-4 py-4 align-top text-slate-600 wrap-break-word">
                       <p>{contact.email}</p>
@@ -138,8 +138,8 @@ export default function AdminContacts() {
             </div>
             <div className="mt-5 space-y-4 text-sm text-slate-700">
               <div>
-                <p className="font-semibold text-slate-800">Tour</p>
-                <p>{selectedContact.tourName || "Không chọn tour"}</p>
+                <p className="font-semibold text-slate-800">Tour ID</p>
+                <p>{selectedContact.tour || "Không chọn tour"}</p>
               </div>
               <div>
                 <p className="font-semibold text-slate-800">Nội dung</p>

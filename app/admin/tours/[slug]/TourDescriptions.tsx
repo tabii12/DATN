@@ -1,11 +1,26 @@
 "use client";
 import { useState } from "react";
+import { formatTextLines } from "../../lib/textFormatter";
 
 const API = "https://db-pickyourway.vercel.app/api";
 type TourDescription = { _id: string; title: string; content: string };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{children}</p>;
+}
+
+// Component để hiển thị nội dung phân đoạn
+function FormattedContent({ content }: { content: string }) {
+  const lines = formatTextLines(content);
+  return (
+    <div className="space-y-2">
+      {lines.map((line, i) => (
+        <p key={i} className="text-xs text-gray-600 leading-relaxed">
+          {line.startsWith("-") ? "• " + line.slice(1).trim() : line}
+        </p>
+      ))}
+    </div>
+  );
 }
 
 interface Props { tourId: string; descriptions: TourDescription[]; onRefresh: () => void; }
@@ -81,7 +96,7 @@ export default function TourDescriptions({ tourId, descriptions, onRefresh }: Pr
                     <div className="w-6 h-6 rounded-full bg-orange-100 text-orange-500 text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{i+1}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-800 mb-1">{d.title}</p>
-                      <pre className="text-xs text-gray-500 whitespace-pre-wrap font-sans leading-relaxed">{d.content}</pre>
+                      <FormattedContent content={d.content} />
                     </div>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">

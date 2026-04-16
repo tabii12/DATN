@@ -83,6 +83,47 @@ export default function BlogDetailPage() {
     );
   }
 
+  const hasHtmlContent = /<\/?.+>/.test(blog.content);
+  const contentParagraphs = hasHtmlContent
+    ? []
+    : blog.content
+        .replace(/\r\n/g, '\n')
+        .split(/\n{2,}/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean)
+        .flatMap((paragraph) => {
+          if (paragraph.length <= 200) {
+            return [paragraph];
+          }
+
+          const sentences = paragraph.match(/[^.!?…]+[.!?…]+/g) || [paragraph];
+          const grouped: string[] = [];
+          let current = '';
+
+          for (const sentence of sentences) {
+            const trimmedSentence = sentence.trim();
+            if (!trimmedSentence) continue;
+
+            if (!current) {
+              current = trimmedSentence;
+              continue;
+            }
+
+            if ((current + ' ' + trimmedSentence).length <= 200) {
+              current = current + ' ' + trimmedSentence;
+            } else {
+              grouped.push(current);
+              current = trimmedSentence;
+            }
+          }
+
+          if (current) {
+            grouped.push(current);
+          }
+
+          return grouped.length > 0 ? grouped : [paragraph];
+        });
+
   return (
     <div className="min-h-screen font-sans">
       {/* Breadcrumb */}
@@ -128,12 +169,44 @@ export default function BlogDetailPage() {
           )}
 
           {/* Content */}
-          <div className="px-8 pb-8">
-            <div
-              className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: blog.content }}
-            />
-          </div>
+<div className="px-6 md:px-8 pb-10 space-y-5 text-gray-700">
+  {hasHtmlContent ? (
+    <div
+      className="
+        prose prose-lg max-w-none 
+        text-gray-700 leading-8 tracking-wide
+
+        prose-p:mb-4  
+        prose-headings:mb-5
+        prose-headings:font-semibold
+        prose-h1:text-3xl
+        prose-h2:text-2xl
+
+        prose-ul:my-6
+        prose-li:mb-2
+
+        prose-img:rounded-2xl
+        prose-img:shadow-md
+        prose-img:my-8
+      "
+      dangerouslySetInnerHTML={{ __html: blog.content }}
+    />
+  ) : (
+    <div className="space-y-4">
+      {contentParagraphs.map((paragraph: string, index: number) => (
+        <p
+          key={index}
+          className="text-base leading-7 text-slate-700"
+        >
+          {paragraph.startsWith('-') 
+            ? '• ' + paragraph.slice(1).trim()
+            : paragraph
+          }
+        </p>
+      ))}
+    </div>
+  )}
+</div>
 
           {/* Footer */}
           <footer className="px-8 py-6 bg-gray-50 border-t border-gray-100">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import FavoriteButton from "./FavoriteButton";
 import CommentForm from "../CommentForm";
 import CommentsDisplay from "../CommentsDisplay";
+import { formatTextLines } from "../../../lib/textFormatter";
 
 // ─────────────────────────── TYPES ───────────────────────────
 
@@ -195,10 +196,12 @@ function formatVND(n: number) {
   return n.toLocaleString("vi-VN");
 }
 function ContentLines({ text }: { text: string }) {
+  const lines = formatTextLines(text);
+
   return (
     <>
-      {text.split("\n").filter(Boolean).map((line, i) => (
-        <p key={i} className="text-[13px] text-gray-600 leading-relaxed mb-0.5">
+      {lines.map((line: string, i: number) => (
+        <p key={i} className="text-[13px] text-gray-600 leading-relaxed mb-3">
           {line.startsWith("-") ? "• " + line.slice(1).trim() : line}
         </p>
       ))}
