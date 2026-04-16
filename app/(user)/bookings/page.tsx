@@ -29,7 +29,6 @@ interface Booking {
   departureDate: string;
   status: string;
 
-  // ✅ THÊM CONTACT
   contactName: string;
   contactEmail: string;
   contactPhone: string;
@@ -49,7 +48,11 @@ export default function BookingsPage() {
       const token = localStorage.getItem("token");
       const u = localStorage.getItem("user");
 
-      if (u) setUser(JSON.parse(u));
+      let userData = null;
+      if (u) {
+        userData = JSON.parse(u);
+        setUser(userData);
+      }
 
       if (!token) {
         router.push("/auth/login");
@@ -68,41 +71,33 @@ export default function BookingsPage() {
 
         const json = await res.json();
         const raw = json.data || [];
-console.log("BOOKINGS RAW:", raw); // 👈 thêm dòng này
+
         const normalized: Booking[] = raw.map((b: any) => {
           let total = b.total_price || 0;
-
-          // FIX VNPay x100
           if (total > 100000000) total = total / 100;
 
           return {
             id: b._id,
             tourId: b.trip_id?._id || "",
             tourName: b.tourName || "Không có tên",
-
             thumbnail:
               b.thumbnail ||
               "https://via.placeholder.com/400x300?text=No+Image",
-
             adults: Number(b.adults || 0),
             children: Number(b.children || 0),
-
             total: Number(total),
             departureDate: b.departureDate,
             status: b.status,
 
-            // ✅ FIX QUAN TRỌNG (MAP CONTACT)
-            contactName: b.contactName || "Không có",
-            contactEmail: b.contactEmail || "Không có",
-            contactPhone: b.contactPhone || "Không có",
+            contactName: b.contactName || userData?.name || "Không có",
+            contactEmail: b.contactEmail || userData?.email || "Không có",
+            contactPhone: b.contactPhone || userData?.phone || "Không có",
           };
         });
 
-        console.log("DATA API:", raw); // debug nếu cần
-
         setBookings(normalized);
       } catch (err) {
-        console.error(err);
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -128,22 +123,65 @@ console.log("BOOKINGS RAW:", raw); // 👈 thêm dòng này
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex gap-6">
 
-      {/* SIDEBAR */}
-      <div className="bg-white p-5 rounded-xl w-64">
-        <p className="font-bold mb-2">{user?.name}</p>
-        <p className="text-sm text-gray-500 mb-4">{user?.email}</p>
+      {/* ===== SIDEBAR GIỐNG PROFILE ===== */}
+      <div className="w-72 bg-white rounded-2xl shadow-lg p-5">
 
-        <MenuItem icon={<User size={18} />} label="Profile" href="/profile" />
-        <MenuItem icon={<Briefcase size={18} />} label="Bookings" href="/bookings" active />
-        <MenuItem icon={<Heart size={18} />} label="Favorites" href="/favorites" />
-        <MenuItem icon={<CreditCard size={18} />} label="Payments" href="/payments" />
+        {/* User */}
+        <div className="flex items-center gap-3 pb-5 border-b">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white flex items-center justify-center font-bold">
+            {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+          </div>
+          <div>
+            <p className="font-semibold">{user?.name || "User"}</p>
+            <p className="text-sm text-gray-500">{user?.email}</p>
+          </div>
+        </div>
 
-        <button onClick={handleLogout} className="mt-4 text-red-500">
-          Logout
-        </button>
+        {/* Menu */}
+        <div className="mt-4 space-y-1">
+
+          <MenuItem
+            icon={<User size={18} />}
+            label="Thông tin cá nhân"
+            href="/profile"
+            active={pathname === "/profile"}
+          />
+
+          <MenuItem
+            icon={<Briefcase size={18} />}
+            label="Tour đã đặt"
+            href="/bookings"
+            active={pathname === "/bookings"}
+          />
+
+          <MenuItem
+            icon={<Heart size={18} />}
+            label="Tour yêu thích"
+            href="/favorites"
+            active={pathname === "/favorites"}
+          />
+
+          <div className="border-t my-3"></div>
+
+          <MenuItem
+            icon={<Lock size={18} />}
+            label="Đổi mật khẩu"
+            href="/change-password"
+            active={pathname === "/change-password"}
+          />
+
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition"
+          >
+            <LogOut size={18} />
+            Đăng xuất
+          </button>
+        </div>
       </div>
 
-      {/* CONTENT */}
+      {/* ===== CONTENT ===== */}
       <div className="flex-1 space-y-6">
         <h1 className="text-2xl font-bold">Tour đã đặt</h1>
 
@@ -159,7 +197,7 @@ console.log("BOOKINGS RAW:", raw); // 👈 thêm dòng này
                   className="w-56 h-40 object-cover rounded-xl"
                 />
 
-                <div className="flex-1">
+                <div className="flex-1 space-y-1">
                   <p className="font-bold text-lg">{b.tourName}</p>
 
                   <p>
@@ -177,11 +215,13 @@ console.log("BOOKINGS RAW:", raw); // 👈 thêm dòng này
 
                   <p>
                     Trạng thái:{" "}
-                    {b.status === "confirmed"
-                      ? "Đã thanh toán"
-                      : b.status === "pending"
-                      ? "Chờ thanh toán"
-                      : "Đã hủy"}
+                    <span className="font-semibold">
+                      {b.status === "confirmed"
+                        ? "Đã thanh toán"
+                        : b.status === "pending"
+                        ? "Chờ thanh toán"
+                        : "Đã hủy"}
+                    </span>
                   </p>
 
                   {isTourCompleted(b) && (
@@ -194,18 +234,6 @@ console.log("BOOKINGS RAW:", raw); // 👈 thêm dòng này
                   )}
                 </div>
               </div>
-
-              {/* ✅ THÔNG TIN KHÁCH HÀNG */}
-              <div className="border-t pt-3">
-                <p className="font-semibold mb-2">Thông tin liên hệ</p>
-
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <p><b>Tên:</b> {b.contactName}</p>
-                  <p><b>Email:</b> {b.contactEmail}</p>
-                  <p><b>SĐT:</b> {b.contactPhone}</p>
-                </div>
-              </div>
-
             </div>
           ))
         )}
@@ -223,15 +251,20 @@ console.log("BOOKINGS RAW:", raw); // 👈 thêm dòng này
   );
 }
 
+/* ===== MENU ITEM ===== */
 function MenuItem({ icon, label, href, active = false }: any) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2 p-2 rounded ${
-        active ? "bg-blue-500 text-white" : "hover:bg-gray-100"
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
+      ${
+        active
+          ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
+          : "text-gray-700 hover:bg-gray-100"
       }`}
     >
-      {icon} {label}
+      {icon}
+      <span className="font-medium">{label}</span>
     </Link>
   );
 }

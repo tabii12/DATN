@@ -95,13 +95,6 @@ export default function ProfilePage() {
             active={pathname === "/favorites"}
           />
 
-          <MenuItem
-            icon={<CreditCard size={18} />}
-            label="Lịch sử thanh toán"
-            href="/payments"
-            active={pathname === "/payments"}
-          />
-
           <div className="border-t my-3"></div>
 
           <MenuItem

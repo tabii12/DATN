@@ -27,9 +27,18 @@ export default function ChangePasswordPage() {
     if (u) setUser(JSON.parse(u));
   }, []);
 
+  // ✅ CHECK GOOGLE USER
+  const isGoogleUser = user?.provider === "google";
+
   // ===== CHANGE PASSWORD =====
   const handleChangePassword = async () => {
     try {
+      // ✅ CHẶN GOOGLE USER
+      if (isGoogleUser) {
+        alert("Tài khoản Google không thể đổi mật khẩu!");
+        return;
+      }
+
       if (!currentPassword || !newPassword || !confirmPassword) {
         alert("Vui lòng nhập đầy đủ thông tin!");
         return;
@@ -108,7 +117,7 @@ export default function ChangePasswordPage() {
           <MenuItem icon={<User size={18} />} label="Thông tin cá nhân" onClick={() => router.push("/profile")} />
           <MenuItem icon={<Briefcase size={18} />} label="Tour đã đặt" onClick={() => router.push("/bookings")} />
           <MenuItem icon={<Heart size={18} />} label="Tour yêu thích" onClick={() => router.push("/favorites")} />
-          <MenuItem icon={<CreditCard size={18} />} label="Thanh toán" onClick={() => router.push("/payments")} />
+          
 
           <div className="border-t my-3"></div>
 
@@ -131,6 +140,13 @@ export default function ChangePasswordPage() {
             🔒 Đổi mật khẩu
           </h1>
 
+          {/* ✅ THÔNG BÁO GOOGLE */}
+          {isGoogleUser && (
+            <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-lg text-sm text-center">
+              Bạn đang đăng nhập bằng Google nên không thể đổi mật khẩu.
+            </div>
+          )}
+
           <div className="space-y-5">
 
             <div>
@@ -141,7 +157,8 @@ export default function ChangePasswordPage() {
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+                disabled={isGoogleUser} // ✅ disable
+                className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100"
               />
             </div>
 
@@ -153,7 +170,8 @@ export default function ChangePasswordPage() {
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+                disabled={isGoogleUser}
+                className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100"
               />
             </div>
 
@@ -165,16 +183,26 @@ export default function ChangePasswordPage() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+                disabled={isGoogleUser}
+                className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100"
               />
             </div>
 
             <button
               onClick={handleChangePassword}
-              disabled={loading}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition disabled:opacity-50"
+              disabled={loading || isGoogleUser} // ✅ disable luôn
+              className={`w-full py-3 rounded-lg font-semibold transition
+                ${
+                  isGoogleUser
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-600 text-white"
+                }`}
             >
-              {loading ? "Đang xử lý..." : "Cập nhật mật khẩu"}
+              {isGoogleUser
+                ? "Tài khoản Google không đổi được mật khẩu"
+                : loading
+                ? "Đang xử lý..."
+                : "Cập nhật mật khẩu"}
             </button>
 
           </div>

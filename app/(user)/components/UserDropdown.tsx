@@ -188,9 +188,7 @@ export default function UserDropdown() {
               <Heart size={18} /> Tour yêu thích
             </Link>
 
-            <Link href="/payments" className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100">
-              <CreditCard size={18} /> Lịch sử thanh toán
-            </Link>
+        
           </div>
 
           <div className="border-t py-2">

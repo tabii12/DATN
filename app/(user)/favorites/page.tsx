@@ -5,12 +5,11 @@ import axios from "axios";
 import {
   User,
   Heart,
-  CreditCard,
   LogOut,
   Lock,
   Briefcase,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function FavoritePage() {
   const [tours, setTours] = useState<any[]>([]);
@@ -18,6 +17,7 @@ export default function FavoritePage() {
   const [user, setUser] = useState<any>(null);
 
   const router = useRouter();
+  const pathname = usePathname();
 
   // ===== LOAD USER =====
   useEffect(() => {
@@ -25,29 +25,37 @@ export default function FavoritePage() {
     if (u) setUser(JSON.parse(u));
   }, []);
 
-  // ===== FETCH FAVORITES =====
+  // ===== FETCH FAVORITES + MAP ẢNH CHUẨN =====
   const fetchFavorites = async () => {
     try {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        alert("Bạn chưa đăng nhập!");
-        setLoading(false);
+        router.push("/auth/login");
         return;
       }
 
-      const res = await axios.get(
-        "https://db-pickyourway.vercel.app/api/favorites/my-favorites",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // 🔥 gọi 2 API
+      const [favRes, tourRes] = await Promise.all([
+        axios.get(
+          "https://db-pickyourway.vercel.app/api/favorites/my-favorites",
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+        axios.get("https://db-pickyourway.vercel.app/api/tours"),
+      ]);
 
-      console.log("TOURS:", res.data.data);
+      const favorites = favRes.data.data || [];
+      const allTours = tourRes.data.data || [];
 
-      setTours(res.data.data || []);
+      // 🔥 GHÉP DATA để có images từ Mongo
+      const merged = favorites.map((fav: any) => {
+        const fullTour = allTours.find(
+          (t: any) => t._id === fav._id
+        );
+        return fullTour || fav;
+      });
+
+      setTours(merged);
     } catch (error: any) {
       console.log(error);
       alert(error?.response?.data?.message || "Lỗi tải danh sách yêu thích");
@@ -59,6 +67,21 @@ export default function FavoritePage() {
   useEffect(() => {
     fetchFavorites();
   }, []);
+
+  // ===== LẤY ẢNH CHUẨN CLOUDINARY =====
+  const getImage = (tour: any) => {
+    if (tour.images?.length > 0) {
+      const img = tour.images[0];
+
+      return (
+        img?.secure_url ||
+        img?.url ||
+        img?.image_url
+      );
+    }
+
+    return "https://dummyimage.com/400x300/cccccc/000000&text=No+Image";
+  };
 
   // ===== REMOVE =====
   const handleRemoveFavorite = async (tourId: string) => {
@@ -81,31 +104,6 @@ export default function FavoritePage() {
     }
   };
 
-  // ===== LOGOUT =====
-  const handleLogout = () => {
-    localStorage.clear();
-    window.dispatchEvent(new Event("tokenChanged"));
-    router.push("/auth/login");
-  };
-
-  // ===== FIX ẢNH CHUẨN (QUAN TRỌNG) =====
-  const getImage = (tour: any) => {
-    // giống trang tours → ưu tiên cloudinary
-    if (tour.images?.length > 0) {
-      const img = tour.images[0];
-
-      if (img?.secure_url) return img.secure_url;
-      if (img?.image_url) return img.image_url;
-      if (img?.url) return img.url;
-      if (typeof img === "string") return img;
-    }
-
-    if (tour.thumbnail) return tour.thumbnail;
-    if (tour.image) return tour.image;
-
-    return "https://via.placeholder.com/400x300?text=No+Image";
-  };
-
   // ===== NAVIGATE =====
   const goToDetail = (tour: any) => {
     if (tour.slug) {
@@ -115,34 +113,67 @@ export default function FavoritePage() {
     }
   };
 
+  // ===== LOGOUT =====
+  const handleLogout = () => {
+    localStorage.clear();
+    window.dispatchEvent(new Event("tokenChanged"));
+    router.push("/auth/login");
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex gap-6">
 
       {/* ===== SIDEBAR ===== */}
       <div className="w-72 bg-white rounded-2xl shadow-lg p-5">
-        <div className="flex flex-col items-center border-b pb-5 mb-5">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xl font-bold">
-            {user?.name?.charAt(0)?.toUpperCase() || "U"}
+
+        <div className="flex items-center gap-3 pb-5 border-b">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white flex items-center justify-center font-bold">
+            {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
           </div>
-          <p className="mt-3 font-semibold">{user?.name || "User"}</p>
-          <p className="text-sm text-gray-500">{user?.email}</p>
+          <div>
+            <p className="font-semibold">{user?.name || "User"}</p>
+            <p className="text-sm text-gray-500">{user?.email}</p>
+          </div>
         </div>
 
-        <div className="space-y-2 text-gray-700">
-          <MenuItem icon={<User size={18} />} label="Thông tin cá nhân" onClick={() => router.push("/profile")} />
-          <MenuItem icon={<Briefcase size={18} />} label="Tour đã đặt" onClick={() => router.push("/bookings")} />
-          <MenuItem icon={<Heart size={18} />} label="Tour yêu thích" active />
-          <MenuItem icon={<CreditCard size={18} />} label="Thanh toán" onClick={() => router.push("/payments")} />
+        <div className="mt-4 space-y-1">
+
+          <MenuItem
+            icon={<User size={18} />}
+            label="Thông tin cá nhân"
+            href="/profile"
+            active={pathname === "/profile"}
+          />
+
+          <MenuItem
+            icon={<Briefcase size={18} />}
+            label="Tour đã đặt"
+            href="/bookings"
+            active={pathname === "/bookings"}
+          />
+
+          <MenuItem
+            icon={<Heart size={18} />}
+            label="Tour yêu thích"
+            href="/favorites"
+            active={pathname === "/favorites"}
+          />
 
           <div className="border-t my-3"></div>
 
-          <MenuItem icon={<Lock size={18} />} label="Đổi mật khẩu" onClick={() => router.push("/change-password")} />
+          <MenuItem
+            icon={<Lock size={18} />}
+            label="Đổi mật khẩu"
+            href="/change-password"
+            active={pathname === "/change-password"}
+          />
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-red-500 hover:bg-red-50"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition"
           >
-            <LogOut size={18} /> Đăng xuất
+            <LogOut size={18} />
+            Đăng xuất
           </button>
         </div>
       </div>
@@ -171,21 +202,19 @@ export default function FavoritePage() {
                     src={getImage(tour)}
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
-                        "https://via.placeholder.com/400x300?text=No+Image";
+                        "https://dummyimage.com/400x300/cccccc/000000&text=No+Image";
                     }}
                     className="w-full h-48 object-cover group-hover:scale-110 transition duration-500"
                   />
 
-                  {/* overlay */}
                   <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition"></div>
 
-                  {/* ❤️ */}
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // 🔥 fix click
+                      e.stopPropagation();
                       handleRemoveFavorite(tour._id);
                     }}
-                    className="absolute top-3 right-3 bg-white/90 backdrop-blur p-2 rounded-full shadow hover:bg-red-100"
+                    className="absolute top-3 right-3 bg-white/90 p-2 rounded-full shadow hover:bg-red-100"
                   >
                     ❤️
                   </button>
@@ -216,20 +245,22 @@ export default function FavoritePage() {
   );
 }
 
-// ===== MENU ITEM =====
-function MenuItem({ icon, label, active = false, onClick }: any) {
+/* ===== MENU ITEM ===== */
+function MenuItem({ icon, label, href, active = false }: any) {
+  const router = useRouter();
+
   return (
     <div
-      onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition
+      onClick={() => router.push(href)}
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition
       ${
         active
-          ? "bg-blue-50 text-blue-600 font-medium"
-          : "hover:bg-gray-100"
+          ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
+          : "text-gray-700 hover:bg-gray-100"
       }`}
     >
       {icon}
-      {label}
+      <span className="font-medium">{label}</span>
     </div>
   );
 }
