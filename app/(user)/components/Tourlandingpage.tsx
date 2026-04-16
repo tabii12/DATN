@@ -17,10 +17,10 @@ type TripMin = {
 };
 
 const REGIONS = [
-  { label: "Miền Bắc",   cities: ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình"],         img: "https://images.unsplash.com/photo-1509030450996-dd1a26dda07a?w=600&q=80" },
-  { label: "Miền Trung", cities: ["Đà Nẵng", "Hội An", "Huế", "Quảng Bình"],          img: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=600&q=80" },
-  { label: "Miền Nam",   cities: ["TP. HCM", "Vũng Tàu", "Cần Thơ", "Phú Quốc"],     img: "https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80" },
-  { label: "Tây Nguyên", cities: ["Đà Lạt", "Buôn Ma Thuột", "Pleiku"],               img: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=600&q=80" },
+  { label: "Miền Bắc", cities: ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình"], img: "https://images.unsplash.com/photo-1509030450996-dd1a26dda07a?w=600&q=80" },
+  { label: "Miền Trung", cities: ["Đà Nẵng", "Hội An", "Huế", "Quảng Bình"], img: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=600&q=80" },
+  { label: "Miền Nam", cities: ["TP. HCM", "Vũng Tàu", "Cần Thơ", "Phú Quốc"], img: "https://images.unsplash.com/photo-1528127269322-539801943592?w=600&q=80" },
+  { label: "Tây Nguyên", cities: ["Đà Lạt", "Buôn Ma Thuột", "Pleiku"], img: "https://images.unsplash.com/photo-1600298881974-6be191ceeda1?w=600&q=80" },
 ];
 
 function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?: TripMin }) {
@@ -37,7 +37,7 @@ function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?:
     <a href={`/tours/${tour.slug}`} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col no-underline border border-gray-100">
       <div className="relative overflow-hidden aspect-video">
         {img ? (
-          <img src={img} alt={tour.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy"/>
+          <img src={img} alt={tour.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center">
             <span className="text-4xl">🏖️</span>
@@ -91,34 +91,42 @@ function TourCard({ tour, badge, trip }: { tour: TourAPI; badge?: string; trip?:
 function SkeletonCard() {
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 animate-pulse">
-      <div className="aspect-video bg-gray-200"/>
+      <div className="aspect-video bg-gray-200" />
       <div className="p-3.5 space-y-2">
-        <div className="h-3 bg-gray-200 rounded w-1/3"/>
-        <div className="h-4 bg-gray-200 rounded w-full"/>
-        <div className="h-4 bg-gray-200 rounded w-3/4"/>
-        <div className="h-3 bg-gray-200 rounded w-1/2 mt-2"/>
+        <div className="h-3 bg-gray-200 rounded w-1/3" />
+        <div className="h-4 bg-gray-200 rounded w-full" />
+        <div className="h-4 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 rounded w-1/2 mt-2" />
       </div>
     </div>
   );
 }
 
 export default function ToursLandingPage() {
-  const [tours, setTours]     = useState<TourAPI[]>([]);
+  const [tours, setTours] = useState<TourAPI[]>([]);
   const [loading, setLoading] = useState(true);
   const [tripMap, setTripMap] = useState<Record<string, TripMin>>({});
   const [saleIds, setSaleIds] = useState<Set<string>>(new Set());
-
+  const [bannerImages, setBannerImages] = useState<string[]>([]);
   useEffect(() => {
     Promise.all([
       fetch("https://db-pickyourway.vercel.app/api/tours").then(r => r.json()),
       fetch("https://db-pickyourway.vercel.app/api/sales").then(r => r.json()).catch(() => ({ data: [] })),
+      fetch("https://db-pickyourway.vercel.app/api/home").then(r => r.json()).catch(() => null),
     ])
-      .then(async ([res, salesRes]) => {
+      .then(async ([res, salesRes, homeRes]) => {
         if (!res.success) return;
         const tourList: TourAPI[] = res.data;
         const ids = new Set<string>((salesRes.data ?? []).map((s: any) => s.tour_id as string));
         setSaleIds(ids);
         setTours(tourList);
+        // Lấy banner images từ API home
+        if (homeRes?.success && homeRes.data?.banners) {
+          setBannerImages(homeRes.data.banners.map((b: any) => b.image_url).filter(Boolean));
+        } else {
+          // Fallback: dùng ảnh từ các tour đầu tiên
+          setBannerImages(tourList.slice(0, 5).map(t => t.images?.[0]?.image_url).filter(Boolean) as string[]);
+        }
         setLoading(false);
 
         // Fetch trips per-tour (dùng slug endpoint — trả về đúng trips cho tour đó)
@@ -155,12 +163,12 @@ export default function ToursLandingPage() {
           setTripMap(map);
         } catch { /* trips fail thì tour vẫn hiện, không có giá */ }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
-  const saleTours   = tours.filter(t => saleIds.has(t._id));
-  const dealTours   = saleTours.length > 0 ? saleTours.slice(0, 4) : tours.slice(0, 4);
+  const saleTours = tours.filter(t => saleIds.has(t._id));
+  const dealTours = saleTours.length > 0 ? saleTours.slice(0, 4) : tours.slice(0, 4);
   const popularTours = tours.slice(0, 8);
 
   return (
@@ -171,6 +179,7 @@ export default function ToursLandingPage() {
         subtitle="Hơn 100 tour du lịch trong nước, giá tốt nhất, dịch vụ chuyên nghiệp"
         searchPlaceholder="Tìm điểm đến, tên tour..."
         searchRoute="/tours/search"
+        images={bannerImages}
       />
 
       <div className="max-w-7xl mx-auto px-4 py-10 space-y-12">
@@ -179,7 +188,7 @@ export default function ToursLandingPage() {
         <section>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-7 bg-orange-500 rounded-full"/>
+              <div className="w-1 h-7 bg-orange-500 rounded-full" />
               <div>
                 <h2 className="text-xl font-black text-gray-900">🔥 Tour Ưu Đãi Tốt Nhất</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Giá đặc biệt, số lượng có hạn</p>
@@ -188,12 +197,12 @@ export default function ToursLandingPage() {
             <a href="/tours/search?sale=1" className="text-sm text-orange-500 font-semibold hover:underline no-underline">Xem tất cả →</a>
           </div>
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i}/>)}</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {dealTours.map((t, i) => (
                 <TourCard key={t._id} tour={t} trip={tripMap[t._id]}
-                  badge={i === 0 ? "🔥 Hot Deal" : i === 1 ? "⚡ Flash Sale" : undefined}/>
+                  badge={i === 0 ? "🔥 Hot Deal" : i === 1 ? "⚡ Flash Sale" : undefined} />
               ))}
             </div>
           )}
@@ -203,7 +212,7 @@ export default function ToursLandingPage() {
         <section>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-7 bg-orange-500 rounded-full"/>
+              <div className="w-1 h-7 bg-orange-500 rounded-full" />
               <div>
                 <h2 className="text-xl font-black text-gray-900">⭐ Tour Du Lịch Phổ Biến</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Được khách hàng yêu thích nhất</p>
@@ -212,10 +221,10 @@ export default function ToursLandingPage() {
             <a href="/tours/search?q=" className="text-sm text-orange-500 font-semibold hover:underline no-underline">Xem tất cả →</a>
           </div>
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i}/>)}</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {popularTours.map(t => <TourCard key={t._id} tour={t} trip={tripMap[t._id]}/>)}
+              {popularTours.map(t => <TourCard key={t._id} tour={t} trip={tripMap[t._id]} />)}
             </div>
           )}
         </section>
@@ -223,7 +232,7 @@ export default function ToursLandingPage() {
         {/* ── KHÁM PHÁ THEO VÙNG ── */}
         <section>
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-1 h-7 bg-orange-500 rounded-full"/>
+            <div className="w-1 h-7 bg-orange-500 rounded-full" />
             <div>
               <h2 className="text-xl font-black text-gray-900">🗺️ Khám Phá Theo Vùng</h2>
               <p className="text-xs text-gray-400 mt-0.5">Chọn điểm đến theo miền</p>
@@ -233,8 +242,8 @@ export default function ToursLandingPage() {
             {REGIONS.map(r => (
               <a key={r.label} href={`/tours/search?q=${encodeURIComponent(r.label)}`}
                 className="group relative rounded-2xl overflow-hidden h-40 no-underline shadow-sm hover:shadow-lg transition-all duration-300">
-                <img src={r.img} alt={r.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"/>
+                <img src={r.img} alt={r.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white font-black text-sm">{r.label}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -253,10 +262,10 @@ export default function ToursLandingPage() {
           <h2 className="text-xl font-black text-gray-900 text-center mb-6">Tại sao chọn Pick Your Way?</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
-              ["🛡️", "An toàn tuyệt đối",      "Bảo hiểm toàn hành trình"],
-              ["💰", "Giá tốt nhất",             "Cam kết hoàn tiền nếu rẻ hơn"],
-              ["⭐", "Hướng dẫn viên 5 sao",    "Đào tạo chuyên nghiệp"],
-              ["📞", "Hỗ trợ 24/7",              "Hotline 0336323498"],
+              ["🛡️", "An toàn tuyệt đối", "Bảo hiểm toàn hành trình"],
+              ["💰", "Giá tốt nhất", "Cam kết hoàn tiền nếu rẻ hơn"],
+              ["⭐", "Hướng dẫn viên 5 sao", "Đào tạo chuyên nghiệp"],
+              ["📞", "Hỗ trợ 24/7", "Hotline 0336323498"],
             ].map(([icon, title, sub]) => (
               <div key={title as string}>
                 <div className="text-3xl mb-2">{icon}</div>
