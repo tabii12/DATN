@@ -285,6 +285,8 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const [activeImg, setActiveImg] = useState(0);
   const [openDay, setOpenDay] = useState<number | null>(0);
   const [showAllTrips, setShowAllTrips] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(0);
   const [commentRefresh, setCommentRefresh] = useState(0);
 
   // ── Booking state ──
@@ -491,7 +493,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 <div className="flex-1 min-w-0">
                   <div className="grid gap-1 h-80" style={{ gridTemplateColumns: "2fr 1fr 1fr" }}>
                     {mainImgs.map((img, i) => (
-                      <div key={i} onClick={() => setActiveImg(i)} className="overflow-hidden rounded cursor-pointer group">
+                      <div key={i} onClick={() => { setLightboxIdx(i); setLightboxOpen(true); }} className="overflow-hidden rounded cursor-pointer group">
                         <img src={img.image_url} alt={hotel.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       </div>
                     ))}
@@ -499,10 +501,10 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   {subImgs.length > 0 && (
                     <div className="grid gap-1 mt-1 h-27.5" style={{ gridTemplateColumns: `repeat(${subImgs.length}, 1fr)` }}>
                       {subImgs.map((img, i) => (
-                        <div key={i} onClick={() => setActiveImg(i + 3)} className="relative overflow-hidden rounded cursor-pointer group">
+                        <div key={i} onClick={() => { setLightboxIdx(i + 3); setLightboxOpen(true); }} className="relative overflow-hidden rounded cursor-pointer group">
                           <img src={img.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           {i === subImgs.length - 1 && images.length > 7 && (
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
                               <span className="text-white text-sm font-bold">+{images.length - 7} hình</span>
                             </div>
                           )}
@@ -894,6 +896,69 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
         </button>
       </div>
       <div className="lg:hidden h-16" />
+
+      {/* ── LIGHTBOX ── */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Nút đóng */}
+          <button
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-xl font-bold border-none cursor-pointer transition-colors z-10"
+          >
+            ✕
+          </button>
+
+          {/* Counter */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full">
+            {lightboxIdx + 1} / {allImgs.length}
+          </div>
+
+          {/* Prev */}
+          {lightboxIdx > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxIdx(p => p - 1); }}
+              className="absolute left-4 w-11 h-11 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white text-2xl font-bold border-none cursor-pointer transition-colors"
+            >
+              ‹
+            </button>
+          )}
+
+          {/* Next */}
+          {lightboxIdx < allImgs.length - 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxIdx(p => p + 1); }}
+              className="absolute right-4 w-11 h-11 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-white text-2xl font-bold border-none cursor-pointer transition-colors"
+            >
+              ›
+            </button>
+          )}
+
+          {/* Ảnh chính */}
+          <img
+            src={allImgs[lightboxIdx]?.image_url}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl"
+          />
+
+          {/* Thumbnail strip */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] pb-1">
+            {allImgs.map((img, i) => (
+              <div
+                key={i}
+                onClick={(e) => { e.stopPropagation(); setLightboxIdx(i); }}
+                className={`shrink-0 w-14 h-10 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${i === lightboxIdx ? "border-orange-400 opacity-100" : "border-transparent opacity-50 hover:opacity-80"}`}
+              >
+                <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
 
       {/* Modal tất cả chuyến đi */}
       {showAllTrips && (
