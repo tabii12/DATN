@@ -24,7 +24,7 @@ interface TourAPI {
 
 interface TripAPI {
     _id: string;
-    tour_id: string | { _id: string };  
+    tour_id: string | { _id: string };
     start_date: string;
     end_date: string;
     price: number;
@@ -349,7 +349,7 @@ function Sidebar({
                 </div>
             </div>
 
-            
+
         </div>
     );
 }
@@ -413,13 +413,22 @@ function HotelListingContent() {
     };
 
     // Suggestions: tìm theo tên tour + city, max 9
+    // THAY suggestions thành:
     const suggestions = searchInput.trim().length >= 1
         ? hotels.filter(h => {
             const keyword = searchInput.toLowerCase();
-            return (h.name ?? "").toLowerCase().includes(keyword) ||
-                (h.city ?? "").toLowerCase().includes(keyword);
+            const name = (h.name ?? "").toLowerCase();
+            const city = (h.city ?? "").toLowerCase();
+            return name.includes(keyword) || city.includes(keyword);
         }).slice(0, 9)
         : [];
+
+    // THAY count trong dropdown thành:
+    const totalMatch = hotels.filter(h => {
+        const keyword = searchInput.toLowerCase();
+        return (h.name ?? "").toLowerCase().includes(keyword) ||
+            (h.city ?? "").toLowerCase().includes(keyword);
+    }).length;
 
     // Click outside để đóng dropdown
     useEffect(() => {
@@ -524,10 +533,7 @@ function HotelListingContent() {
                                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                                     <div className="px-4 py-2 border-b border-gray-50 flex items-center justify-between">
                                         <span className="text-[11px] text-gray-400 font-semibold">
-                                            {hotels.filter(h =>
-                                                h.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-                                                h.city.toLowerCase().includes(searchInput.toLowerCase())
-                                            ).length} kết quả · hiển thị {suggestions.length}
+                                         {totalMatch} kết quả · hiển thị {suggestions.length}
                                         </span>
                                     </div>
                                     {suggestions.map(s => (

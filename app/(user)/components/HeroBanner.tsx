@@ -85,7 +85,7 @@ export default function HeroBanner({
           );
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const recalcDropdown = useCallback(() => {
@@ -145,16 +145,17 @@ export default function HeroBanner({
   const cityMatch =
     destination.trim().length >= 2
       ? CITIES.find((c) =>
-          c.toLowerCase().includes(destination.trim().toLowerCase())
-        ) ?? null
+        c.toLowerCase().includes(destination.trim().toLowerCase())
+      ) ?? null
       : null;
 
-  const cityTourCount = cityMatch
-    ? allTours.filter((t) =>
-        t.city.toLowerCase() === cityMatch.toLowerCase() ||
-        t.city.toLowerCase().includes(cityMatch.toLowerCase())
-      ).length
-    : 0;
+  const normalize = (str: string) =>
+    str.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d").replace(/Đ/g, "D")
+      .toLowerCase().replace(/[\s.]/g, "");
+  // const cityTourCount = cityMatch
+  //   ? allTours.filter((t) => normalize(t.city) === normalize(cityMatch)).length
+  //   : 0;
 
   const hasDropdown = showSuggestions && (suggestions.length > 0 || !!cityMatch);
 
@@ -191,17 +192,15 @@ export default function HeroBanner({
             key={i}
             src={src}
             alt="banner"
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${
-              i === bannerIdx ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === bannerIdx ? "opacity-100" : "opacity-0"
+              }`}
           />
         ))
       ) : (
         <div
-          className={`absolute inset-0 ${
-            gradientBg ??
+          className={`absolute inset-0 ${gradientBg ??
             "bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-400"
-          }`}
+            }`}
         />
       )}
 
@@ -341,9 +340,8 @@ export default function HeroBanner({
               <button
                 key={i}
                 onClick={() => setBannerIdx(i)}
-                className={`h-1.5 rounded-full transition-all border-none cursor-pointer p-0 ${
-                  i === bannerIdx ? "w-6 bg-white" : "w-1.5 bg-white/50"
-                }`}
+                className={`h-1.5 rounded-full transition-all border-none cursor-pointer p-0 ${i === bannerIdx ? "w-6 bg-white" : "w-1.5 bg-white/50"
+                  }`}
               />
             ))}
           </div>
@@ -373,7 +371,7 @@ export default function HeroBanner({
               <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center text-xl shrink-0">📍</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-orange-600">{cityMatch}</p>
-                <p className="text-[11px] text-gray-400">{cityTourCount} tour tại đây</p>
+                {/* <p className="text-[11px] text-gray-400">{cityTourCount} tour tại đây</p> */}
               </div>
               <span className="text-[11px] text-orange-500 font-bold shrink-0">Xem tất cả →</span>
             </button>
@@ -383,11 +381,9 @@ export default function HeroBanner({
             <>
               <div className="px-4 py-2 border-b border-gray-50 bg-gray-50/50">
                 <span className="text-[11px] text-gray-400 font-semibold">
-                  {allTours.filter((t) =>
-                    t.name.toLowerCase().includes(destination.toLowerCase()) ||
-                    t.city.toLowerCase().includes(destination.toLowerCase())
-                  ).length}{" "}
-                  tour · hiển thị {suggestions.length}
+                  {suggestions.length > 0
+                    ? `${suggestions.length} kết quả`
+                    : "Không tìm thấy"}
                 </span>
               </div>
               {suggestions.map((s) => (
