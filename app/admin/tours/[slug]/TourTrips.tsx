@@ -91,23 +91,25 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
   const handleEditClick = (trip: Trip) => {
     setEditingTripId(trip._id);
     const fmtDate = (d: string) => d ? new Date(d).toISOString().split("T")[0] : "";
-    // Sau khi set form, filter bỏ services không còn tồn tại:
+
+    // ✅ Thêm || [] để tránh crash khi services undefined
+    const services = trip.services || [];
+
     setTripForm({
       start_date: fmtDate(trip.start_date),
       end_date: fmtDate(trip.end_date),
       min_people: trip.min_people,
       max_people: trip.max_people,
-      selected_services: trip.services
+      selected_services: services
         .map(s => {
           const serviceId = typeof s.service_id === "string"
             ? s.service_id
             : (s.service_id as any)?._id ?? "";
           return { service_id: serviceId, quantity: s.quantity, note: s.note || "" };
         })
-        .filter(s => globalServices.some(g => g._id === s.service_id)), // ← chỉ giữ services còn tồn tại
+        .filter(s => globalServices.some(g => g._id === s.service_id)),
     });
-    console.log("trip.services:", trip.services);
-    console.log("first service:", trip.services[0]);
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
