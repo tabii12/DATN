@@ -41,7 +41,7 @@ Tổng = 2×4.39M + 2×3.951M = 16.682.000đ
 
 
 
-Công thức tính giá tour 
+Công thức tính giá  
 
 Quota = số trẻ nhỏ (TN) được miễn phí trong chuyến đi.
 Quota được tạo ra bởi NL và TE:
