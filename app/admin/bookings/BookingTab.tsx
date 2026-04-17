@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 
-// ─────────────────────────── TYPES (Dữ liệu chuẩn từ BE) ───────────────────────────
+// ─────────────────────────── TYPES ───────────────────────────
 
 interface BookingRaw {
   _id: string;
@@ -18,6 +18,14 @@ interface BookingRaw {
   status: "pending" | "confirmed" | "paid" | "cancelled";
   createdAt: any;
   orderId: string;
+  // ✅ Thêm field vnpay để lấy giá đúng từ thanh toán VNPay
+  vnpay?: {
+    amount?: number;
+    status?: string;
+    bank_code?: string;
+    txnRef?: string;
+    transactionNo?: string;
+  };
 }
 
 interface Booking {
@@ -36,10 +44,13 @@ interface Booking {
   createdAt: string;
 }
 
-// ─────────────────────────── NORMALIZE (Gọn gàng) ───────────────────────────
+// ─────────────────────────── NORMALIZE ───────────────────────────
 
 function normalizeBooking(raw: BookingRaw): Booking {
   const parseDate = (d: any) => (d?.$date ? d.$date : d) || "";
+
+  // ✅ Ưu tiên vnpay.amount (giá thực tế đã thanh toán), fallback về total
+  const resolvedPrice = Number(raw.vnpay?.amount ?? raw.total ?? 0);
 
   return {
     id: raw._id,
@@ -51,7 +62,7 @@ function normalizeBooking(raw: BookingRaw): Booking {
     adults: Number(raw.adults ?? 0),
     children: Number(raw.children ?? 0),
     infants: Number(raw.infants ?? 0),
-    totalPrice: Number(raw.total ?? 0),
+    totalPrice: resolvedPrice,
     status: raw.status || "pending",
     singleRooms: Number(raw.singleRooms ?? 0),
     createdAt: parseDate(raw.createdAt),
