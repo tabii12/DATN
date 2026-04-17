@@ -76,11 +76,13 @@ export default function ChangePasswordPage() {
         }
       );
 
-      alert("🎉 Đổi mật khẩu thành công!");
+      // ✅ THÊM LOGOUT SAU KHI ĐỔI MẬT KHẨU
+      alert("🎉 Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
 
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+      localStorage.clear();
+      window.dispatchEvent(new Event("tokenChanged"));
+      router.push("/auth/login");
+
     } catch (error: any) {
       alert(
         error?.response?.data?.message || "Đổi mật khẩu thất bại!"
@@ -117,7 +119,6 @@ export default function ChangePasswordPage() {
           <MenuItem icon={<User size={18} />} label="Thông tin cá nhân" onClick={() => router.push("/profile")} />
           <MenuItem icon={<Briefcase size={18} />} label="Tour đã đặt" onClick={() => router.push("/bookings")} />
           <MenuItem icon={<Heart size={18} />} label="Tour yêu thích" onClick={() => router.push("/favorites")} />
-          
 
           <div className="border-t my-3"></div>
 
@@ -157,7 +158,7 @@ export default function ChangePasswordPage() {
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={isGoogleUser} // ✅ disable
+                disabled={isGoogleUser}
                 className="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none disabled:bg-gray-100"
               />
             </div>
@@ -190,7 +191,7 @@ export default function ChangePasswordPage() {
 
             <button
               onClick={handleChangePassword}
-              disabled={loading || isGoogleUser} // ✅ disable luôn
+              disabled={loading || isGoogleUser}
               className={`w-full py-3 rounded-lg font-semibold transition
                 ${
                   isGoogleUser
