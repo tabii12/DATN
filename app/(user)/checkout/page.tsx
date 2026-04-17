@@ -59,7 +59,7 @@ function SearchContent() {
     bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0",
   );
  const pricePerChild = parseInt(
-  bookingData.pricePerChild ?? searchParams.get("pricePerChild") ?? "0");
+  bookingData.pricePerChild ?? searchParams.get("pricePerChild") ?? "0")
   const adults = parseInt(
     bookingData.adults ?? searchParams.get("adults") ?? "1",
   );
@@ -82,28 +82,28 @@ function SearchContent() {
   // Payment option: 50 = đặt cọc 50%, 100 = thanh toán đầy đủ
   const [paymentPct, setPaymentPct] = useState<50 | 100>(50);
 
-  const subtotalAdults = adults * pricePerAdult;
-  const subtotalChildren = children * pricePerChild;
-  const INSURANCE = 500_000;
-  const total = subtotalAdults + subtotalChildren + INSURANCE;
-  const payNow = Math.round((total * paymentPct) / 100);
-  const remaining = total - payNow;
+ const infantTotal = parseInt(bookingData.infantTotal ?? "0");
+const singleSupplement = parseInt(bookingData.singleSupplement ?? "0");
+const infantPrice = parseInt(bookingData.infantPrice ?? "0");
 
-  const orderItems = [
-    {
-      label: `Giá tour (${adults} người lớn)`,
-      value: formatVND(subtotalAdults),
-    },
-    ...(children > 0
-      ? [
-          {
-            label: `Giá tour (${children} trẻ em)`,
-            value: formatVND(subtotalChildren),
-          },
-        ]
-      : []),
-    { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
-  ];
+const INSURANCE = 500_000;
+const total = grandTotal + INSURANCE;
+const payNow = Math.round((total * paymentPct) / 100);
+const remaining = total - payNow;
+
+const orderItems = [
+  { label: `Người lớn × ${adults}`, value: formatVND(adults * pricePerAdult) },
+  ...(children > 0
+    ? [{ label: `Trẻ em × ${children} (${formatVND(pricePerChild)}/bé)`, value: formatVND(children * pricePerChild) }]
+    : []),
+  ...(infants > 0
+    ? [{ label: `Trẻ nhỏ × ${infants}${infantPrice === 0 ? " (miễn phí)" : ` (${formatVND(infantPrice)}/bé)`}`, value: formatVND(infantTotal) }]
+    : []),
+  ...(singleSupplement > 0
+    ? [{ label: `Phụ thu phòng đơn × ${singleRooms}`, value: formatVND(singleSupplement) }]
+    : []),
+  { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
+];
 
   const FIELDS = ["name", "email", "phone"];
 

@@ -105,21 +105,28 @@ function SearchContent() {
   }
 
   // Trích xuất dữ liệu hiển thị (Sử dụng destructuring với giá trị mặc định)
-  const {
-    tourName = "",
-    hotelName = "",
-    city = "",
-    thumbnail = "",
-    adults = 1,
-    children = 0,
-    contactName = "",
-    contactEmail = "",
-    contactPhone = "",
-    total = 0,
-    payNow = 0,
-    remaining = 0,
-    paymentPct = 100
-  } = data;
+ const {
+  tourName = "",
+  hotelName = "",
+  city = "",
+  thumbnail = "",
+  adults = 1,
+  children = 0,
+  infants = 0,
+  pricePerAdult = 0,
+  pricePerChild = 0,
+  infantPrice = 0,
+  infantTotal = 0,
+  singleSupplement = 0,
+  singleRooms = 0,
+  contactName = "",
+  contactEmail = "",
+  contactPhone = "",
+  total = 0,
+  payNow = 0,
+  remaining = 0,
+  paymentPct = 100
+} = data;
 
   const isSuccess = vnpResponseCode === "00";
 
@@ -153,7 +160,11 @@ function SearchContent() {
             </div>
 
             <div className="flex justify-between text-sm py-3 border-y border-slate-50">
-              <span className="text-slate-600">{adults} người lớn, {children} trẻ em</span>
+              <span className="text-slate-600">
+  {adults} người lớn
+  {children > 0 ? ` · ${children} trẻ em` : ""}
+  {infants > 0 ? ` · ${infants} trẻ nhỏ` : ""}
+</span>
               <span className="font-bold text-indigo-600 text-lg">{formatVND(total)}</span>
             </div>
 
