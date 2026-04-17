@@ -56,43 +56,41 @@ export default function PaymentPage() {
   }
 
   // 2. Trích xuất các biến từ object booking
-  const {
-    tourName = "",
-    city = "",
-    thumbnail = "",
-    pricePerAdult = 0,
-    pricePerChild = 0,
-    adults = 1,
-    children = 0,
-    infants = 0,
-    contactName = "",
-    contactEmail = "",
-    contactPhone = "",
-    paymentPct = 100,
-    payNow = 0,
-    remaining = 0,
-    total = 0,
-  } = booking;
+const {
+  tourName = "",
+  city = "",
+  thumbnail = "",
+  pricePerAdult = 0,
+  pricePerChild = 0,
+  infantPrice = 0,
+  infantTotal = 0,
+  singleSupplement = 0,
+  singleRooms = 0,
+  adults = 1,
+  children = 0,
+  infants = 0,
+  contactName = "",
+  contactEmail = "",
+  contactPhone = "",
+  paymentPct = 100,
+  payNow = 0,
+  remaining = 0,
+  total = 0,
+} = booking;
 
-  const INSURANCE = 500_000;
-  const subtotalAdults = adults * pricePerAdult;
-  const subtotalChildren = children * pricePerChild;
-
-  const orderItems = [
-    {
-      label: `Giá tour (${adults} người lớn)`,
-      value: formatVND(subtotalAdults),
-    },
-    ...(children > 0
-      ? [
-          {
-            label: `Giá tour (${children} trẻ em)`,
-            value: formatVND(subtotalChildren),
-          },
-        ]
-      : []),
-    { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
-  ];
+const orderItems = [
+  { label: `Người lớn × ${adults}`, value: formatVND(adults * pricePerAdult) },
+  ...(children > 0
+    ? [{ label: `Trẻ em × ${children} (${formatVND(pricePerChild)}/bé)`, value: formatVND(children * pricePerChild) }]
+    : []),
+  ...(infants > 0
+    ? [{ label: `Trẻ nhỏ × ${infants}${infantPrice === 0 ? " (miễn phí)" : ` (${formatVND(infantPrice)}/bé)`}`, value: formatVND(infantTotal) }]
+    : []),
+  ...(singleSupplement > 0
+    ? [{ label: `Phụ thu phòng đơn × ${singleRooms}`, value: formatVND(singleSupplement) }]
+    : []),
+  { label: "Bảo hiểm du lịch", value: formatVND(500_000) },
+];
 
   const handleVNPayPayment = async () => {
     setLoading(true);

@@ -380,7 +380,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     const trip = departureDates.find((t) => t._id === selectedTripId);
 
     // ✅ SAVE TO LOCALSTORAGE
-  const bookingData = {
+ const bookingData = {
   trip_id: selectedTripId,
   adults,
   children,
@@ -392,8 +392,11 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   city: tour?.hotel_id?.city ?? "",
   thumbnail: tour?.images?.[0]?.image_url ?? "",
   basePrice,
-  pricePerChild: pricing.childPrice,   // ✅ THÊM DÒNG NÀY
-  pricePerAdult: basePrice,             // ✅ Thêm cho rõ ràng
+  pricePerAdult: basePrice,
+  pricePerChild: pricing.childPrice,
+  infantPrice: pricing.infantPrice,      // ✅ thêm
+  infantTotal: pricing.infantTotal,      // ✅ thêm
+  singleSupplement: pricing.singleSupplement, // ✅ thêm
   grandTotal: pricing.grandTotal,
   departureDate: trip ? new Date(trip.start_date).toLocaleDateString("vi-VN") : "",
 };
