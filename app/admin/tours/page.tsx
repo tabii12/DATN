@@ -11,6 +11,7 @@ interface Tour {
   name: string;
   slug: string;
   status: string;
+  start_location?: string;
   hotel_id?: {
     name: string;
     city: string;
@@ -46,6 +47,24 @@ export default function AdminTours() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Quick-edit modal
+  // Trips popup
+  const [tripsPopupTour, setTripsPopupTour] = useState<Tour | null>(null);
+  const [tripsData, setTripsData] = useState<any[]>([]);
+  const [tripsLoading, setTripsLoading] = useState(false);
+  const [tripsFilter, setTripsFilter] = useState<"all" | "open" | "past">("all");
+  const openTripsPopup = async (tour: Tour) => {
+    setTripsPopupTour(tour);
+    setTripsLoading(true);
+    setTripsData([]);
+    try {
+      const res = await fetch(`${API}/trips/tour/${tour.slug}`);
+      const d = await res.json();
+      setTripsData(d.data || []);
+    } catch { }
+    finally { setTripsLoading(false); }
+  };
+
+  // Quick-edit modal
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [editName, setEditName] = useState("");
   const [editStatus, setEditStatus] = useState("active");
@@ -55,7 +74,7 @@ export default function AdminTours() {
     fetch(`${API}/tours/admin?page=1&limit=1000`)
       .then((r) => r.json())
       .then((d) => setTours(d.data || []))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -180,11 +199,10 @@ export default function AdminTours() {
                   setFilterStatus(v);
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${
-                  filterStatus === v
-                    ? "bg-white shadow text-gray-800"
-                    : "text-gray-500 bg-transparent hover:text-gray-700"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${filterStatus === v
+                  ? "bg-white shadow text-gray-800"
+                  : "text-gray-500 bg-transparent hover:text-gray-700"
+                  }`}
               >
                 {l}
               </button>
@@ -218,9 +236,6 @@ export default function AdminTours() {
                 <tr className="border-b border-gray-100 bg-gray-50/60">
                   <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-5 py-3">
                     Tour
-                  </th>
-                  <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden md:table-cell">
-                    Khách sạn
                   </th>
                   <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">
                     Danh mục
@@ -267,22 +282,6 @@ export default function AdminTours() {
                       </div>
                     </td>
 
-                    {/* Hotel */}
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      {t.hotel_id ? (
-                        <div>
-                          <p className="text-sm font-medium text-gray-700 truncate max-w-40">
-                            {t.hotel_id.name}
-                          </p>
-                          <p className="text-[11px] text-amber-500">
-                            {"⭐".repeat(Math.round(t.hotel_id.rating))}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-gray-300 text-sm">—</span>
-                      )}
-                    </td>
-
                     {/* Category */}
                     <td className="px-4 py-3 hidden lg:table-cell">
                       {t.category_id?.name ? (
@@ -295,9 +294,10 @@ export default function AdminTours() {
                     </td>
 
                     {/* City */}
+                    {/* City */}
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <span className="text-sm text-gray-600">
-                        {t.hotel_id?.city || "—"}
+                        {t.start_location || t.hotel_id?.city || "—"}
                       </span>
                     </td>
 
@@ -316,7 +316,7 @@ export default function AdminTours() {
                           Sửa chi tiết
                         </button>
                         <button
-                          onClick={() => router.push(`/admin/tours/${t.slug}?tab=trips`)}
+                          onClick={() => openTripsPopup(t)}
                           className="text-xs font-semibold text-gray-500 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors"
                         >
                           Chuyến đi
@@ -350,11 +350,10 @@ export default function AdminTours() {
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-lg text-sm font-semibold border cursor-pointer transition-colors ${
-                        currentPage === page
-                          ? "bg-orange-500 text-white border-orange-500"
-                          : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-                      }`}
+                      className={`w-8 h-8 rounded-lg text-sm font-semibold border cursor-pointer transition-colors ${currentPage === page
+                        ? "bg-orange-500 text-white border-orange-500"
+                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
                     >
                       {page}
                     </button>
@@ -374,6 +373,92 @@ export default function AdminTours() {
           )}
         </div>
       </div>
+
+      {/* Trips popup */}
+      {tripsPopupTour && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setTripsPopupTour(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-black text-gray-900">🚀 Chuyến đi</h2>
+                <p className="text-xs text-gray-400 truncate mt-0.5">{tripsPopupTour.name}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setTripsPopupTour(null); router.push(`/admin/tours/${tripsPopupTour.slug}?tab=trips`); }}
+                  className="text-xs font-semibold text-orange-500 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg border-none cursor-pointer transition-colors">
+                  Quản lý →
+                </button>
+                <button onClick={() => setTripsPopupTour(null)} className="w-8 h-8 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 bg-white cursor-pointer text-lg">✕</button>
+              </div>
+            </div>
+            <div className="px-4 pt-3 pb-0 flex gap-1 border-b border-gray-100 bg-white">
+              {([["all", "Tất cả"], ["open", "Đang mở"], ["past", "Đã qua"]] as const).map(([v, l]) => (
+                <button key={v} onClick={() => setTripsFilter(v)}
+                  className={`px-3 py-2 text-xs font-semibold border-b-2 transition-colors bg-transparent cursor-pointer ${tripsFilter === v ? "border-orange-500 text-orange-500" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            <div className="overflow-y-auto flex-1 p-4">
+              {tripsLoading ? (
+                <div className="py-10 flex justify-center"><div className="w-8 h-8 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>
+              ) : tripsData.length === 0 ? (
+                <div className="py-12 text-center text-gray-400">
+                  <p className="text-4xl mb-3">📭</p>
+                  <p className="text-sm font-semibold">Chưa có chuyến đi nào</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {[...tripsData]
+                    .filter(trip => {
+                      const isPast = new Date(trip.end_date) < new Date();
+                      if (tripsFilter === "open") return !isPast && trip.status === "open";
+                      if (tripsFilter === "past") return isPast;
+                      return true;
+                    })
+                    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()).map(trip => {
+                      const start = new Date(trip.start_date);
+                      const end = new Date(trip.end_date);
+                      const slotsLeft = trip.max_people - trip.booked_people;
+                      const isPast = end < new Date();
+                      const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+                      const nights = Math.ceil((end.getTime() - start.getTime()) / 86400000);
+                      return (
+                        <div key={trip._id} className={`flex items-center gap-4 p-3 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50/30 transition-all ${isPast ? "opacity-40" : ""}`}>
+                          <div className="shrink-0 text-center bg-orange-50 rounded-xl px-3 py-2 min-w-[52px]">
+                            <p className="text-[10px] font-bold text-orange-400">{dayLabels[start.getDay()]}</p>
+                            <p className="text-base font-black text-orange-600 leading-none">{String(start.getDate()).padStart(2, "0")}</p>
+                            <p className="text-[10px] text-orange-400">T{start.getMonth() + 1}</p>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-gray-800">{start.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                              <span className="text-gray-400 text-xs">→</span>
+                              <span className="text-xs font-bold text-gray-800">{end.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                              <span className="text-[10px] text-gray-400">({nights + 1}N{nights}Đ)</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="text-[11px] font-black text-orange-500">{(trip.price || trip.base_price || 0).toLocaleString("vi-VN")}đ</span>
+                              <span className="text-[10px] text-gray-400">{trip.booked_people}/{trip.max_people} · còn <span className={slotsLeft <= 3 ? "text-red-500 font-bold" : "text-emerald-600 font-semibold"}>{slotsLeft} chỗ</span></span>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${trip.status === "open" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : trip.status === "full" ? "bg-red-50 text-red-400 border-red-200" : "bg-gray-100 text-gray-400 border-gray-200"}`}>
+                            {trip.status === "open" ? "Mở" : trip.status === "full" ? "Đầy" : "Đóng"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+            <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 text-center">
+              <p className="text-xs text-gray-400">{tripsData.filter(t => t.status === "open").length} đang mở · {tripsData.filter(t => new Date(t.end_date) < new Date()).length} đã qua · tổng {tripsData.length} chuyến</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Quick-edit modal */}
       {editingTour && (
@@ -410,11 +495,10 @@ export default function AdminTours() {
                     <button
                       key={v}
                       onClick={() => setEditStatus(v)}
-                      className={`py-2.5 rounded-xl text-sm font-semibold border-2 cursor-pointer transition-all ${
-                        editStatus === v
-                          ? "border-orange-400 bg-orange-50 text-orange-600"
-                          : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200"
-                      }`}
+                      className={`py-2.5 rounded-xl text-sm font-semibold border-2 cursor-pointer transition-all ${editStatus === v
+                        ? "border-orange-400 bg-orange-50 text-orange-600"
+                        : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-200"
+                        }`}
                     >
                       {l}
                     </button>
