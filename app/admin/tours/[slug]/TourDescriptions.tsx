@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { formatTextLines } from "../../lib/textFormatter";
+import { formatTextLines } from "@/app/lib/textFormatter";
 
 const API = "https://db-pickyourway.vercel.app/api";
 type TourDescription = { _id: string; title: string; content: string };
