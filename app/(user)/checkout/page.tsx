@@ -58,7 +58,8 @@ function SearchContent() {
   const pricePerAdult = parseInt(
     bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0",
   );
-  const pricePerChild = parseInt(searchParams.get("pricePerChild") ?? "0");
+ const pricePerChild = parseInt(
+  bookingData.pricePerChild ?? searchParams.get("pricePerChild") ?? "0");
   const adults = parseInt(
     bookingData.adults ?? searchParams.get("adults") ?? "1",
   );
