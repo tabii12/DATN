@@ -12,8 +12,7 @@ export interface Trip {
   status: "open" | "closed" | "full" | "deleted";
 }
 interface GlobalService { _id: string; serviceName: string; basePrice: number; unit: string; type: string }
-interface Props { tourId: string; trips: Trip[]; onRefresh: () => void }
-
+interface Props { tourId: string; trips: Trip[]; duration: number; onRefresh: () => void }
 const SERVICE_TYPES = [
   { value: "all", label: "Tất cả loại" },
   { value: "hotel", label: "Khách sạn" },
@@ -34,7 +33,7 @@ const CheckedIcon = () => (
   </div>
 );
 
-export default function TourTrips({ tourId, trips, onRefresh }: Props) {
+export default function TourTrips({ tourId, trips, duration, onRefresh }: Props) {
   const today = new Date().toISOString().split("T")[0];
 
   // ── Services ──
@@ -188,16 +187,27 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
         {/* Ngày & số người */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div>
-            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày đi</label>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày khởi hành</label>
             <input type="date" value={tripForm.start_date} min={!editingTripId ? today : undefined}
-              onChange={e => setTripForm(f => ({ ...f, start_date: e.target.value }))}
+              onChange={e => {
+                const start = e.target.value;
+                let end = "";
+                if (start && duration) {
+                  const d = new Date(start);
+                  d.setDate(d.getDate() + duration - 1);
+                  end = d.toISOString().split("T")[0];
+                }
+                setTripForm(f => ({ ...f, start_date: start, end_date: end }));
+              }}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày về</label>
-            <input type="date" value={tripForm.end_date} min={tripForm.start_date}
-              onChange={e => setTripForm(f => ({ ...f, end_date: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày kết thúc</label>
+            <input type="date" value={tripForm.end_date} disabled
+              className="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-400 cursor-not-allowed" />
+            {tripForm.end_date && (
+              <p className="text-[10px] text-orange-500 mt-1 font-semibold">Tự tính từ {duration} ngày tour</p>
+            )}
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 block mb-1">Tối thiểu (người)</label>

@@ -12,22 +12,22 @@ import TourTrips from "./TourTrips";
 const API = "https://db-pickyourway.vercel.app/api";
 
 const TABS = [
-  { id: "info",        icon: "📋", label: "Thông tin" },
-  { id: "images",      icon: "🖼️", label: "Hình ảnh" },
-  { id: "desc",        icon: "📝", label: "Mô tả" },
-  { id: "itinerary",   icon: "🗓️", label: "Lịch trình" },
-  { id: "trips",       icon: "🚀", label: "Chuyến đi" },
+  { id: "info", icon: "📋", label: "Thông tin" },
+  { id: "images", icon: "🖼️", label: "Hình ảnh" },
+  { id: "desc", icon: "📝", label: "Mô tả" },
+  { id: "itinerary", icon: "🗓️", label: "Lịch trình" },
+  { id: "trips", icon: "🚀", label: "Chuyến đi" },
 ];
 
 export default function TourDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const slug   = params?.slug as string | undefined;
+  const slug = params?.slug as string | undefined;
 
-  const [tour, setTour]             = useState<any>(null);
+  const [tour, setTour] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [activeTab, setActiveTab]   = useState("info");
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("info");
 
   const fetchTourData = useCallback(async () => {
     if (!slug) return;
@@ -37,9 +37,9 @@ export default function TourDetailPage() {
         fetch(`${API}/categories`),
       ]);
       const tourData = await tourRes.json();
-      const catData  = await catRes.json();
+      const catData = await catRes.json();
       if (tourData.success) setTour(tourData.data);
-      if (catData.success)  setCategories(catData.data);
+      if (catData.success) setCategories(catData.data);
     } catch (err) {
       console.error("Lỗi fetch dữ liệu:", err);
     } finally {
@@ -52,7 +52,7 @@ export default function TourDetailPage() {
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center text-gray-400">
-        <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4"/>
+        <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
         <p className="text-sm font-semibold">Đang tải tour...</p>
       </div>
     </div>
@@ -70,11 +70,11 @@ export default function TourDetailPage() {
 
   // Tabs hiển thị số lượng
   const tabsWithCount = [
-    { id: "info",      icon: "📋", label: "Thông tin" },
-    { id: "images",    icon: "🖼️", label: `Ảnh (${tour.images?.length ?? 0})` },
-    { id: "desc",      icon: "📝", label: `Mô tả (${tour.descriptions?.length ?? 0})` },
+    { id: "info", icon: "📋", label: "Thông tin" },
+    { id: "images", icon: "🖼️", label: `Ảnh (${tour.images?.length ?? 0})` },
+    { id: "desc", icon: "📝", label: `Mô tả (${tour.descriptions?.length ?? 0})` },
     { id: "itinerary", icon: "🗓️", label: `Lịch trình (${tour.itineraries?.length ?? 0}N)` },
-    { id: "trips",     icon: "🚀", label: `Chuyến đi (${tour.trips?.length ?? 0})` },
+    { id: "trips", icon: "🚀", label: `Chuyến đi (${tour.trips?.length ?? 0})` },
   ];
 
   return (
@@ -103,19 +103,19 @@ export default function TourDetailPage() {
 
         {/* Tab content */}
         {activeTab === "info" && (
-          <TourInfo tour={tour} categories={categories} onRefresh={fetchTourData}/>
+          <TourInfo tour={tour} categories={categories} onRefresh={fetchTourData} />
         )}
         {activeTab === "images" && (
-          <TourImages slug={tour.slug} images={tour.images || []} onRefresh={fetchTourData}/>
+          <TourImages slug={tour.slug} images={tour.images || []} onRefresh={fetchTourData} />
         )}
         {activeTab === "desc" && (
-          <TourDescriptions tourId={tour._id} descriptions={tour.descriptions || []} onRefresh={fetchTourData}/>
+          <TourDescriptions tourId={tour._id} descriptions={tour.descriptions || []} onRefresh={fetchTourData} />
         )}
         {activeTab === "itinerary" && (
-          <TourItineraries tourId={tour._id} itineraries={tour.itineraries || []} onRefresh={fetchTourData}/>
+          <TourItineraries tourId={tour._id} itineraries={tour.itineraries || []} onRefresh={fetchTourData} />
         )}
         {activeTab === "trips" && (
-          <TourTrips tourId={tour._id} trips={tour.trips || []} onRefresh={fetchTourData}/>
+          <TourTrips tourId={tour._id} trips={tour.trips || []} duration={tour.duration ?? 1} onRefresh={fetchTourData} />
         )}
       </div>
     </div>

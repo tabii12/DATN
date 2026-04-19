@@ -11,8 +11,8 @@ type Category = { _id: string; name: string };
 interface Tour {
   _id: string; name: string; slug: string; status: string;
   hotel_id?: Hotel; category_id?: Category; start_location?: string;
+  duration?: number;
 }
-
 const DEFAULT_HOTEL_FORM = { name: "", address: "", city: "", description: "", price_per_night: "", rating: "3", capacity: "2" };
 const STAR_OPTIONS = [1, 2, 3, 4, 5];
 const VIETNAM_CITIES = ["Hà Nội", "Hồ Chí Minh", "Đà Nẵng", "Hải Phòng", "Cần Thơ", "Nha Trang", "Đà Lạt", "Hội An", "Huế", "Vũng Tàu", "Phú Quốc", "Quy Nhơn", "Phan Thiết", "Mũi Né", "Sapa", "Hạ Long", "Ninh Bình", "Buôn Ma Thuột", "Pleiku", "Quảng Bình"];
@@ -74,7 +74,41 @@ function InlineField({ label, value, onSave, mono, icon, readOnly, renderDisplay
     </div>
   );
 }
-
+function DurationSetForm({ onSave }: { onSave: (n: number) => Promise<void> }) {
+  const [val, setVal] = useState("");
+  const [saving, setSaving] = useState(false);
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-base shrink-0">📅</span>
+      <div className="flex-1">
+        <p className="text-[11px] font-semibold text-gray-400 mb-1.5">Số ngày</p>
+        <div className="flex items-center gap-2">
+          <input
+            type="number" min={1} max={30} placeholder="VD: 3"
+            value={val} onChange={e => setVal(e.target.value)}
+            className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 transition-all"
+          />
+          {val && Number(val) > 0 && (
+            <span className="text-xs text-gray-400">{val} ngày {Number(val) - 1} đêm</span>
+          )}
+          <button
+            onClick={async () => {
+              const n = Number(val);
+              if (!n || n < 1) return alert("Số ngày phải lớn hơn 0");
+              setSaving(true);
+              await onSave(n);
+              setSaving(false);
+            }}
+            disabled={saving || !val || Number(val) < 1}
+            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer transition-colors disabled:opacity-60"
+          >
+            {saving ? <><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Đang lưu...</> : "Thiết lập"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 export default function TourInfo({ tour, categories, onRefresh }: { tour: Tour; categories: Category[]; onRefresh: () => void }) {
   const router = useRouter();
   const [hotels, setHotels] = useState<Hotel[]>([]);
@@ -85,8 +119,8 @@ export default function TourInfo({ tour, categories, onRefresh }: { tour: Tour; 
 
   useEffect(() => { fetch(`${API}/services/all`).then(r => r.json()).then(d => setHotels(d.data?.filter((s: any) => s.type === "hotel") || [])); }, []);
 
-  const saveField = async (patch: Partial<{ name: string; status: string; hotel_id: string; category_id: string; start_location: string }>) => {
-    const merged = { name: tour.name, status: tour.status, hotel_id: tour.hotel_id?._id, category_id: tour.category_id?._id, start_location: tour.start_location, ...patch };
+  const saveField = async (patch: Partial<{ name: string; status: string; hotel_id: string; category_id: string; start_location: string; duration: number }>) => {
+    const merged = { name: tour.name, status: tour.status, hotel_id: tour.hotel_id?._id, category_id: tour.category_id?._id, start_location: tour.start_location, duration: tour.duration, ...patch };
     const res = await fetch(`${API}/tours/update/${tour.slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(merged) });
     const data = await res.json();
     if (data.success) { onRefresh(); if (data.data.slug !== tour.slug) router.push(`/admin/tours/${data.data.slug}`); }
@@ -163,29 +197,32 @@ export default function TourInfo({ tour, categories, onRefresh }: { tour: Tour; 
           )} />
       </div>
 
-      {/* Khách sạn */}
+      {/* Duration */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-1">
-          <SectionTitle>Khách sạn</SectionTitle>
-          <button onClick={() => setShowHotelModal(true)} className="flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-xl border-none cursor-pointer transition-colors">+ Thêm mới</button>
-        </div>
-        <InlineField label="Khách sạn hiện tại" value={tour.hotel_id?._id || ""} icon="🏨" onSave={val => saveField({ hotel_id: val })}
-          renderDisplay={() => selectedHotel ? (
-            <div className="flex items-center gap-3 mt-1 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2.5">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 mb-0.5"><span className="text-amber-400 text-sm">{"★".repeat(selectedHotel.rating ?? 0)}</span><span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">{selectedHotel.rating ?? 0} sao</span></div>
-                <p className="text-sm font-bold text-gray-800">{selectedHotel.serviceName}</p>
-                {(selectedHotel.address || selectedHotel.city) && <p className="text-[11px] text-gray-500 mt-0.5">📍 {[selectedHotel.address, selectedHotel.city].filter(Boolean).join(", ")}</p>}
+        <SectionTitle>Thời lượng tour</SectionTitle>
+        {!tour.duration ? (
+          <DurationSetForm onSave={async (n) => { await saveField({ duration: n } as any); }} />
+        ) : (
+          <InlineField label="Số ngày" value={String(tour.duration)} icon="📅"
+            onSave={async val => {
+              const n = Number(val);
+              if (!n || n < 1) return alert("Số ngày phải lớn hơn 0");
+              await saveField({ duration: n } as any);
+            }}
+            renderDisplay={val => (
+              <span className="text-sm font-bold text-gray-800">{val} ngày {Number(val) - 1} đêm</span>
+            )}
+            renderEdit={(val, set) => (
+              <div className="space-y-2">
+                <input type="number" min={1} max={30} value={val}
+                  onChange={e => set(e.target.value)}
+                  className="w-full border border-orange-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 transition-all" />
+                {val && Number(val) > 0 && (
+                  <p className="text-xs text-orange-500 font-semibold">= {val} ngày {Number(val) - 1} đêm</p>
+                )}
               </div>
-              {selectedHotel.basePrice !== undefined && <div className="text-right shrink-0"><p className="text-[10px] text-gray-400 font-semibold">Giá/đêm</p><p className="text-base font-black text-orange-500">{selectedHotel.basePrice.toLocaleString("vi-VN")}đ</p></div>}
-            </div>
-          ) : <span className="text-sm text-gray-300 italic">Chưa chọn</span>}
-          renderEdit={(val, set) => (
-            <select value={val} onChange={e => set(e.target.value)} className="w-full border border-orange-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-100 bg-white cursor-pointer">
-              <option value="">-- Chọn khách sạn --</option>
-              {hotels.map(h => <option key={h._id} value={h._id}>{h.serviceName} {h.city ? `(${h.city})` : ""}</option>)}
-            </select>
-          )} />
+            )} />
+        )}
       </div>
 
       {/* Danh mục */}
