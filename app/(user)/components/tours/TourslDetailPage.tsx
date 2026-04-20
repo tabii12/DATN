@@ -57,36 +57,6 @@ interface TourAPI {
   sale?: { discount: number } | null;
 }
 
-// ─────────────────────────── PRICING LOGIC (ivivu exact) ───────────────────────────
-/*
-  CÔNG THỨC CHÍNH XÁC — reverse-engineered từ số thực ivivu (9/9 case verified):
-
-  3 nhóm khách:
-  ┌──────────┬──────────┬─────────────────────────────────────────────────────┐
-  │ Nhóm     │ Độ tuổi  │ Giá                                                 │
-  ├──────────┼──────────┼─────────────────────────────────────────────────────┤
-  │ NL       │ > 9 tuổi │ 100% base (cố định)                                 │
-  │ Trẻ em   │ 5–9 tuổi │ base × (1 − 1/((2×NL+1)×TE))  khi TN_free < TE    │
-  │          │          │ = 100% base                     khi TN_free ≥ TE    │
-  │ Trẻ nhỏ  │ < 5 tuổi │ Miễn phí nếu trong quota                           │
-  │          │          │ base × TN_paid / (TN_paid + TN_free) nếu vượt       │
-  └──────────┴──────────┴─────────────────────────────────────────────────────┘
-
-  Quota TN_free = NL − 1
-  (2NL → quota=1, 3NL → quota=2, 4NL → quota=3, ...)
-
-  Ví dụ base=4.390.000:
-  2NL+1TE        → TE = 4.39M×(1−1/5)   = 3.512.000
-  2NL+2TE        → TE = 4.39M×(1−1/10)  = 3.951.000
-  2NL+3TE        → TE = 4.39M×(1−1/15)  = 4.097.333
-  2NL+0TE+1TN    → TN = 0 (free, quota=1)
-  2NL+0TE+2TN    → TN_paid = 4.39M×1/2  = 2.195.000
-  2NL+0TE+3TN    → TN_paid = 4.39M×2/3  = 2.926.667
-  3NL+0TE+3TN    → TN_paid = 4.39M×1/3  = 1.463.333
-  2NL+1TE+1TN    → TE = 4.39M (TN_free≥TE), TN = 0 (free)
-  2NL+1TE+2TN    → TE = 4.39M (TN_free≥TE), TN_paid = 2.195.000
-*/
-
 interface PriceBreakdown {
   adultCount: number;
   adultPrice: number;
