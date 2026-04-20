@@ -2,53 +2,71 @@
 import { useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-const VNP_HASH_SECRET = "MT2SFAQ1GR8B26P4F0RKNFAC1UOHY9PO"; // Same as api/payment/vnpay
+const VNP_HASH_SECRET = "MT2SFAQ1GR8B26P4F0RKNFAC1UOHY9PO";
 
 function VnpayReturnPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
-    const params = Object.fromEntries(searchParams.entries());
+    const handleReturn = async () => {
+      const params = Object.fromEntries(searchParams.entries());
 
-    // 1. Kiểm tra và verify vnp_SecureHash
-    const receivedHash = params.vnp_SecureHash;
-    delete params.vnp_SecureHash;
+      const receivedHash = params.vnp_SecureHash;
+      delete params.vnp_SecureHash;
 
-    // Sort params theo alphabet + tạo signature
-    const sortedParams = Object.keys(params)
-      .sort()
-      .reduce(
-        (acc, key) => {
+      const sortedParams = Object.keys(params)
+        .sort()
+        .reduce((acc, key) => {
           acc[key] = params[key];
           return acc;
-        },
-        {} as Record<string, string>,
-      );
+        }, {} as Record<string, string>);
 
-    const signData = new URLSearchParams(sortedParams).toString();
-    const calculatedHash = require("crypto")
-      .createHmac("sha512", VNP_HASH_SECRET)
-      .update(signData)
-      .digest("hex");
+      const signData = new URLSearchParams(sortedParams).toString();
 
-    const isValid = receivedHash === calculatedHash;
+      const calculatedHash = require("crypto")
+        .createHmac("sha512", VNP_HASH_SECRET)
+        .update(signData)
+        .digest("hex");
 
-    // 2. Redirect confirmation với status
-    if (isValid && params.vnp_ResponseCode === "00") {
-      // Success - forward tất cả vnpay params
-      const query = new URLSearchParams(params).toString();
-      router.replace(`/checkout/confirmation?${query}&status=success`);
-    } else {
-      // Failed - chỉ forward error info
-      const errorParams = new URLSearchParams({
-        vnp_ResponseCode: params.vnp_ResponseCode || "99",
-        vnp_TxnRef: params.vnp_TxnRef || "",
-        status: "failed",
-        message: params.vnp_ResponseDescription || "Xác thực thất bại",
-      }).toString();
-      router.replace(`/checkout/confirmation?${errorParams}`);
-    }
+      const isValid = receivedHash === calculatedHash;
+
+      const txnRef = params.vnp_TxnRef;
+      const amount = Number(params.vnp_Amount) / 100; // 👈 đã gồm 500k
+
+      if (isValid && params.vnp_ResponseCode === "00") {
+        try {
+          // 🔥 FIX QUAN TRỌNG: UPDATE BOOKING
+          await fetch("https://db-pickyourway.vercel.app/api/bookings/update-payment", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              txnRef,
+              status: "paid",
+              total_price: amount, // 👈 giữ nguyên tiền từ VNPay
+            }),
+          });
+        } catch (err) {
+          console.error("Update booking error:", err);
+        }
+
+        const query = new URLSearchParams(params).toString();
+        router.replace(`/checkout/confirmation?${query}&status=success`);
+      } else {
+        const errorParams = new URLSearchParams({
+          vnp_ResponseCode: params.vnp_ResponseCode || "99",
+          vnp_TxnRef: params.vnp_TxnRef || "",
+          status: "failed",
+          message: params.vnp_ResponseDescription || "Xác thực thất bại",
+        }).toString();
+
+        router.replace(`/checkout/confirmation?${errorParams}`);
+      }
+    };
+
+    handleReturn();
   }, [searchParams, router]);
 
   return (
@@ -64,23 +82,6 @@ function VnpayReturnPage() {
             Đang xử lý...
           </h2>
           <p className="text-gray-500">Xác thực thanh toán VNPay</p>
-        </div>
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span>Mã giao dịch:</span>
-            <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs">
-              {searchParams.get("vnp_TxnRef") || "Đang tải..."}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span>Mã phản hồi:</span>
-            <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs">
-              {searchParams.get("vnp_ResponseCode") || "Đang tải..."}
-            </span>
-          </div>
-        </div>
-        <div className="mt-8 text-center text-sm text-gray-500">
-          Sẽ chuyển hướng trong 3s...
         </div>
       </div>
     </div>
