@@ -80,30 +80,47 @@ export default function BookingsPage() {
         const raw = json.data || [];
 
         const normalized: Booking[] = raw.map((b: any) => {
-          const basePrice = Number(b.basePrice || 0);
+          // 🔥 LẤY GIÁ TỪ BE (QUAN TRỌNG NHẤT)
+          let total = Number(b.total_price || 0);
+
+          // fix case BE trả sai đơn vị
+          if (total > 100000000) total = total / 100;
+
+          // fallback nếu BE chưa có
+          const basePrice = Number(
+            b.basePrice ||
+            b.trip_id?.price ||
+            0
+          );
+
           const adults = Number(b.adults || 0);
           const children = Number(b.children || 0);
           const infants = Number(b.infants || 0);
           const singleRooms = Number(b.singleRooms || 0);
 
-          const insuranceFee = 500000; // FIX
+          const insuranceFee = 500000;
 
-          // 👉 TÍNH LẠI 100% (KHÔNG DÙNG b.total)
-          const adultTotal = adults * basePrice;
-          const childTotal = children * basePrice;
-          const singleRoomFee = singleRooms * 656775;
+          // 👉 chỉ tính khi total = 0
+          if (!total) {
+            const adultTotal = adults * basePrice;
+            const childTotal = children * basePrice;
+            const singleRoomFee = singleRooms * 656775;
 
-          const total =
-            adultTotal +
-            childTotal +
-            singleRoomFee +
-            insuranceFee;
+            total =
+              adultTotal +
+              childTotal +
+              singleRoomFee +
+              insuranceFee;
+          }
 
           return {
             id: b._id,
             tourId: b.trip_id?._id || "",
-            tourName: b.tourName,
-            thumbnail: b.thumbnail,
+            tourName: b.tourName || b.trip_id?.title || "Không có tên",
+            thumbnail:
+              b.thumbnail ||
+              b.trip_id?.thumbnail ||
+              "https://via.placeholder.com/400x300",
 
             adults,
             children,
@@ -116,7 +133,9 @@ export default function BookingsPage() {
             insuranceFee,
 
             departureDate: b.departureDate,
-            status: b.status,
+
+            // 🔥 FIX STATUS
+            status: (b.status || "").toLowerCase(),
 
             contactName: b.contactName,
             contactEmail: b.contactEmail,
@@ -172,7 +191,10 @@ export default function BookingsPage() {
 
           <MenuItem icon={<Lock size={18} />} label="Đổi mật khẩu" href="/change-password" />
 
-          <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50"
+          >
             <LogOut size={18} />
             Đăng xuất
           </button>
@@ -183,61 +205,52 @@ export default function BookingsPage() {
       <div className="flex-1 space-y-6">
         <h1 className="text-2xl font-bold">Tour đã đặt</h1>
 
-        {bookings.map((b) => {
-          const adultTotal = b.adults * b.basePrice;
-          const childTotal = b.children * b.basePrice;
-          const singleRoomFee = b.singleRooms * 656775;
+        {bookings.map((b) => (
+          <div key={b.id} className="bg-white p-5 rounded-xl shadow space-y-4">
+            <div className="flex gap-5">
+              <img
+                src={b.thumbnail}
+                className="w-56 h-40 object-cover rounded-xl"
+              />
 
-          return (
-            <div key={b.id} className="bg-white p-5 rounded-xl shadow space-y-4">
-              <div className="flex gap-5">
-                <img src={b.thumbnail} className="w-56 h-40 object-cover rounded-xl" />
+              <div className="flex-1 space-y-2">
+                <p className="font-bold text-lg">{b.tourName}</p>
 
-                <div className="flex-1 space-y-2">
-                  <p className="font-bold text-lg">{b.tourName}</p>
+                <p>
+                  👨‍👩‍👧 {b.adults} NL - {b.children} TE -{" "}
+                  {b.infants > 0 ? b.infants + " TN" : "0 TN"}
+                </p>
 
-                  <p>👨‍👩‍👧 {b.adults} NL - {b.children} TE - {b.infants} TN</p>
+                <p className="text-xl font-bold text-indigo-600">
+                  {formatVND(b.total)}
+                </p>
 
-                  <div className="bg-gray-50 p-3 rounded-lg text-sm space-y-1">
-                    <p>Người lớn: {formatVND(adultTotal)}</p>
-                    <p>Trẻ em: {formatVND(childTotal)}</p>
-                    <p>Trẻ nhỏ: {b.infants > 0 ? "Miễn phí" : "0đ"}</p>
-                    <p>Phòng đơn: {formatVND(singleRoomFee)}</p>
-                    <p>Bảo hiểm: {formatVND(b.insuranceFee)}</p>
+                <p>
+                  Ngày đi:{" "}
+                  {new Date(b.departureDate).toLocaleDateString("vi-VN")}
+                </p>
 
-                    <hr />
+                <p>
+                  Trạng thái:{" "}
+                  <span className="font-semibold">
+                    {b.status === "paid"
+                      ? "Đã thanh toán"
+                      : "Chờ thanh toán"}
+                  </span>
+                </p>
 
-                    <p className="font-bold text-indigo-600">
-                      Tổng: {formatVND(b.total)}
-                    </p>
-                  </div>
-
-                  <p>
-                    Ngày đi: {new Date(b.departureDate).toLocaleDateString("vi-VN")}
-                  </p>
-
-                  <p>
-                    Trạng thái:{" "}
-                    <span className="font-semibold">
-                      {b.status === "paid"
-                        ? "Đã thanh toán"
-                        : "Chờ thanh toán"}
-                    </span>
-                  </p>
-
-                  {isTourCompleted(b) && (
-                    <button
-                      onClick={() => setReviewBooking(b)}
-                      className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded flex items-center gap-2"
-                    >
-                      <Star size={14} /> Đánh giá
-                    </button>
-                  )}
-                </div>
+                {isTourCompleted(b) && (
+                  <button
+                    onClick={() => setReviewBooking(b)}
+                    className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded flex items-center gap-2"
+                  >
+                    <Star size={14} /> Đánh giá
+                  </button>
+                )}
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       {reviewBooking && (
