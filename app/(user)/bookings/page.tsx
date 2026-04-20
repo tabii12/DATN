@@ -6,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   User,
   Heart,
-  CreditCard,
   LogOut,
   Lock,
   Briefcase,
@@ -23,9 +22,17 @@ interface Booking {
   tourId: string;
   tourName: string;
   thumbnail: string;
+
   adults: number;
   children: number;
+  infants: number;
+
+  basePrice: number;
   total: number;
+
+  singleRooms: number;
+  insuranceFee: number;
+
   departureDate: string;
   status: string;
 
@@ -73,25 +80,47 @@ export default function BookingsPage() {
         const raw = json.data || [];
 
         const normalized: Booking[] = raw.map((b: any) => {
-          let total = b.total_price || 0;
-          if (total > 100000000) total = total / 100;
+          const basePrice = Number(b.basePrice || 0);
+          const adults = Number(b.adults || 0);
+          const children = Number(b.children || 0);
+          const infants = Number(b.infants || 0);
+          const singleRooms = Number(b.singleRooms || 0);
+
+          const insuranceFee = 500000; // FIX
+
+          // 👉 TÍNH LẠI 100% (KHÔNG DÙNG b.total)
+          const adultTotal = adults * basePrice;
+          const childTotal = children * basePrice;
+          const singleRoomFee = singleRooms * 656775;
+
+          const total =
+            adultTotal +
+            childTotal +
+            singleRoomFee +
+            insuranceFee;
 
           return {
             id: b._id,
             tourId: b.trip_id?._id || "",
-            tourName: b.tourName || "Không có tên",
-            thumbnail:
-              b.thumbnail ||
-              "https://via.placeholder.com/400x300?text=No+Image",
-            adults: Number(b.adults || 0),
-            children: Number(b.children || 0),
-            total: Number(total),
+            tourName: b.tourName,
+            thumbnail: b.thumbnail,
+
+            adults,
+            children,
+            infants,
+
+            basePrice,
+            total,
+
+            singleRooms,
+            insuranceFee,
+
             departureDate: b.departureDate,
             status: b.status,
 
-            contactName: b.contactName || userData?.name || "Không có",
-            contactEmail: b.contactEmail || userData?.email || "Không có",
-            contactPhone: b.contactPhone || userData?.phone || "Không có",
+            contactName: b.contactName,
+            contactEmail: b.contactEmail,
+            contactPhone: b.contactPhone,
           };
         });
 
@@ -122,105 +151,77 @@ export default function BookingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex gap-6">
-
-      {/* ===== SIDEBAR GIỐNG PROFILE ===== */}
+      {/* SIDEBAR */}
       <div className="w-72 bg-white rounded-2xl shadow-lg p-5">
-
-        {/* User */}
         <div className="flex items-center gap-3 pb-5 border-b">
           <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white flex items-center justify-center font-bold">
             {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
           </div>
           <div>
-            <p className="font-semibold">{user?.name || "User"}</p>
+            <p className="font-semibold">{user?.name}</p>
             <p className="text-sm text-gray-500">{user?.email}</p>
           </div>
         </div>
 
-        {/* Menu */}
         <div className="mt-4 space-y-1">
-
-          <MenuItem
-            icon={<User size={18} />}
-            label="Thông tin cá nhân"
-            href="/profile"
-            active={pathname === "/profile"}
-          />
-
-          <MenuItem
-            icon={<Briefcase size={18} />}
-            label="Tour đã đặt"
-            href="/bookings"
-            active={pathname === "/bookings"}
-          />
-
-          <MenuItem
-            icon={<Heart size={18} />}
-            label="Tour yêu thích"
-            href="/favorites"
-            active={pathname === "/favorites"}
-          />
+          <MenuItem icon={<User size={18} />} label="Thông tin cá nhân" href="/profile" active={pathname === "/profile"} />
+          <MenuItem icon={<Briefcase size={18} />} label="Tour đã đặt" href="/bookings" active />
+          <MenuItem icon={<Heart size={18} />} label="Tour yêu thích" href="/favorites" active={pathname === "/favorites"} />
 
           <div className="border-t my-3"></div>
 
-          <MenuItem
-            icon={<Lock size={18} />}
-            label="Đổi mật khẩu"
-            href="/change-password"
-            active={pathname === "/change-password"}
-          />
+          <MenuItem icon={<Lock size={18} />} label="Đổi mật khẩu" href="/change-password" />
 
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition"
-          >
+          <button onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-50">
             <LogOut size={18} />
             Đăng xuất
           </button>
         </div>
       </div>
 
-      {/* ===== CONTENT ===== */}
+      {/* CONTENT */}
       <div className="flex-1 space-y-6">
         <h1 className="text-2xl font-bold">Tour đã đặt</h1>
 
-        {bookings.length === 0 ? (
-          <p>Chưa có đơn</p>
-        ) : (
-          bookings.map((b) => (
+        {bookings.map((b) => {
+          const adultTotal = b.adults * b.basePrice;
+          const childTotal = b.children * b.basePrice;
+          const singleRoomFee = b.singleRooms * 656775;
+
+          return (
             <div key={b.id} className="bg-white p-5 rounded-xl shadow space-y-4">
-
               <div className="flex gap-5">
-                <img
-                  src={b.thumbnail}
-                  className="w-56 h-40 object-cover rounded-xl"
-                />
+                <img src={b.thumbnail} className="w-56 h-40 object-cover rounded-xl" />
 
-                <div className="flex-1 space-y-1">
+                <div className="flex-1 space-y-2">
                   <p className="font-bold text-lg">{b.tourName}</p>
 
-                  <p>
-                    👨‍👩‍👧 {b.adults} NL - {b.children} TE
-                  </p>
+                  <p>👨‍👩‍👧 {b.adults} NL - {b.children} TE - {b.infants} TN</p>
 
-                  <p className="text-indigo-600 font-bold text-xl">
-                    {formatVND(b.total)}
-                  </p>
+                  <div className="bg-gray-50 p-3 rounded-lg text-sm space-y-1">
+                    <p>Người lớn: {formatVND(adultTotal)}</p>
+                    <p>Trẻ em: {formatVND(childTotal)}</p>
+                    <p>Trẻ nhỏ: {b.infants > 0 ? "Miễn phí" : "0đ"}</p>
+                    <p>Phòng đơn: {formatVND(singleRoomFee)}</p>
+                    <p>Bảo hiểm: {formatVND(b.insuranceFee)}</p>
+
+                    <hr />
+
+                    <p className="font-bold text-indigo-600">
+                      Tổng: {formatVND(b.total)}
+                    </p>
+                  </div>
 
                   <p>
-                    Ngày đi:{" "}
-                    {new Date(b.departureDate).toLocaleDateString("vi-VN")}
+                    Ngày đi: {new Date(b.departureDate).toLocaleDateString("vi-VN")}
                   </p>
 
                   <p>
                     Trạng thái:{" "}
                     <span className="font-semibold">
-                      {b.status === "confirmed"
+                      {b.status === "paid"
                         ? "Đã thanh toán"
-                        : b.status === "pending"
-                        ? "Chờ thanh toán"
-                        : "Đã hủy"}
+                        : "Chờ thanh toán"}
                     </span>
                   </p>
 
@@ -235,11 +236,10 @@ export default function BookingsPage() {
                 </div>
               </div>
             </div>
-          ))
-        )}
+          );
+        })}
       </div>
 
-      {/* MODAL */}
       {reviewBooking && (
         <CommentForm
           tourId={reviewBooking.tourId}
@@ -251,20 +251,18 @@ export default function BookingsPage() {
   );
 }
 
-/* ===== MENU ITEM ===== */
 function MenuItem({ icon, label, href, active = false }: any) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
-      ${
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl ${
         active
-          ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md"
-          : "text-gray-700 hover:bg-gray-100"
+          ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white"
+          : "hover:bg-gray-100"
       }`}
     >
       {icon}
-      <span className="font-medium">{label}</span>
+      {label}
     </Link>
   );
 }
