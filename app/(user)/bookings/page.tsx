@@ -55,11 +55,7 @@ export default function BookingsPage() {
       const token = localStorage.getItem("token");
       const u = localStorage.getItem("user");
 
-      let userData = null;
-      if (u) {
-        userData = JSON.parse(u);
-        setUser(userData);
-      }
+      if (u) setUser(JSON.parse(u));
 
       if (!token) {
         router.push("/auth/login");
@@ -80,13 +76,12 @@ export default function BookingsPage() {
         const raw = json.data || [];
 
         const normalized: Booking[] = raw.map((b: any) => {
-          // 🔥 LẤY GIÁ TỪ BE (QUAN TRỌNG NHẤT)
+          // ✅ ƯU TIÊN TOTAL TỪ BE
           let total = Number(b.total_price || 0);
 
-          // fix case BE trả sai đơn vị
+          // fix VNPay x100
           if (total > 100000000) total = total / 100;
 
-          // fallback nếu BE chưa có
           const basePrice = Number(
             b.basePrice ||
             b.trip_id?.price ||
@@ -100,7 +95,13 @@ export default function BookingsPage() {
 
           const insuranceFee = 500000;
 
-          // 👉 chỉ tính khi total = 0
+          // 🔥 FIX QUAN TRỌNG:
+          // Nếu BE có total nhưng chưa có bảo hiểm → cộng thêm
+          if (total && total < 500000) {
+            total += insuranceFee;
+          }
+
+          // 👉 fallback nếu BE chưa lưu total
           if (!total) {
             const adultTotal = adults * basePrice;
             const childTotal = children * basePrice;
@@ -134,7 +135,6 @@ export default function BookingsPage() {
 
             departureDate: b.departureDate,
 
-            // 🔥 FIX STATUS
             status: (b.status || "").toLowerCase(),
 
             contactName: b.contactName,
@@ -221,6 +221,7 @@ export default function BookingsPage() {
                   {b.infants > 0 ? b.infants + " TN" : "0 TN"}
                 </p>
 
+                {/* 🔥 GIÁ CHUẨN */}
                 <p className="text-xl font-bold text-indigo-600">
                   {formatVND(b.total)}
                 </p>
