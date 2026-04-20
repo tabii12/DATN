@@ -27,8 +27,8 @@ export default function ChangePasswordPage() {
     if (u) setUser(JSON.parse(u));
   }, []);
 
-  // ✅ CHECK GOOGLE USER
-  const isGoogleUser = user?.provider === "google";
+  // ✅ FIX CHUẨN Ở ĐÂY (CHỈ SỬA DÒNG NÀY)
+  const isGoogleUser = user?.isGoogleLogin === true;
 
   // ===== CHANGE PASSWORD =====
   const handleChangePassword = async () => {
@@ -76,7 +76,7 @@ export default function ChangePasswordPage() {
         }
       );
 
-      // ✅ THÊM LOGOUT SAU KHI ĐỔI MẬT KHẨU
+      // ✅ LOGOUT SAU KHI ĐỔI MẬT KHẨU
       alert("🎉 Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
 
       localStorage.clear();
