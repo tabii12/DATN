@@ -39,7 +39,7 @@ export default function ChangePasswordPage() {
 
   // ===== CHANGE PASSWORD =====
   const handleChangePassword = async () => {
-    // ✅ CHẶN NGAY TỪ ĐẦU (FIX QUAN TRỌNG NHẤT)
+    // ✅ CHẶN NGAY TỪ ĐẦU
     if (user?.isGoogleLogin) {
       alert("Tài khoản Google không thể đổi mật khẩu!");
       return;
@@ -128,7 +128,10 @@ export default function ChangePasswordPage() {
 
           <div className="border-t my-3"></div>
 
-          <MenuItem icon={<Lock size={18} />} label="Đổi mật khẩu" active />
+          {/* ✅ ẨN ĐỔI MẬT KHẨU NẾU LÀ GOOGLE USER */}
+          {!isGoogleUser && (
+            <MenuItem icon={<Lock size={18} />} label="Đổi mật khẩu" active />
+          )}
 
           <button
             onClick={handleLogout}
