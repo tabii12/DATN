@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import TourIsCommingSoon from "./dashboard/tourIsCommingSoon/page";
 
 const API = "https://db-pickyourway.vercel.app/api";
 
@@ -364,6 +365,8 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+
+        <TourIsCommingSoon />
       </div>
     </div>
   );
