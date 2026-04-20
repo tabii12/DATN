@@ -76,16 +76,13 @@ export default function BookingsPage() {
         const raw = json.data || [];
 
         const normalized: Booking[] = raw.map((b: any) => {
-          // ✅ ƯU TIÊN TOTAL TỪ BE
           let total = Number(b.total_price || 0);
 
           // fix VNPay x100
           if (total > 100000000) total = total / 100;
 
           const basePrice = Number(
-            b.basePrice ||
-            b.trip_id?.price ||
-            0
+            b.basePrice || b.trip_id?.price || 0
           );
 
           const adults = Number(b.adults || 0);
@@ -95,14 +92,11 @@ export default function BookingsPage() {
 
           const insuranceFee = 500000;
 
-          // 🔥 FIX QUAN TRỌNG:
-          // Nếu BE có total nhưng chưa có bảo hiểm → cộng thêm
-          if (total && total < 500000) {
-            total += insuranceFee;
-          }
+          // 🔥 LUÔN CỘNG 500K
+          total = total + insuranceFee;
 
-          // 👉 fallback nếu BE chưa lưu total
-          if (!total) {
+          // 👉 nếu BE không có total thì tự tính
+          if (!b.total_price) {
             const adultTotal = adults * basePrice;
             const childTotal = children * basePrice;
             const singleRoomFee = singleRooms * 656775;
@@ -221,7 +215,6 @@ export default function BookingsPage() {
                   {b.infants > 0 ? b.infants + " TN" : "0 TN"}
                 </p>
 
-                {/* 🔥 GIÁ CHUẨN */}
                 <p className="text-xl font-bold text-indigo-600">
                   {formatVND(b.total)}
                 </p>
