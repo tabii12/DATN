@@ -27,23 +27,25 @@ export default function ChangePasswordPage() {
     if (u) setUser(JSON.parse(u));
   }, []);
 
-  // ✅ FIX CHUẨN Ở ĐÂY (CHỈ SỬA DÒNG NÀY)
+  // ✅ CHECK GOOGLE USER
   const isGoogleUser = user?.isGoogleLogin === true;
-// ✅ AUTO THÔNG BÁO NGAY KHI VÀO TRANG
-useEffect(() => {
-  if (user?.isGoogleLogin) {
-    alert("Tài khoản Google không thể đổi mật khẩu!");
-  }
-}, [user]);
+
+  // ✅ AUTO THÔNG BÁO NGAY KHI VÀO TRANG
+  useEffect(() => {
+    if (user?.isGoogleLogin) {
+      alert("Tài khoản Google không thể đổi mật khẩu!");
+    }
+  }, [user]);
+
   // ===== CHANGE PASSWORD =====
   const handleChangePassword = async () => {
-    try {
-      // ✅ CHẶN GOOGLE USER
-      if (isGoogleUser) {
-        alert("Tài khoản Google không thể đổi mật khẩu!");
-        return;
-      }
+    // ✅ CHẶN NGAY TỪ ĐẦU (FIX QUAN TRỌNG NHẤT)
+    if (user?.isGoogleLogin) {
+      alert("Tài khoản Google không thể đổi mật khẩu!");
+      return;
+    }
 
+    try {
       if (!currentPassword || !newPassword || !confirmPassword) {
         alert("Vui lòng nhập đầy đủ thông tin!");
         return;
@@ -81,7 +83,6 @@ useEffect(() => {
         }
       );
 
-      // ✅ LOGOUT SAU KHI ĐỔI MẬT KHẨU
       alert("🎉 Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
 
       localStorage.clear();
@@ -146,7 +147,6 @@ useEffect(() => {
             🔒 Đổi mật khẩu
           </h1>
 
-          {/* ✅ THÔNG BÁO GOOGLE */}
           {isGoogleUser && (
             <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-lg text-sm text-center">
               Bạn đang đăng nhập bằng Google nên không thể đổi mật khẩu.
@@ -218,7 +218,6 @@ useEffect(() => {
   );
 }
 
-// ===== MENU ITEM =====
 function MenuItem({ icon, label, active = false, onClick }: any) {
   return (
     <div
