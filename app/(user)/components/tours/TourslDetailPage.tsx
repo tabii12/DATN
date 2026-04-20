@@ -187,6 +187,7 @@ function StarRating({ count }: { count: number }) {
 }
 
 function scoreFromRating(s: number) {
+  if (!s || isNaN(s)) return 8.0;
   return Math.min(9.9, parseFloat((s * 1.8 + 0.8).toFixed(1)));
 }
 function scoreLabel(s: number) {
@@ -288,6 +289,8 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const [commentRefresh, setCommentRefresh] = useState(0);
+  const [latestComment, setLatestComment] = useState<{ user_name: string; rating: number; content: string; createdAt: string } | null>(null);
+  const [avgCommentRating, setAvgCommentRating] = useState<number | null>(null);
 
   // ── Booking state ──
   const [adults, setAdults] = useState(2);
@@ -374,6 +377,26 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [slug]);
 
+  useEffect(() => {
+    if (!tour?._id) return;
+    fetch(`https://db-pickyourway.vercel.app/api/comments/tour/${tour._id}`)
+      .then((r) => r.json())
+      .then((res) => {
+        const list = res.data ?? [];
+        if (list.length > 0) {
+          const sorted = [...list].sort((a: { createdAt: string }, b: { createdAt: string }) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setLatestComment(sorted[0]);
+          const avg = list.reduce((s: number, c: { rating: number }) => s + (c.rating || 0), 0) / list.length;
+          setAvgCommentRating(avg);
+        } else {
+          setAvgCommentRating(null);
+        }
+      })
+      .catch(() => {});
+  }, [tour?._id, commentRefresh]);
+
   const handleBook = () => {
     if (!selectedTripId) return;
     const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("token");
@@ -446,9 +469,11 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
   const hotel = tour.hotel_id;
   const images = tour.images ?? [];
-  const score = scoreFromRating(hotel.rating);
-  const label = scoreLabel(score);
-  const scoreColor = score >= 9.0 ? "bg-green-600" : "bg-lime-500";
+  const score = avgCommentRating !== null
+    ? Math.min(9.9, parseFloat((avgCommentRating * 1.8 + 0.8).toFixed(1)))
+    : null;
+  const label = score !== null ? scoreLabel(score) : null;
+  const scoreColor = score !== null ? (score >= 9.0 ? "bg-green-600" : "bg-lime-500") : "bg-gray-400";
 
   const FAKE_IMGS = [
     "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80",
@@ -532,22 +557,44 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   </div>
                   <div className="flex-1 border border-gray-200 rounded-lg overflow-hidden bg-white flex flex-col">
                     <div className="flex items-center gap-2.5 px-3 py-2.5">
-                      <span className={`text-xl font-black text-white ${scoreColor} px-2 py-0.5 rounded-md leading-tight`}>{score.toFixed(1)}</span>
-                      <span className="text-sm font-bold text-green-600">{label}</span>
+                      <span className={`text-xl font-black text-white ${scoreColor} px-2 py-0.5 rounded-md leading-tight`}>
+                        {score !== null ? score.toFixed(1) : "—"}
+                      </span>
+                      <span className="text-sm font-bold text-green-600">{label ?? "Chưa có đánh giá"}</span>
                     </div>
                     <div className="h-px bg-gray-100" />
-                    <div className="flex-1 p-3 flex flex-col justify-between">
-                      <p className="text-xs text-gray-600 leading-relaxed line-clamp-5">
-                        Dịch vụ tại {hotel.name} thì mình thấy rất ok, chuyến đi mọi thứ rất tốt. Hướng dẫn viên nhiệt tình, chu đáo trong suốt hành trình.
-                      </p>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[10px] font-bold text-orange-500 shrink-0">TD</div>
-                          <span className="text-xs font-semibold text-gray-700">Chu Kha</span>
+                    {latestComment ? (
+                      <div className="flex-1 p-3 flex flex-col justify-between">
+                        <div className="flex gap-0.5 mb-1">
+                          {Array.from({ length: Math.min(5, Math.max(0, latestComment.rating || 0)) }).map((_, i) => (
+                            <svg key={i} className="w-3 h-3 fill-amber-400" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
+                          {Array.from({ length: 5 - Math.min(5, Math.max(0, latestComment.rating || 0)) }).map((_, i) => (
+                            <svg key={i} className="w-3 h-3 fill-gray-200" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
                         </div>
-                        <span className="text-[11px] text-gray-400">05-04-2026</span>
+                        <p className="text-xs text-gray-600 leading-relaxed line-clamp-4">{latestComment.content}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[10px] font-bold text-orange-500 shrink-0">
+                              {latestComment.user_name.slice(0, 2).toUpperCase()}
+                            </div>
+                            <span className="text-xs font-semibold text-gray-700">{latestComment.user_name}</span>
+                          </div>
+                          <span className="text-[11px] text-gray-400">
+                            {new Date(latestComment.createdAt).toLocaleDateString("vi-VN")}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex-1 p-3 flex items-center justify-center">
+                        <p className="text-xs text-gray-400 italic">Chưa có đánh giá nào</p>
+                      </div>
+                    )}
                     <div className="h-px bg-gray-100" />
                     <button onClick={scrollToReview} className="py-2 text-xs font-semibold text-orange-500 hover:bg-orange-50 transition-colors w-full bg-transparent border-none cursor-pointer">
                       Xem tất cả đánh giá
@@ -1121,7 +1168,7 @@ function ReviewSection({ hotelName, tourId }: { hotelName: string; tourId: strin
       .catch(() => setCanReview("no"));
   }, [tourId]);
 
-  const avgScore = reviews.reduce((s, r) => s + r.score, 0) / reviews.length;
+  const avgScore = reviews.length > 0 ? reviews.reduce((s, r) => s + r.score, 0) / reviews.length : 0;
   const scoreColor = avgScore >= 9 ? "bg-green-600" : avgScore >= 8 ? "bg-lime-500" : "bg-amber-500";
   const dist = [9, 8, 7, 6, 5].map((s) => ({
     label: s === 9 ? "9-10" : s === 8 ? "8-9" : s === 7 ? "7-8" : s === 6 ? "6-7" : "<6",
