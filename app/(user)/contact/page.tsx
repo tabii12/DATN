@@ -238,6 +238,7 @@ export default function ContactPage() {
               value={form.message}
               onChange={handleChange}
               rows={6}
+                  placeholder="Nhập nội dung yêu cầu của bạn..."
               className="w-full rounded-xl border p-4"
             />
             {error && ( <div className="rounded-3xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"> {error} 
