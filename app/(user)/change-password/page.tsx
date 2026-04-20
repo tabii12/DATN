@@ -29,7 +29,12 @@ export default function ChangePasswordPage() {
 
   // ✅ FIX CHUẨN Ở ĐÂY (CHỈ SỬA DÒNG NÀY)
   const isGoogleUser = user?.isGoogleLogin === true;
-
+// ✅ AUTO THÔNG BÁO NGAY KHI VÀO TRANG
+useEffect(() => {
+  if (user?.isGoogleLogin) {
+    alert("Tài khoản Google không thể đổi mật khẩu!");
+  }
+}, [user]);
   // ===== CHANGE PASSWORD =====
   const handleChangePassword = async () => {
     try {
