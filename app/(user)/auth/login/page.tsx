@@ -63,11 +63,8 @@ function LoginForm() {
         return;
       }
 
-      // ✅ FIX CHUẨN
       const token = data.token;
       const user = data.user;
-
-      console.log("TOKEN:", token);
 
       if (!token) {
         alert("Không nhận được token");
@@ -78,7 +75,6 @@ function LoginForm() {
       localStorage.setItem("user", JSON.stringify(user));
 
       window.dispatchEvent(new Event("tokenChanged"));
-
       router.push(redirectTo);
     } catch (error) {
       console.log(error);
@@ -145,9 +141,13 @@ function LoginForm() {
 
               console.log("GOOGLE RESPONSE:", res.data);
 
-              // ✅ FIX CHUẨN
               const token = res.data.token;
-              const user = res.data.user;
+
+              // ✅ FIX QUAN TRỌNG Ở ĐÂY
+              const user = {
+                ...res.data.user,
+                isGoogleLogin: true,
+              };
 
               if (!token) {
                 alert("Google login không có token");
