@@ -1,370 +1,321 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
+
 import TourIsCommingSoon from "./dashboard/tourIsCommingSoon/page";
 
 const API = "https://db-pickyourway.vercel.app/api";
 
+// ================= TYPES =================
 interface TourAPI {
   _id: string;
   name: string;
-  slug: string;
   status: string;
-  hotel_id: { name: string; city: string; price_per_night: number; rating: number };
-  category_id: { name: string } | null;
-  images: { image_url: string }[];
+}
+
+interface BookingRaw {
+  _id: string;
+  tour_id: any;
+  user_id?: any;
+  total_price?: number;
   createdAt: string;
+  vnpay?: { amount?: number };
 }
 
-interface Stats {
-  total: number;
-  active: number;
-  inactive: number;
-  cities: number;
-  avgPrice: number;
-  topCity: string;
+interface User {
+  _id: string;
+  name?: string;
+  email?: string;
+  status: string;
 }
 
-function formatVND(n: number) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "tr";
-  return n.toLocaleString("vi-VN");
-}
-
-function StatCard({
-  icon, label, value, sub, color, delay,
-}: {
-  icon: string; label: string; value: string | number;
-  sub?: string; color: string; delay: number;
-}) {
-  const [displayed, setDisplayed] = useState(0);
-  const target = typeof value === "number" ? value : 0;
-
-  useEffect(() => {
-    if (typeof value !== "number") return;
-    let start = 0;
-    const step = Math.ceil(target / 30);
-    const t = setInterval(() => {
-      start += step;
-      if (start >= target) { setDisplayed(target); clearInterval(t); }
-      else setDisplayed(start);
-    }, 30);
-    return () => clearInterval(t);
-  }, [target]);
-
+// ================= CARD =================
+function StatCard({ icon, label, value, color }: any) {
   return (
-    <div
-      className="relative bg-white rounded-2xl p-5 overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 group"
-      style={{ animationDelay: delay + "ms" }}
-    >
-      {/* Accent bar */}
+    <div className="relative bg-white rounded-2xl p-5 border shadow-sm hover:shadow-md transition">
       <div className={`absolute top-0 left-0 right-0 h-1 ${color}`} />
-      {/* Decorative circle */}
-      <div className={`absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-10 ${color}`} />
-
-      <div className="flex items-start justify-between mb-3">
-        <div className={`text-2xl w-10 h-10 rounded-xl flex items-center justify-center bg-opacity-10`}>
-          {icon}
-        </div>
+      <p className="text-xs text-gray-400 font-bold uppercase">{label}</p>
+      <p className="text-2xl font-black text-gray-900 mt-1">{value}</p>
+      <div className="absolute right-4 top-4 text-2xl opacity-70">
+        {icon}
       </div>
-      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-3xl font-black text-gray-900 leading-none">
-        {typeof value === "number" ? displayed.toLocaleString("vi-VN") : value}
-      </p>
-      {sub && <p className="text-[11px] text-gray-400 mt-1">{sub}</p>}
     </div>
   );
 }
 
-function TourRow({ tour, i }: { tour: TourAPI; i: number }) {
-  const img = tour.images?.[0]?.image_url;
-  const isActive = tour.status === "active";
+// ================= AI =================
+function predictNext7Days(bookings: BookingRaw[]) {
+  if (!bookings.length) return [];
 
-  return (
-    <tr className="border-b border-gray-50 hover:bg-orange-50/40 transition-colors group">
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-            {img
-              ? <img src={img} alt={tour.name} className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center text-lg">🏖️</div>
-            }
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-800 truncate max-w-55">{tour.name}</p>
-            <p className="text-[11px] text-gray-400">{tour.hotel_id?.city}</p>
-          </div>
-        </div>
-      </td>
-      <td className="py-3 px-4">
-        {tour.category_id
-          ? <span className="text-[11px] bg-orange-50 text-orange-500 font-semibold px-2 py-0.5 rounded-full">{tour.category_id.name}</span>
-          : <span className="text-[11px] text-gray-300">—</span>
-        }
-      </td>
-      <td className="py-3 px-4">
-        <span className="text-sm font-bold text-gray-700">
-          {tour.hotel_id?.price_per_night ? formatVND(tour.hotel_id.price_per_night) + "đ" : "—"}
-        </span>
-      </td>
-      <td className="py-3 px-4">
-        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${isActive ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
-          }`}>
-          {isActive ? "● Hoạt động" : "○ Tạm ẩn"}
-        </span>
-      </td>
-      <td className="py-3 px-4">
-        <div className="flex items-center gap-2">
-          <a href={`/tours/${tour.slug}`} target="_blank"
-            className="text-[11px] text-blue-500 hover:underline no-underline">Xem</a>
-          <span className="text-gray-200">|</span>
-          <a href={`/admin/tours/${tour.slug}`}
-            className="text-[11px] text-orange-500 hover:underline no-underline">Sửa</a>
-        </div>
-      </td>
-    </tr>
-  );
-}
+  const map: Record<string, number> = {};
 
-export default function AdminDashboard() {
-  const [tours, setTours] = useState<TourAPI[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
-  const [tab, setTab] = useState<"overview" | "tours">("overview");
-
-  useEffect(() => {
-    fetch(`${API}/tours/admin?page=1&limit=1000`)
-      .then(r => r.json())
-      .then(res => { if (res.success) setTours(res.data || []); })
-      .catch(() => { })
-      .finally(() => setLoading(false));
-  }, []);
-
-  // Tính stats
-  const stats: Stats = {
-    total: tours.length,
-    active: tours.filter(t => t.status === "active").length,
-    inactive: tours.filter(t => t.status !== "active").length,
-    cities: new Set(tours.map(t => t.hotel_id?.city).filter(Boolean)).size,
-    avgPrice: tours.length
-      ? Math.round(tours.reduce((s, t) => s + (t.hotel_id?.price_per_night || 0), 0) / tours.length)
-      : 0,
-    topCity: (() => {
-      const freq: Record<string, number> = {};
-      tours.forEach(t => { const c = t.hotel_id?.city; if (c) freq[c] = (freq[c] || 0) + 1; });
-      return Object.entries(freq).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
-    })(),
-  };
-
-  // Filter tours
-  const filtered = tours.filter(t => {
-    const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.hotel_id?.city?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === "all" || (filterStatus === "active" ? t.status === "active" : t.status !== "active");
-    return matchSearch && matchStatus;
+  bookings.forEach((b) => {
+    const key = new Date(b.createdAt).toISOString().slice(0, 10);
+    const price = b.vnpay?.amount ?? b.total_price ?? 0;
+    map[key] = (map[key] || 0) + price;
   });
 
-  // Top cities
-  const cityMap: Record<string, number> = {};
-  tours.forEach(t => { const c = t.hotel_id?.city; if (c) cityMap[c] = (cityMap[c] || 0) + 1; });
-  const topCities = Object.entries(cityMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const maxCity = topCities[0]?.[1] || 1;
+  const values = Object.values(map);
+  const avg = values.reduce((a, b) => a + b, 0) / (values.length || 1);
 
-  // Categories
-  const catMap: Record<string, number> = {};
-  tours.forEach(t => { const c = t.category_id?.name; if (c) catMap[c] = (catMap[c] || 0) + 1; });
-  const topCats = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  return Array.from({ length: 7 }).map((_, i) => ({
+    day: `D+${i + 1}`,
+    predicted: Math.round(avg * (1 + i * 0.1)),
+  }));
+}
+
+// ================= MAIN =================
+export default function AdminDashboard() {
+  const [tours, setTours] = useState<TourAPI[]>([]);
+  const [bookings, setBookings] = useState<BookingRaw[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [topTours, setTopTours] = useState<any[]>([]);
+  const [topUsers, setTopUsers] = useState<any[]>([]);
+  const [aiData, setAiData] = useState<any[]>([]);
+  const [visitorData, setVisitorData] = useState<any[]>([]);
+
+  // ================= VISITOR (FIXED SAFE) =================
+  useEffect(() => {
+    const fetchVisitors = async () => {
+      try {
+        const res = await fetch(`${API}/visitors/stats`);
+        const json = await res.json();
+
+        const data = json?.data || json || [];
+
+        setVisitorData(
+          data.map((item: any) => ({
+            name: item._id,
+            visitors: item.visitors,
+          }))
+        );
+      } catch (err) {
+        console.log("Visitor API error:", err);
+        setVisitorData([]);
+      }
+    };
+
+    fetchVisitors();
+  }, []);
+
+  // ================= FETCH =================
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const [t, b, u] = await Promise.all([
+          fetch(`${API}/tours`).then((r) => r.json()),
+          fetch(`${API}/bookings/admin/all`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((r) => r.json()),
+          fetch(`${API}/users`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((r) => r.json()),
+        ]);
+
+        setTours(t?.data || []);
+        setBookings(b?.data || []);
+        setUsers(u?.data || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // ================= REVENUE =================
+  useEffect(() => {
+    const map: Record<string, number> = {};
+
+    bookings.forEach((b) => {
+      const key = new Date(b.createdAt).toLocaleDateString("vi-VN");
+      const price = b.vnpay?.amount ?? b.total_price ?? 0;
+
+      map[key] = (map[key] || 0) + price;
+    });
+
+    setRevenueData(
+      Object.entries(map).map(([name, revenue]) => ({
+        name,
+        revenue,
+      }))
+    );
+  }, [bookings]);
+
+  // ================= TOP TOUR =================
+  useEffect(() => {
+    const map: any = {};
+
+    bookings.forEach((b) => {
+      const id = b.tour_id?._id || "unknown";
+      const name = b.tour_id?.name || "Unknown";
+      const price = b.vnpay?.amount ?? b.total_price ?? 0;
+
+      if (!map[id]) {
+        map[id] = { name, revenue: 0 };
+      }
+
+      map[id].revenue += price;
+    });
+
+    setTopTours(
+      Object.values(map)
+        .sort((a: any, b: any) => b.revenue - a.revenue)
+        .slice(0, 6)
+    );
+  }, [bookings]);
+
+  // ================= TOP USERS =================
+  useEffect(() => {
+    const map: any = {};
+
+    bookings.forEach((b) => {
+      const uid = b.user_id?._id || "unknown";
+      const name = b.user_id?.name || "User";
+      const price = b.vnpay?.amount ?? b.total_price ?? 0;
+
+      if (!map[uid]) {
+        map[uid] = { name, total: 0, count: 0 };
+      }
+
+      map[uid].total += price;
+      map[uid].count += 1;
+    });
+
+    setTopUsers(
+      Object.values(map)
+        .sort((a: any, b: any) => b.total - a.total)
+        .slice(0, 6)
+    );
+  }, [bookings]);
+
+  // ================= AI =================
+  useEffect(() => {
+    setAiData(predictNext7Days(bookings));
+  }, [bookings]);
+
+  // ================= STATS =================
+  const stats = useMemo(() => {
+    const revenue = bookings.reduce(
+      (s, b) => s + (b.vnpay?.amount ?? b.total_price ?? 0),
+      0
+    );
+
+    return {
+      tours: tours.length,
+      users: users.length,
+      bookings: bookings.length,
+      revenue,
+    };
+  }, [tours, users, bookings]);
+
+  if (loading) return <div className="p-10 text-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div>
-          <h1 className="text-lg font-black text-gray-900">📊 Dashboard</h1>
-          <p className="text-xs text-gray-400">Pick Your Way — Tổng quan hệ thống</p>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b px-6 py-4">
+        <h1 className="font-black text-lg">📊 Dashboard PRO</h1>
       </div>
 
-      <div className="max-w-full mx-auto px-4 py-6 space-y-6">
+      <div className="p-6 space-y-6">
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-          {([["overview", "Tổng quan"], ["tours", "Danh sách tour"]] as const).map(([key, label]) => (
-            <button key={key} onClick={() => setTab(key)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all border-none cursor-pointer ${tab === key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 bg-transparent hover:text-gray-700"
-                }`}>
-              {label}
-            </button>
-          ))}
+        {/* STATS */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard icon="🗺️" label="Tours" value={stats.tours} color="bg-orange-500" />
+          <StatCard icon="👤" label="Users" value={stats.users} color="bg-blue-500" />
+          <StatCard icon="📦" label="Bookings" value={stats.bookings} color="bg-purple-500" />
+          <StatCard icon="💰" label="Revenue" value={stats.revenue.toLocaleString()} color="bg-green-500" />
         </div>
 
-        {/* ── OVERVIEW TAB ── */}
-        {tab === "overview" && (
-          <>
-            {/* Stat cards */}
-            {loading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl h-28 animate-pulse border border-gray-100" />
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard icon="🗺️" label="Tổng số tours" value={stats.total} sub="Toàn bộ danh mục" color="bg-orange-500" delay={0} />
-                <StatCard icon="✅" label="Đang hoạt động" value={stats.active} sub={`${stats.inactive} tạm ẩn`} color="bg-green-500" delay={60} />
-                <StatCard icon="📍" label="Điểm đến" value={stats.cities} sub={"Phổ biến: " + stats.topCity} color="bg-blue-500" delay={120} />
-                <StatCard icon="🚫" label="Không hoạt động" value={stats.inactive} sub={`${stats.total > 0 ? Math.round(stats.inactive / stats.total * 100) : 0}% tổng số`} color="bg-red-400" delay={180} />
-              </div>
-            )}
+        {/* CHARTS */}
+        <div className="grid md:grid-cols-2 gap-6">
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Top cities bar chart */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                <h3 className="text-sm font-black text-gray-800 mb-4">📍 Tour theo điểm đến</h3>
-                {loading ? (
-                  <div className="space-y-3">
-                    {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-6 bg-gray-100 rounded animate-pulse" />)}
-                  </div>
-                ) : topCities.length === 0 ? (
-                  <p className="text-sm text-gray-400">Chưa có dữ liệu</p>
-                ) : (
-                  <div className="space-y-3">
-                    {topCities.map(([city, count]) => (
-                      <div key={city}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-semibold text-gray-600">{city}</span>
-                          <span className="text-xs text-gray-400">{count} tour</span>
-                        </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-linear-to-r from-orange-400 to-orange-500 rounded-full transition-all duration-700"
-                            style={{ width: `${(count / maxCity) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Category breakdown */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-5">
-                <h3 className="text-sm font-black text-gray-800 mb-4">🏷️ Phân loại tour</h3>
-                {loading ? (
-                  <div className="space-y-3">
-                    {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />)}
-                  </div>
-                ) : topCats.length === 0 ? (
-                  <p className="text-sm text-gray-400">Chưa có dữ liệu</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {topCats.map(([cat, count], i) => {
-                      const colors = ["bg-orange-50 text-orange-600", "bg-blue-50 text-blue-600", "bg-green-50 text-green-600", "bg-purple-50 text-purple-600"];
-                      return (
-                        <div key={cat} className={`rounded-xl p-3 ${colors[i % colors.length].split(" ")[0]}`}>
-                          <p className={`text-lg font-black ${colors[i % colors.length].split(" ")[1]}`}>{count}</p>
-                          <p className="text-[11px] text-gray-500 font-medium leading-tight mt-0.5">{cat}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Quick recent tours */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-black text-gray-800">🕐 Tour mới nhất</h3>
-                <button onClick={() => setTab("tours")} className="text-xs text-orange-500 font-semibold bg-transparent border-none cursor-pointer">Xem tất cả →</button>
-              </div>
-              {loading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />)}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {tours.slice(0, 5).map((t, i) => (
-                    <div key={t._id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
-                      <span className="text-[11px] text-gray-300 w-4 text-center font-bold">{i + 1}</span>
-                      <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                        {t.images?.[0]?.image_url
-                          ? <img src={t.images[0].image_url} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center text-sm">🏖️</div>
-                        }
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-700 truncate">{t.name}</p>
-                        <p className="text-[11px] text-gray-400">{t.hotel_id?.city} · {t.category_id?.name ?? "Chưa phân loại"}</p>
-                      </div>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${t.status === "active" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
-                        }`}>
-                        {t.status === "active" ? "Hoạt động" : "Ẩn"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* ── TOURS TAB ── */}
-        {tab === "tours" && (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            {/* Toolbar */}
-            <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 flex-wrap">
-              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 flex-1 min-w-50">
-                <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text" placeholder="Tìm tên tour, điểm đến..." value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="flex-1 text-sm bg-transparent outline-none text-gray-700 placeholder-gray-400 border-none"
-                />
-              </div>
-              <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-                {([["all", "Tất cả"], ["active", "Hoạt động"], ["inactive", "Tạm ẩn"]] as const).map(([v, l]) => (
-                  <button key={v} onClick={() => setFilterStatus(v)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${filterStatus === v ? "bg-white shadow-sm text-gray-800" : "bg-transparent text-gray-500"
-                      }`}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-              <span className="text-xs text-gray-400">{filtered.length} kết quả</span>
-            </div>
-
-            {/* Table */}
-            {loading ? (
-              <div className="p-5 space-y-3">
-                {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />)}
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="py-16 text-center text-gray-400">
-                <p className="text-4xl mb-3">🔍</p>
-                <p className="font-semibold">Không tìm thấy tour nào</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Tour</th>
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Danh mục</th>
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Giá/đêm</th>
-                      <th className="text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-4 py-3">Trạng thái</th>
-                      <th className="px-4 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((t, i) => <TourRow key={t._id} tour={t} i={i} />)}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          {/* REVENUE */}
+          <div className="bg-white p-4 rounded-2xl border h-[320px]">
+            <h2 className="font-bold mb-3">💰 Doanh thu</h2>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line dataKey="revenue" stroke="#22c55e" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-        )}
+
+          {/* TOP TOUR */}
+          <div className="bg-white p-4 rounded-2xl border h-[320px]">
+            <h2 className="font-bold mb-3">🔥 Top Tour</h2>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topTours}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="revenue" fill="#f97316" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* TOP USERS */}
+        <div className="bg-white p-5 rounded-2xl border">
+          <h2 className="font-bold mb-4">👑 Top Users chi tiêu nhiều nhất</h2>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            {topUsers.map((u: any, i) => (
+              <div key={i} className="p-4 bg-gray-50 rounded-xl border">
+                <p className="font-bold">{u.name}</p>
+                <p className="text-sm text-gray-500">{u.count} đơn</p>
+                <p className="text-orange-600 font-black">
+                  {u.total.toLocaleString()}đ
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* VISITOR */}
+        <div className="bg-white p-4 rounded-2xl border h-[280px]">
+          <h2 className="font-bold mb-3">👁 Visitors (REAL DATA)</h2>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={visitorData}>
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Line dataKey="visitors" stroke="#3b82f6" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* AI */}
+        <div className="bg-white p-4 rounded-2xl border h-[280px]">
+          <h2 className="font-bold mb-3">🤖 AI Dự đoán</h2>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={aiData}>
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip />
+              <Line dataKey="predicted" stroke="#a855f7" strokeDasharray="5 5" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
 
         <TourIsCommingSoon />
       </div>
