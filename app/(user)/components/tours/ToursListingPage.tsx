@@ -51,10 +51,14 @@ interface Hotel {
     trips: TripAPI[]; // ← thêm trips
 }
 
-function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[]): Hotel {
+function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[], commentMap: Record<string, { avg: number; count: number }>): Hotel {
     const hotel = tour.hotel_id;
-    const score = parseFloat(Math.min(9.9, hotel.rating * 1.8 + 0.8).toFixed(1));
-    const label = score >= 9.0 ? "Tuyệt vời" : "Rất tốt";
+    const hotelStars = Math.round(hotel?.rating ?? 0);
+    const commentData = commentMap[tour._id];
+    const score = commentData && commentData.count > 0
+        ? parseFloat(Math.min(9.9, commentData.avg * 1.8 + 0.8).toFixed(1))
+        : 0;
+    const label = score >= 9.0 ? "Tuyệt vời" : score >= 8.5 ? "Rất tốt" : score > 0 ? "Tốt" : "Chưa có đánh giá";
     const comboDesc = tour.descriptions?.find(d => d.title === "Giá tour bao gồm");
     const comboText = comboDesc?.content?.split("\n")?.[0]?.replace("- ", "") ?? null;
     let days = tour.itineraries?.length ?? 0;
@@ -65,11 +69,11 @@ function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[]): Hotel {
     const routeMatch = tour.name.match(/từ\s+([A-ZÀ-Ỹa-zà-ỹ\s.]+?)(?:\s*[-–]|$)/i);
     const route = routeMatch ? routeMatch[1].trim() : "TP.HCM";
 
-    // Join trips thuộc tour này
     const trips = allTrips.filter(t => {
         const tid = typeof t.tour_id === "object" ? (t.tour_id as any)?._id : t.tour_id;
         return tid === tour._id;
     });
+
     return {
         id: tour._id,
         slug: tour.slug,
@@ -78,16 +82,17 @@ function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[]): Hotel {
         combo: comboText,
         rating: score,
         ratingLabel: label,
-        reviewCount: Math.floor(hotel.rating * 23 + 40),
-        address: `${hotel.address}, ${hotel.city}`,
-        city: hotel.city,
-        tags: [hotel.city, tour.category_id?.name ?? "Tour du lịch", `${hotel.rating} sao`],
-        stars: Math.round(hotel.rating),
+        reviewCount: commentData?.count ?? 0,
+        address: `${hotel?.address ?? ""}, ${hotel?.city ?? ""}`,
+        city: hotel?.city ?? "",
+        tags: [hotel?.city ?? "", tour.category_id?.name ?? "Tour du lịch", `${hotelStars} sao`],
+        stars: hotelStars,
         days,
         route,
         trips,
     };
 }
+
 
 // ─────────────────────────── CONSTANTS ───────────────────────────
 
@@ -174,6 +179,7 @@ function StarRating({ count }: { count: number }) {
 }
 
 function RatingBadge({ rating }: { rating: number }) {
+    if (!rating || rating === 0) return <span className="text-xs text-gray-400 italic"></span>;
     const color = rating >= 9.5 ? "bg-green-600" : rating >= 9.0 ? "bg-green-500" : "bg-lime-500";
     return <span className={`${color} text-white text-xs font-black px-1.5 py-0.5 rounded`}>{rating.toFixed(1)}</span>;
 }
@@ -385,13 +391,28 @@ function HotelListingContent() {
             fetch("https://db-pickyourway.vercel.app/api/tours").then(r => r.json()),
             fetch("https://db-pickyourway.vercel.app/api/trips/").then(r => r.json()),
             fetch("https://db-pickyourway.vercel.app/api/sales").then(r => r.json()).catch(() => ({ data: [] })),
+            fetch("https://db-pickyourway.vercel.app/api/comments").then(r => r.json()).catch(() => ({ data: [] })),
         ])
-            .then(([toursRes, tripsRes, salesRes]) => {
+            .then(([toursRes, tripsRes, salesRes, commentsRes]) => {
                 if (toursRes.success && Array.isArray(toursRes.data)) {
                     const allTrips: TripAPI[] = Array.isArray(tripsRes.data) ? tripsRes.data : [];
                     const ids = new Set<string>((salesRes.data ?? []).map((s: any) => s.tour_id as string));
                     setSaleIds(ids);
-                    setHotels(toursRes.data.map((t: TourAPI) => mapTourToHotel(t, allTrips)));
+
+                    // Build commentMap: { tour_id -> { avg, count } }
+                    const allComments: { tour_id: string; rating: number }[] = commentsRes.data ?? [];
+                    const commentMap: Record<string, { avg: number; count: number }> = {};
+                    allComments.forEach(c => {
+                        if (!c.tour_id || !c.rating) return;
+                        if (!commentMap[c.tour_id]) commentMap[c.tour_id] = { avg: 0, count: 0 };
+                        commentMap[c.tour_id].avg += c.rating;
+                        commentMap[c.tour_id].count += 1;
+                    });
+                    Object.keys(commentMap).forEach(id => {
+                        commentMap[id].avg = commentMap[id].avg / commentMap[id].count;
+                    });
+
+                    setHotels(toursRes.data.map((t: TourAPI) => mapTourToHotel(t, allTrips, commentMap)));
                 } else setError(true);
             })
             .catch(() => setError(true))
