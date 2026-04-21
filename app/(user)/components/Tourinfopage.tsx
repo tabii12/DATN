@@ -85,7 +85,7 @@ const CONTENT: Record<string, JSX.Element> = {
       </div>
       <div className="prose prose-gray max-w-none text-[15px] text-gray-700 leading-relaxed space-y-4">
         <p><strong>Pick Your Way</strong> là nền tảng du lịch trực tuyến chuyên cung cấp các tour du lịch trong nước chất lượng cao tại Việt Nam. Chúng tôi kết nối du khách với những trải nghiệm du lịch đáng nhớ từ Bắc vào Nam.</p>
-        <p>Với đội ngũ hướng dẫn viên chuyên nghiệp và hơn <strong>500+ tour</strong> đa dạng, chúng tôi cam kết mang đến hành trình an toàn, thú vị và đáng giá cho từng khách hàng.</p>
+        <p>Với đội ngũ chuyên nghiệp và hơn <strong>100+ tour</strong> đa dạng, chúng tôi cam kết mang đến hành trình an toàn, thú vị và đáng giá cho từng khách hàng.</p>
         <div className="grid grid-cols-3 gap-4 my-6">
           {[["500+", "Tour đa dạng"], ["50k+", "Khách hài lòng"], ["10+", "Năm kinh nghiệm"]].map(([num, label]) => (
             <div key={label} className="bg-orange-50 rounded-xl p-4 text-center">
@@ -147,7 +147,7 @@ const CONTENT: Record<string, JSX.Element> = {
         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-sm text-blue-800">
           <p className="font-semibold mb-1">📌 Lưu ý thanh toán</p>
           <ul className="space-y-1 list-disc list-inside text-blue-700">
-            <li>Đặt cọc tối thiểu 30% giá trị tour khi đặt</li>
+            <li>Đặt cọc tối thiểu 50% giá trị tour khi đặt</li>
             <li>Thanh toán đủ 100% trước ngày khởi hành 3 ngày</li>
             <li>Giá tour đã bao gồm VAT theo quy định</li>
           </ul>
