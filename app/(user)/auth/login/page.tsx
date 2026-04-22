@@ -98,7 +98,7 @@ function LoginForm() {
             onChange={handleChange}
             className="w-full border p-2 rounded"
           />
-          {errors.email && <p className="text-red-500">{errors.email}</p>}
+{errors.email && <p className="text-red-500">{errors.email}</p>}
         </div>
 
         <div>
