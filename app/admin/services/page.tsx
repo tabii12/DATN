@@ -278,11 +278,10 @@ export default function AdminServices() {
                     </td>
                     <td className="px-4 py-4">
                       <span
-                        className={`text-[10px] font-bold px-2 py-1 rounded-lg ${
-                          s.status === "active"
+                        className={`text-[10px] font-bold px-2 py-1 rounded-lg ${s.status === "active"
                             ? "bg-emerald-50 text-emerald-600"
                             : "bg-gray-100 text-gray-400"
-                        }`}
+                          }`}
                       >
                         ● {s.status === "active" ? "Hoạt động" : "Tạm dừng"}
                       </span>
@@ -327,6 +326,36 @@ export default function AdminServices() {
                 ))}
               </tbody>
             </table>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-xs text-gray-400">
+                Trang {currentPage}/{totalPages} · {filtered.length} dịch vụ
+              </span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="w-8 h-8 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-30 bg-white cursor-pointer transition-colors"
+                >‹</button>
+                {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                  const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                  return (
+                    <button key={page} onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-lg text-sm font-semibold border cursor-pointer transition-colors ${currentPage === page ? "bg-orange-500 text-white border-orange-500" : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+                      {page}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="w-8 h-8 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-30 bg-white cursor-pointer transition-colors"
+                >›</button>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -447,11 +476,10 @@ export default function AdminServices() {
                           ? { backgroundColor: FPT_ORANGE }
                           : {}
                       }
-                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border-none cursor-pointer ${
-                        formData.status === s
+                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border-none cursor-pointer ${formData.status === s
                           ? "text-white shadow-lg shadow-orange-100"
                           : "bg-gray-100 text-gray-400 hover:bg-gray-200"
-                      }`}
+                        }`}
                     >
                       {s === "active" ? "Hoạt động" : "Tạm ẩn"}
                     </button>

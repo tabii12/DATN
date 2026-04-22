@@ -440,12 +440,12 @@ export default function AdminCategories() {
                 >
                   ✏️ Sửa
                 </button>
-                <button
+                {/* <button
                   onClick={() => setDeletingCat(cat)}
                   className="py-1.5 px-3 rounded-lg text-xs font-semibold bg-red-50 text-red-400 hover:bg-red-100 transition-colors"
                 >
                   🗑️
-                </button>
+                </button> */}
               </div>
             </div>
           ))}

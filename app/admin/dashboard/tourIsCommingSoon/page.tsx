@@ -23,12 +23,9 @@ export default function TourIsCommingSoon() {
   }, []);
 
   return (
-    <div className="p-8 mx-auto">
+    <div className="mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Quản lý Tour</h1>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          + Thêm Tour mới
-        </button>
       </div>
 
       {loading ? (

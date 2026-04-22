@@ -15,82 +15,115 @@ interface BlogItem {
 }
 
 const SECTIONS = [
+  { id: "gioi-thieu", icon: "🗺️", label: "Giới thiệu", sub: null },
   {
-    id: "gioi-thieu",
-    icon: "🗺️",
-    label: "Giới thiệu",
-    sub: null,
-  },
-  {
-    id: "chinh-sach",
-    icon: "📋",
-    label: "Chính sách",
+    id: "chinh-sach", icon: "📋", label: "Chính sách",
     sub: [
-      { id: "chinh-sach-huy", label: "Chính sách hủy tour" },
-      { id: "chinh-sach-thanh-toan", label: "Chính sách thanh toán" },
-      { id: "chinh-sach-doi-lich", label: "Đổi lịch & hoàn tiền" },
+      { id: "chinh-sach-huy",         label: "Chính sách hủy tour" },
+      { id: "chinh-sach-thanh-toan",  label: "Chính sách thanh toán" },
+      { id: "chinh-sach-doi-lich",    label: "Đổi lịch & hoàn tiền" },
     ],
   },
+  { id: "dieu-khoan", icon: "📝", label: "Điều khoản sử dụng", sub: null },
   {
-    id: "dieu-khoan",
-    icon: "📝",
-    label: "Điều khoản sử dụng",
-    sub: null,
-  },
-  {
-    id: "huong-dan",
-    icon: "📖",
-    label: "Hướng dẫn đặt tour",
+    id: "huong-dan", icon: "📖", label: "Hướng dẫn đặt tour",
     sub: [
-      { id: "huong-dan-dat", label: "Cách đặt tour" },
+      { id: "huong-dan-dat",        label: "Cách đặt tour" },
       { id: "huong-dan-thanh-toan", label: "Hướng dẫn thanh toán" },
-      { id: "huong-dan-check-in", label: "Hướng dẫn check-in" },
+      { id: "huong-dan-check-in",   label: "Hướng dẫn check-in" },
     ],
   },
+  { id: "an-toan",  icon: "🛡️", label: "An toàn du lịch",    sub: null },
+  { id: "bao-hiem", icon: "🏥", label: "Bảo hiểm du lịch",   sub: null },
   {
-    id: "an-toan",
-    icon: "🛡️",
-    label: "An toàn du lịch",
-    sub: null,
-  },
-  {
-    id: "bao-hiem",
-    icon: "🏥",
-    label: "Bảo hiểm du lịch",
-    sub: null,
-  },
-  {
-    id: "ho-tro",
-    icon: "💬",
-    label: "Hỗ trợ khách hàng",
+    id: "ho-tro", icon: "💬", label: "Hỗ trợ khách hàng",
     sub: [
       { id: "ho-tro-lien-he", label: "Liên hệ hỗ trợ" },
-      { id: "ho-tro-faq", label: "Câu hỏi thường gặp" },
+      { id: "ho-tro-faq",     label: "Câu hỏi thường gặp" },
     ],
   },
 ];
 
+// ─── CONTENT MAP ────────────────────────────────────────────
+
 const CONTENT: Record<string, JSX.Element> = {
+
+  // ── GIỚI THIỆU ──────────────────────────────────────────
   "gioi-thieu": (
     <div>
       <div className="flex items-center gap-3 mb-6">
         <span className="text-3xl">🗺️</span>
         <h2 className="text-2xl font-bold text-gray-900">Giới thiệu Pick Your Way</h2>
       </div>
-      <div className="relative rounded-2xl overflow-hidden mb-6 h-52">
-        <img src="https://images.unsplash.com/photo-1528127269322-539801943592?w=900&q=80" alt="Vietnam" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-5">
-          <p className="text-white font-semibold text-lg">Khám phá vẻ đẹp Việt Nam cùng chúng tôi</p>
+
+      {/* Hero ảnh */}
+      <div className="relative rounded-2xl overflow-hidden mb-7 h-56">
+        <img src="https://images.unsplash.com/photo-1528127269322-539801943592?w=900&q=80" alt="Pick Your Way" className="w-full h-full object-cover"/>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 to-transparent flex items-end p-5">
+          <p className="text-white font-bold text-lg leading-snug">Khám phá vẻ đẹp Việt Nam cùng Pick Your Way</p>
         </div>
       </div>
-      <div className="prose prose-gray max-w-none text-[15px] text-gray-700 leading-relaxed space-y-4">
-        <p><strong>Pick Your Way</strong> là nền tảng du lịch trực tuyến chuyên cung cấp các tour du lịch trong nước chất lượng cao tại Việt Nam. Chúng tôi kết nối du khách với những trải nghiệm du lịch đáng nhớ từ Bắc vào Nam.</p>
-        <p>Với đội ngũ chuyên nghiệp và hơn <strong>100+ tour</strong> đa dạng, chúng tôi cam kết mang đến hành trình an toàn, thú vị và đáng giá cho từng khách hàng.</p>
-        <div className="grid grid-cols-3 gap-4 my-6">
-          {[["500+", "Tour đa dạng"], ["50k+", "Khách hài lòng"], ["10+", "Năm kinh nghiệm"]].map(([num, label]) => (
-            <div key={label} className="bg-orange-50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-black text-orange-500">{num}</p>
-              <p className="text-xs text-gray-500 mt-1">{label}</p>
+
+      {/* Mô tả */}
+      <div className="text-[15px] text-gray-700 leading-relaxed space-y-4 mb-7">
+        <p>
+          <strong>Pick Your Way</strong> là nền tảng đặt tour du lịch trực tuyến tập trung vào các tour
+          trong nước tại Việt Nam, trụ sở tại <strong>TP. Hồ Chí Minh</strong>. Chúng tôi kết nối du khách
+          với những hành trình đáng nhớ — từ biển đảo miền Nam, phố cổ miền Trung, đến núi rừng
+          miền Bắc và cao nguyên Tây Nguyên.
+        </p>
+        <p>
+          Với hơn <strong>100 tour đa dạng</strong> và đội ngũ hướng dẫn viên chuyên nghiệp, Pick Your Way
+          cam kết mang đến trải nghiệm du lịch an toàn, chất lượng và đáng giá — dù bạn đi một mình,
+          cùng gia đình hay theo nhóm bạn.
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-7">
+        {[
+          ["100+",      "Tour đa dạng",           "🏖️"],
+          ["Toàn quốc", "Điểm đến khắp Việt Nam", "📍"],
+          ["24/7",      "Hỗ trợ khách hàng",      "📞"],
+        ].map(([num, label, icon]) => (
+          <div key={label} className="bg-orange-50 rounded-xl p-4 text-center border border-orange-100">
+            <div className="text-xl mb-1">{icon}</div>
+            <p className="text-xl font-black text-orange-500">{num}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Điểm mạnh */}
+      <div className="grid grid-cols-2 gap-3 mb-7">
+        {[
+          ["🚌", "Nhiều lịch khởi hành",      "Linh hoạt cuối tuần, cuối tháng và theo yêu cầu"],
+          ["💰", "Giá minh bạch",              "Không phí ẩn, thanh toán đặt cọc hoặc toàn bộ"],
+          ["🛡️", "An toàn & bảo hiểm",        "Bảo hiểm toàn hành trình, hướng dẫn viên có chứng chỉ"],
+          ["⭐", "Dịch vụ chuyên nghiệp",     "Khách sạn, phương tiện, ăn uống đều được chọn lọc kỹ"],
+        ].map(([icon, title, sub]) => (
+          <div key={title} className="flex items-start gap-3 bg-white border border-gray-100 rounded-xl p-4">
+            <span className="text-2xl shrink-0">{icon}</span>
+            <div>
+              <p className="text-sm font-bold text-gray-800">{title}</p>
+              <p className="text-[12px] text-gray-400 mt-0.5 leading-relaxed">{sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Liên hệ */}
+      <div className="bg-gradient-to-r from-orange-500 to-amber-400 rounded-2xl p-5 text-white">
+        <p className="font-bold text-base mb-3">📬 Liên hệ Pick Your Way</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            ["📞", "Hotline",  "0336 323 498"],
+            ["📧", "Email",    "support@pickyourway.vn"],
+            ["📍", "Trụ sở",   "TP. Hồ Chí Minh"],
+          ].map(([icon, label, value]) => (
+            <div key={label} className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3">
+              <p className="text-[11px] text-white/70 font-semibold">{icon} {label}</p>
+              <p className="text-sm font-bold mt-0.5">{value}</p>
             </div>
           ))}
         </div>
@@ -98,6 +131,7 @@ const CONTENT: Record<string, JSX.Element> = {
     </div>
   ),
 
+  // ── CHÍNH SÁCH HỦY ──────────────────────────────────────
   "chinh-sach-huy": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -109,15 +143,15 @@ const CONTENT: Record<string, JSX.Element> = {
       </div>
       <div className="space-y-3">
         {[
-          { time: "Trước 15 ngày", refund: "Hoàn 100%", color: "green" },
-          { time: "Trước 7 ngày", refund: "Hoàn 80%", color: "blue" },
-          { time: "Trước 3 ngày", refund: "Hoàn 50%", color: "yellow" },
-          { time: "Trước 24 giờ", refund: "Hoàn 20%", color: "orange" },
-          { time: "Trong vòng 24 giờ", refund: "Không hoàn tiền", color: "red" },
+          { time: "Trước 15 ngày",       refund: "Hoàn 100%",        color: "green" },
+          { time: "Trước 7 ngày",        refund: "Hoàn 80%",         color: "blue" },
+          { time: "Trước 3 ngày",        refund: "Hoàn 50%",         color: "yellow" },
+          { time: "Trước 24 giờ",        refund: "Hoàn 20%",         color: "orange" },
+          { time: "Trong vòng 24 giờ",   refund: "Không hoàn tiền",  color: "red" },
         ].map(({ time, refund, color }) => (
           <div key={time} className="flex items-center justify-between border border-gray-100 rounded-xl px-4 py-3 bg-white">
             <div className="flex items-center gap-3">
-              <div className={`w-2.5 h-2.5 rounded-full bg-${color}-400`} />
+              <div className={`w-2.5 h-2.5 rounded-full bg-${color}-400`}/>
               <span className="text-sm text-gray-700 font-medium">{time}</span>
             </div>
             <span className={`text-sm font-bold text-${color}-600`}>{refund}</span>
@@ -128,6 +162,7 @@ const CONTENT: Record<string, JSX.Element> = {
     </div>
   ),
 
+  // ── THANH TOÁN ──────────────────────────────────────────
   "chinh-sach-thanh-toan": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -135,17 +170,17 @@ const CONTENT: Record<string, JSX.Element> = {
         <h2 className="text-2xl font-bold text-gray-900">Chính sách thanh toán</h2>
       </div>
       <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
-        <p>Chúng tôi hỗ trợ nhiều hình thức thanh toán linh hoạt, an toàn và tiện lợi cho khách hàng:</p>
+        <p>Chúng tôi hỗ trợ nhiều hình thức thanh toán linh hoạt, an toàn và tiện lợi:</p>
         <div className="grid grid-cols-2 gap-3">
-          {[["🏦", "Chuyển khoản ngân hàng"], ["💳", "Thẻ tín dụng / ghi nợ"], ["📱", "Ví điện tử (MoMo, ZaloPay)"], ["💵", "Thanh toán tiền mặt"]].map(([icon, method]) => (
-            <div key={method} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 bg-white">
+          {[["🏦","Chuyển khoản ngân hàng"],["💳","Thẻ tín dụng / ghi nợ"],["📱","Ví điện tử (MoMo, ZaloPay)"],["💵","Thanh toán tiền mặt"]].map(([icon,method]) => (
+            <div key={method as string} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 bg-white">
               <span className="text-xl">{icon}</span>
               <span className="text-sm font-medium text-gray-700">{method}</span>
             </div>
           ))}
         </div>
         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-sm text-blue-800">
-          <p className="font-semibold mb-1">📌 Lưu ý thanh toán</p>
+          <p className="font-semibold mb-1">📌 Lưu ý</p>
           <ul className="space-y-1 list-disc list-inside text-blue-700">
             <li>Đặt cọc tối thiểu 50% giá trị tour khi đặt</li>
             <li>Thanh toán đủ 100% trước ngày khởi hành 3 ngày</li>
@@ -156,6 +191,7 @@ const CONTENT: Record<string, JSX.Element> = {
     </div>
   ),
 
+  // ── ĐỔI LỊCH ────────────────────────────────────────────
   "chinh-sach-doi-lich": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -163,23 +199,23 @@ const CONTENT: Record<string, JSX.Element> = {
         <h2 className="text-2xl font-bold text-gray-900">Đổi lịch & hoàn tiền</h2>
       </div>
       <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
-        <p>Khách hàng có thể yêu cầu đổi lịch khởi hành <strong>tối đa 1 lần</strong> cho mỗi đơn đặt tour, với điều kiện:</p>
+        <p>Khách hàng có thể yêu cầu đổi lịch <strong>tối đa 1 lần</strong> cho mỗi đơn đặt tour, với điều kiện:</p>
         <ul className="space-y-2">
-          {["Yêu cầu đổi lịch trước ngày khởi hành ít nhất 5 ngày", "Tour thay thế phải có cùng điểm đến hoặc tương đương", "Chênh lệch giá (nếu có) sẽ được hoàn hoặc thu thêm", "Không áp dụng đổi lịch cho tour đã đặt dịp lễ Tết"].map(c => (
+          {["Yêu cầu trước ngày khởi hành ít nhất 5 ngày","Tour thay thế phải có cùng điểm đến hoặc tương đương","Chênh lệch giá (nếu có) sẽ được hoàn hoặc thu thêm","Không áp dụng đổi lịch cho tour đặt dịp lễ Tết"].map(c => (
             <li key={c} className="flex items-start gap-2">
-              <span className="text-orange-400 mt-0.5">✓</span>
-              <span>{c}</span>
+              <span className="text-orange-400 mt-0.5">✓</span><span>{c}</span>
             </li>
           ))}
         </ul>
         <div className="bg-green-50 rounded-xl p-4 border border-green-100 text-sm text-green-800">
           <p className="font-semibold mb-1">💚 Hoàn tiền</p>
-          <p>Thời gian hoàn tiền từ <strong>3–7 ngày làm việc</strong> kể từ khi xác nhận hủy thành công. Hoàn về đúng phương thức thanh toán ban đầu.</p>
+          <p>Thời gian hoàn tiền <strong>3–7 ngày làm việc</strong> kể từ khi xác nhận hủy. Hoàn về đúng phương thức thanh toán ban đầu.</p>
         </div>
       </div>
     </div>
   ),
 
+  // ── ĐIỀU KHOẢN ──────────────────────────────────────────
   "dieu-khoan": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -188,10 +224,10 @@ const CONTENT: Record<string, JSX.Element> = {
       </div>
       <div className="space-y-5 text-[15px] text-gray-700 leading-relaxed">
         {[
-          ["1. Điều kiện tham gia", "Khách hàng phải từ 18 tuổi trở lên hoặc có người giám hộ hợp pháp. Trẻ em dưới 12 tuổi được giảm 30% giá tour khi đi cùng người lớn."],
-          ["2. Trách nhiệm của khách hàng", "Cung cấp thông tin cá nhân chính xác khi đặt tour. Có mặt đúng giờ tại điểm tập trung. Tuân thủ nội quy điểm tham quan và hướng dẫn của trưởng đoàn."],
-          ["3. Trách nhiệm của chúng tôi", "Thực hiện đúng lịch trình và dịch vụ đã cam kết. Cung cấp hướng dẫn viên có chứng chỉ hành nghề. Hỗ trợ xử lý các tình huống phát sinh trong hành trình."],
-          ["4. Bất khả kháng", "Trong trường hợp thiên tai, dịch bệnh, chiến tranh hoặc lệnh cấm của cơ quan nhà nước, hai bên cùng thống nhất phương án xử lý phù hợp mà không phát sinh phí phạt."],
+          ["1. Điều kiện tham gia","Khách hàng phải từ 18 tuổi trở lên hoặc có người giám hộ hợp pháp. Trẻ em dưới 12 tuổi được giảm 30% giá tour khi đi cùng người lớn."],
+          ["2. Trách nhiệm của khách hàng","Cung cấp thông tin cá nhân chính xác khi đặt tour. Có mặt đúng giờ tại điểm tập trung. Tuân thủ nội quy điểm tham quan và hướng dẫn của trưởng đoàn."],
+          ["3. Trách nhiệm của chúng tôi","Thực hiện đúng lịch trình và dịch vụ đã cam kết. Cung cấp hướng dẫn viên có chứng chỉ hành nghề. Hỗ trợ xử lý các tình huống phát sinh trong hành trình."],
+          ["4. Bất khả kháng","Trong trường hợp thiên tai, dịch bệnh hoặc lệnh cấm của cơ quan nhà nước, hai bên cùng thống nhất phương án xử lý mà không phát sinh phí phạt."],
         ].map(([title, content]) => (
           <div key={title as string}>
             <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
@@ -202,6 +238,7 @@ const CONTENT: Record<string, JSX.Element> = {
     </div>
   ),
 
+  // ── HƯỚNG DẪN ĐẶT ───────────────────────────────────────
   "huong-dan-dat": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -210,10 +247,10 @@ const CONTENT: Record<string, JSX.Element> = {
       </div>
       <div className="space-y-4">
         {[
-          ["Bước 1", "Chọn tour", "Tìm kiếm và chọn tour phù hợp từ danh sách. Đọc kỹ thông tin lịch trình, giá cả và những gì bao gồm.", "🔍"],
-          ["Bước 2", "Điền thông tin", "Nhập thông tin cá nhân, số lượng khách, ngày khởi hành mong muốn và yêu cầu đặc biệt (nếu có).", "📋"],
-          ["Bước 3", "Xác nhận & thanh toán", "Kiểm tra lại thông tin đơn hàng và tiến hành thanh toán đặt cọc hoặc toàn bộ.", "💳"],
-          ["Bước 4", "Nhận xác nhận", "Chúng tôi sẽ gửi email xác nhận và phiếu tour trong vòng 30 phút sau khi nhận thanh toán.", "✅"],
+          ["Bước 1","Chọn tour","Tìm kiếm và chọn tour phù hợp. Đọc kỹ lịch trình, giá cả và những gì bao gồm.","🔍"],
+          ["Bước 2","Điền thông tin","Nhập thông tin cá nhân, số lượng khách, ngày khởi hành và yêu cầu đặc biệt (nếu có).","📋"],
+          ["Bước 3","Xác nhận & thanh toán","Kiểm tra lại đơn hàng và thanh toán đặt cọc hoặc toàn bộ.","💳"],
+          ["Bước 4","Nhận xác nhận","Chúng tôi gửi email xác nhận và phiếu tour trong vòng 30 phút sau khi nhận thanh toán.","✅"],
         ].map(([step, title, desc, icon]) => (
           <div key={step as string} className="flex gap-4 p-4 bg-white border border-gray-100 rounded-xl">
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-lg">{icon}</div>
@@ -230,6 +267,7 @@ const CONTENT: Record<string, JSX.Element> = {
     </div>
   ),
 
+  // ── HƯỚNG DẪN THANH TOÁN ────────────────────────────────
   "huong-dan-thanh-toan": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -243,15 +281,16 @@ const CONTENT: Record<string, JSX.Element> = {
           <ul className="text-sm space-y-1 text-gray-600">
             <li>Ngân hàng: <strong>Vietcombank</strong></li>
             <li>Số tài khoản: <strong>1234 5678 9012</strong></li>
-            <li>Chủ tài khoản: <strong>CÔNG TY DU LỊCH PICK YOUR WAY</strong></li>
+            <li>Chủ tài khoản: <strong>PICK YOUR WAY</strong></li>
             <li>Nội dung: <strong>[Mã đơn hàng] - [Họ tên]</strong></li>
           </ul>
         </div>
-        <p className="text-sm text-gray-500">Sau khi chuyển khoản, vui lòng chụp ảnh biên lai và gửi về email <strong className="text-orange-500">support@pickyourway.vn</strong> để xác nhận.</p>
+        <p className="text-sm text-gray-500">Sau khi chuyển khoản, vui lòng gửi ảnh biên lai về email <strong className="text-orange-500">support@pickyourway.vn</strong> để xác nhận.</p>
       </div>
     </div>
   ),
 
+  // ── CHECK-IN ─────────────────────────────────────────────
   "huong-dan-check-in": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -261,7 +300,7 @@ const CONTENT: Record<string, JSX.Element> = {
       <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
         <p>Để check-in tham gia tour, quý khách cần chuẩn bị:</p>
         <div className="grid grid-cols-1 gap-3">
-          {[["🪪", "CMND/CCCD hoặc Hộ chiếu còn hạn"], ["📧", "Email xác nhận đặt tour (in hoặc trên điện thoại)"], ["📸", "Ảnh chân dung rõ mặt (nếu tour yêu cầu)"], ["⏰", "Có mặt trước giờ khởi hành 15 phút"]].map(([icon, text]) => (
+          {[["🪪","CMND/CCCD hoặc Hộ chiếu còn hạn"],["📧","Email xác nhận đặt tour (in hoặc trên điện thoại)"],["📸","Ảnh chân dung rõ mặt (nếu tour yêu cầu)"],["⏰","Có mặt trước giờ khởi hành 15 phút"]].map(([icon,text]) => (
             <div key={text as string} className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl">
               <span className="text-xl">{icon}</span>
               <span className="text-sm text-gray-700">{text}</span>
@@ -272,6 +311,7 @@ const CONTENT: Record<string, JSX.Element> = {
     </div>
   ),
 
+  // ── AN TOÀN ──────────────────────────────────────────────
   "an-toan": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -279,9 +319,9 @@ const CONTENT: Record<string, JSX.Element> = {
         <h2 className="text-2xl font-bold text-gray-900">An toàn du lịch</h2>
       </div>
       <div className="space-y-5 text-[15px] text-gray-700 leading-relaxed">
-        <p>An toàn của khách hàng là ưu tiên hàng đầu của chúng tôi. Mỗi tour đều được thiết kế với các biện pháp an toàn nghiêm ngặt.</p>
+        <p>An toàn của khách hàng là ưu tiên hàng đầu. Mỗi tour đều được thiết kế với các biện pháp an toàn nghiêm ngặt.</p>
         <div className="grid grid-cols-2 gap-3">
-          {[["🚌", "Xe đạt tiêu chuẩn an toàn"], ["👷", "Hướng dẫn viên được đào tạo sơ cứu"], ["📞", "Đường dây khẩn cấp 24/7"], ["🏥", "Bảo hiểm tai nạn toàn hành trình"]].map(([icon, text]) => (
+          {[["🚌","Xe đạt tiêu chuẩn an toàn"],["👷","Hướng dẫn viên được đào tạo sơ cứu"],["📞","Đường dây khẩn cấp 24/7"],["🏥","Bảo hiểm tai nạn toàn hành trình"]].map(([icon,text]) => (
             <div key={text as string} className="flex items-center gap-2 p-3 bg-white border border-gray-100 rounded-xl">
               <span className="text-xl">{icon}</span>
               <span className="text-xs font-medium text-gray-700">{text}</span>
@@ -290,12 +330,13 @@ const CONTENT: Record<string, JSX.Element> = {
         </div>
         <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-700">
           <p className="font-semibold mb-1">🆘 Khẩn cấp trong hành trình</p>
-          <p>Liên hệ ngay hướng dẫn viên hoặc gọi <strong>Hotline: 1900 1870</strong> (24/7) để được hỗ trợ kịp thời.</p>
+          <p>Liên hệ ngay hướng dẫn viên hoặc gọi <strong>Hotline: 0336 323 498</strong> (24/7) để được hỗ trợ kịp thời.</p>
         </div>
       </div>
     </div>
   ),
 
+  // ── BẢO HIỂM ─────────────────────────────────────────────
   "bao-hiem": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -303,20 +344,21 @@ const CONTENT: Record<string, JSX.Element> = {
         <h2 className="text-2xl font-bold text-gray-900">Bảo hiểm du lịch</h2>
       </div>
       <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
-        <p>Tất cả tour của Pick Your Way đều bao gồm <strong>bảo hiểm du lịch</strong> trong suốt hành trình, được cung cấp bởi <strong>Bảo Việt</strong>.</p>
+        <p>Tất cả tour của Pick Your Way đều bao gồm <strong>bảo hiểm du lịch</strong> trong suốt hành trình.</p>
         <div className="space-y-2">
-          {[["Tai nạn thân thể", "200.000.000 đ"], ["Chi phí y tế", "100.000.000 đ"], ["Hủy chuyến bất khả kháng", "20.000.000 đ"], ["Mất hành lý", "5.000.000 đ"]].map(([coverage, limit]) => (
+          {[["Tai nạn thân thể","200.000.000 đ"],["Chi phí y tế","100.000.000 đ"],["Hủy chuyến bất khả kháng","20.000.000 đ"],["Mất hành lý","5.000.000 đ"]].map(([coverage,limit]) => (
             <div key={coverage as string} className="flex justify-between items-center border-b border-gray-100 py-2.5 last:border-0">
               <span className="text-sm text-gray-600">{coverage}</span>
               <span className="text-sm font-bold text-green-600">{limit}</span>
             </div>
           ))}
         </div>
-        <p className="text-xs text-gray-400">* Quyền lợi bảo hiểm áp dụng theo điều khoản hợp đồng với Bảo Việt. Liên hệ chúng tôi để biết thêm chi tiết.</p>
+        <p className="text-xs text-gray-400">* Liên hệ chúng tôi để biết thêm chi tiết về quyền lợi bảo hiểm.</p>
       </div>
     </div>
   ),
 
+  // ── LIÊN HỆ ──────────────────────────────────────────────
   "ho-tro-lien-he": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -324,7 +366,7 @@ const CONTENT: Record<string, JSX.Element> = {
         <h2 className="text-2xl font-bold text-gray-900">Liên hệ hỗ trợ</h2>
       </div>
       <div className="grid grid-cols-2 gap-4 mb-6">
-        {[["📞", "Hotline", "1900 1870", "Thứ 2 – CN, 7:00–22:00"], ["📧", "Email", "support@pickyourway.vn", "Phản hồi trong 2 giờ"], ["💬", "Live chat", "Trên website", "Thứ 2 – CN, 8:00–20:00"], ["📘", "Facebook", "Pick Your Way", "Phản hồi trong 30 phút"]].map(([icon, channel, contact, note]) => (
+        {[["📞","Hotline","0336 323 498","Tất cả các ngày, 7:00–22:00"],["📧","Email","support@pickyourway.vn","Phản hồi trong 2 giờ"],["💬","Live chat","Trên website","Thứ 2 – CN, 8:00–20:00"],["📘","Facebook","Pick Your Way","Phản hồi trong 30 phút"]].map(([icon,channel,contact,note]) => (
           <div key={channel as string} className="p-4 bg-white border border-gray-100 rounded-xl">
             <span className="text-2xl">{icon}</span>
             <p className="text-xs text-gray-400 mt-2">{channel}</p>
@@ -335,11 +377,12 @@ const CONTENT: Record<string, JSX.Element> = {
       </div>
       <div className="bg-orange-50 rounded-xl p-4 border border-orange-100 text-sm text-orange-800">
         <p className="font-semibold">🎯 Hỗ trợ nhanh nhất</p>
-        <p className="mt-1 text-orange-700">Gọi thẳng hotline <strong>1900 1870</strong> để được kết nối với nhân viên tư vấn ngay lập tức.</p>
+        <p className="mt-1 text-orange-700">Gọi thẳng hotline <strong>0336 323 498</strong> để được kết nối với nhân viên tư vấn ngay lập tức.</p>
       </div>
     </div>
   ),
 
+  // ── FAQ ───────────────────────────────────────────────────
   "ho-tro-faq": (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -348,73 +391,41 @@ const CONTENT: Record<string, JSX.Element> = {
       </div>
       <div className="space-y-3">
         {[
-          ["Tôi có thể đặt tour cho nhóm không?", "Có, chúng tôi hỗ trợ đặt tour theo nhóm từ 10 người trở lên với mức giá ưu đãi đặc biệt. Liên hệ hotline 1900 1870 để được tư vấn."],
-          ["Tour có xuất phát từ nhiều điểm không?", "Tuỳ tour, chúng tôi có thể bố trí điểm đón tại nhà hoặc tại các điểm tập trung cố định trong thành phố."],
-          ["Trẻ em có được giảm giá không?", "Trẻ em dưới 5 tuổi miễn phí (không tính suất ăn và ghế ngồi riêng). Từ 5–11 tuổi giảm 30% giá người lớn."],
-          ["Tôi cần chuẩn bị gì trước khi đi tour?", "CMND/CCCD, trang phục phù hợp với điểm đến, thuốc cá nhân nếu cần, và xác nhận đặt tour từ email."],
-          ["Nếu tour bị hủy do thời tiết thì sao?", "Chúng tôi sẽ chủ động thông báo và hỗ trợ đổi ngày hoặc hoàn tiền 100% trong trường hợp hủy vì lý do bất khả kháng."],
+          ["Tôi có thể đặt tour cho nhóm không?","Có, chúng tôi hỗ trợ đặt tour theo nhóm từ 10 người trở lên với mức giá ưu đãi đặc biệt. Liên hệ hotline 0336 323 498 để được tư vấn."],
+          ["Tour có xuất phát từ nhiều điểm không?","Tuỳ tour, chúng tôi có thể bố trí điểm đón tại nhà hoặc tại các điểm tập trung cố định trong thành phố."],
+          ["Trẻ em có được giảm giá không?","Trẻ em dưới 5 tuổi miễn phí (không tính suất ăn và ghế ngồi riêng). Từ 5–11 tuổi giảm 30% giá người lớn."],
+          ["Tôi cần chuẩn bị gì trước khi đi tour?","CMND/CCCD, trang phục phù hợp với điểm đến, thuốc cá nhân nếu cần, và email xác nhận đặt tour."],
+          ["Nếu tour bị hủy do thời tiết thì sao?","Chúng tôi sẽ chủ động thông báo và hỗ trợ đổi ngày hoặc hoàn tiền 100% trong trường hợp hủy vì lý do bất khả kháng."],
         ].map(([q, a]) => (
-          <FaqItem key={q as string} q={q as string} a={a as string} />
+          <FaqItem key={q as string} q={q as string} a={a as string}/>
         ))}
       </div>
     </div>
   ),
 
-  "ve-chung-toi": (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
-        <span className="text-3xl">🏢</span>
-        <h2 className="text-2xl font-bold text-gray-900">Về chúng tôi</h2>
-      </div>
-      <div className="space-y-4 text-[15px] text-gray-700 leading-relaxed">
-        <p><strong>Công ty TNHH Du lịch Pick Your Way</strong> được thành lập năm 2015, trụ sở tại TP. Hồ Chí Minh, chuyên cung cấp dịch vụ tour du lịch nội địa cao cấp trên toàn Việt Nam.</p>
-        <div className="space-y-2 text-sm">
-          {[["Tên công ty", "Công ty TNHH Du lịch Pick Your Way"], ["Mã số thuế", "0312 345 678"], ["Địa chỉ", "123 Nguyễn Huệ, Quận 1, TP. HCM"], ["Giấy phép LHQT", "01-1234/2015/TCDL-GP LHQT"]].map(([label, value]) => (
-            <div key={label as string} className="flex gap-4 border-b border-gray-100 pb-2 last:border-0">
-              <span className="w-36 text-gray-400 flex-shrink-0">{label}</span>
-              <span className="text-gray-700 font-medium">{value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  ),  "blog": <BlogSection />,};
+  // ── BLOG ─────────────────────────────────────────────────
+  "blog": <BlogSection/>,
+};
+
+// ─── BLOG SECTION ────────────────────────────────────────────
 
 function BlogSection() {
   const [blogs, setBlogs] = useState<BlogItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadBlogs() {
-      setLoading(true);
-      try {
-        const res = await fetch("https://db-pickyourway.vercel.app/api/blogs/");
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+    fetch("https://db-pickyourway.vercel.app/api/blogs/")
+      .then(r => r.json())
+      .then(data => {
         const items = Array.isArray(data) ? data : data.data || data.blogs || [];
         setBlogs(items);
-      } catch (err) {
-        setError("Không tải được blog. Vui lòng thử lại sau.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadBlogs();
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return <div className="text-center text-gray-500 py-10">Đang tải blog...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center text-red-500 py-10">{error}</div>;
-  }
-
-  if (!blogs.length) {
-    return <div className="text-center text-gray-500 py-10">Chưa có bài viết nào.</div>;
-  }
+  if (loading) return <div className="text-center text-gray-400 py-10">Đang tải blog...</div>;
+  if (!blogs.length) return <div className="text-center text-gray-400 py-10">Chưa có bài viết nào.</div>;
 
   return (
     <div className="space-y-4">
@@ -423,18 +434,18 @@ function BlogSection() {
         <h2 className="text-2xl font-bold text-gray-900">Blog du lịch</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {blogs.slice(0, 6).map((blog) => (
+        {blogs.slice(0, 6).map(blog => (
           <div key={blog._id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
             {blog.images?.[0]?.image_url && (
               <div className="relative h-40 w-full">
-                <img src={blog.images[0].image_url} alt={blog.title} className="w-full h-full object-cover" />
+                <img src={blog.images[0].image_url} alt={blog.title} className="w-full h-full object-cover"/>
               </div>
             )}
             <div className="p-4">
               <h3 className="font-bold text-lg text-gray-800 line-clamp-2">{blog.title}</h3>
-              <p className="text-gray-600 text-sm mt-2 line-clamp-3">{blog.excerpt ?? (blog.content ? `${blog.content.replace(/<[^>]*>/g, "").slice(0, 120)}...` : "")}</p>
+              <p className="text-gray-600 text-sm mt-2 line-clamp-3">{blog.excerpt ?? (blog.content ? `${blog.content.replace(/<[^>]*>/g,"").slice(0,120)}...` : "")}</p>
               <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-                <span>{blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('vi-VN') : ''}</span>
+                <span>{blog.createdAt ? new Date(blog.createdAt).toLocaleDateString("vi-VN") : ""}</span>
                 <a href={`/news/${blog.slug}`} className="text-orange-500 hover:text-orange-600 font-medium">Xem tiếp →</a>
               </div>
             </div>
@@ -448,59 +459,47 @@ function BlogSection() {
   );
 }
 
+// ─── FAQ ITEM ────────────────────────────────────────────────
+
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden bg-white">
       <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3 text-left bg-transparent border-none cursor-pointer">
         <span className="text-sm font-semibold text-gray-800">{q}</span>
-        <span className={"text-gray-400 text-lg transition-transform duration-200 " + (open ? "rotate-90" : "")}>›</span>
+        <span className={`text-gray-400 text-lg transition-transform duration-200 ${open ? "rotate-90" : ""}`}>›</span>
       </button>
       {open && <div className="px-4 pb-4 text-sm text-gray-500 leading-relaxed border-t border-gray-50 pt-3">{a}</div>}
     </div>
   );
 }
 
+// ─── MAIN ────────────────────────────────────────────────────
+
 function TourInfoContent() {
   const searchParams = useSearchParams();
   const [activeId, setActiveId] = useState("gioi-thieu");
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ "chinh-sach": true, "huong-dan": true, "ho-tro": true });
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    "chinh-sach": true, "huong-dan": true, "ho-tro": true,
+  });
 
   useEffect(() => {
     const section = searchParams.get("section");
     if (!section) return;
     setActiveId(section);
     const parentMap: Record<string, string> = {
-      "chinh-sach-huy": "chinh-sach",
-      "chinh-sach-thanh-toan": "chinh-sach",
-      "chinh-sach-doi-lich": "chinh-sach",
-      "huong-dan-dat": "huong-dan",
-      "huong-dan-thanh-toan": "huong-dan",
-      "huong-dan-check-in": "huong-dan",
-      "ho-tro-lien-he": "ho-tro",
-      "ho-tro-faq": "ho-tro",
+      "chinh-sach-huy": "chinh-sach", "chinh-sach-thanh-toan": "chinh-sach", "chinh-sach-doi-lich": "chinh-sach",
+      "huong-dan-dat": "huong-dan",   "huong-dan-thanh-toan": "huong-dan",   "huong-dan-check-in": "huong-dan",
+      "ho-tro-lien-he": "ho-tro",    "ho-tro-faq": "ho-tro",
     };
     const parent = parentMap[section];
     if (parent) setOpenGroups(prev => ({ ...prev, [parent]: true }));
   }, [searchParams]);
 
-  function toggleGroup(id: string) {
-    setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }));
-  }
-
-  function getContent() {
-    return CONTENT[activeId] ?? (
-      <div className="text-center text-gray-400 py-20">
-        <p className="text-4xl mb-3">🚧</p>
-        <p>Nội dung đang được cập nhật...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Breadcrumb */}
-      <div className="max-w-[1280] mx-auto px-4 pt-4">
+      <div className="max-w-7xl mx-auto px-4 pt-4">
         <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
           <a href="/" className="hover:text-orange-500 no-underline">Trang chủ</a>
           <span>/</span>
@@ -508,7 +507,7 @@ function TourInfoContent() {
         </div>
       </div>
 
-      <div className="max-w-[1280] mx-auto px-4 py-8 flex gap-6 items-start">
+      <div className="max-w-7xl mx-auto px-4 py-6 flex gap-6 items-start">
         {/* SIDEBAR */}
         <aside className="w-[240px] flex-shrink-0 sticky top-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -521,23 +520,20 @@ function TourInfoContent() {
                   {section.sub ? (
                     <>
                       <button
-                        onClick={() => toggleGroup(section.id)}
-                        className={"w-full flex items-center justify-between px-4 py-2.5 text-left bg-transparent border-none cursor-pointer transition-colors " + (openGroups[section.id] ? "text-orange-500" : "text-gray-700 hover:bg-gray-50")}
+                        onClick={() => setOpenGroups(prev => ({ ...prev, [section.id]: !prev[section.id] }))}
+                        className={`w-full flex items-center justify-between px-4 py-2.5 text-left bg-transparent border-none cursor-pointer transition-colors ${openGroups[section.id] ? "text-orange-500" : "text-gray-700 hover:bg-gray-50"}`}
                       >
                         <div className="flex items-center gap-2.5">
                           <span className="text-base">{section.icon}</span>
                           <span className="text-sm font-semibold">{section.label}</span>
                         </div>
-                        <span className={"text-xs text-gray-400 transition-transform duration-200 " + (openGroups[section.id] ? "rotate-90" : "")}>›</span>
+                        <span className={`text-xs text-gray-400 transition-transform duration-200 ${openGroups[section.id] ? "rotate-90" : ""}`}>›</span>
                       </button>
                       {openGroups[section.id] && (
                         <div className="pl-10 pb-1">
                           {section.sub.map(sub => (
-                            <button
-                              key={sub.id}
-                              onClick={() => setActiveId(sub.id)}
-                              className={"w-full text-left px-3 py-2 text-[13px] rounded-lg cursor-pointer border-none transition-colors " + (activeId === sub.id ? "bg-orange-50 text-orange-600 font-semibold" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 bg-transparent")}
-                            >
+                            <button key={sub.id} onClick={() => setActiveId(sub.id)}
+                              className={`w-full text-left px-3 py-2 text-[13px] rounded-lg cursor-pointer border-none transition-colors ${activeId === sub.id ? "bg-orange-50 text-orange-600 font-semibold" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50 bg-transparent"}`}>
                               {sub.label}
                             </button>
                           ))}
@@ -545,22 +541,20 @@ function TourInfoContent() {
                       )}
                     </>
                   ) : (
-                    <button
-                      onClick={() => setActiveId(section.id)}
-                      className={"w-full flex items-center gap-2.5 px-4 py-2.5 text-left border-none cursor-pointer transition-colors " + (activeId === section.id ? "bg-orange-50 text-orange-600" : "text-gray-700 hover:bg-gray-50 bg-transparent")}
-                    >
+                    <button onClick={() => setActiveId(section.id)}
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left border-none cursor-pointer transition-colors ${activeId === section.id ? "bg-orange-50 text-orange-600" : "text-gray-700 hover:bg-gray-50 bg-transparent"}`}>
                       <span className="text-base">{section.icon}</span>
-                      <span className={"text-sm " + (activeId === section.id ? "font-bold" : "font-medium")}>{section.label}</span>
+                      <span className={`text-sm ${activeId === section.id ? "font-bold" : "font-medium"}`}>{section.label}</span>
                     </button>
                   )}
                 </div>
               ))}
             </nav>
 
-            {/* Hotline */}
+            {/* Hotline box */}
             <div className="mx-3 mb-3 bg-orange-500 rounded-xl p-3 text-white text-center">
               <p className="text-[11px] opacity-80">Cần hỗ trợ ngay?</p>
-              <a href="tel:19001870" className="text-base font-black no-underline text-white">📞 1900 1870</a>
+              <a href="tel:0336323498" className="text-base font-black no-underline text-white">📞 0336 323 498</a>
             </div>
           </div>
         </aside>
@@ -568,7 +562,12 @@ function TourInfoContent() {
         {/* CONTENT */}
         <main className="flex-1 min-w-0">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7 min-h-[500px]">
-            {getContent()}
+            {CONTENT[activeId] ?? (
+              <div className="text-center text-gray-400 py-20">
+                <p className="text-4xl mb-3">🚧</p>
+                <p>Nội dung đang được cập nhật...</p>
+              </div>
+            )}
           </div>
         </main>
       </div>
@@ -579,7 +578,7 @@ function TourInfoContent() {
 export default function TourInfoPage() {
   return (
     <Suspense>
-      <TourInfoContent />
+      <TourInfoContent/>
     </Suspense>
   );
 }

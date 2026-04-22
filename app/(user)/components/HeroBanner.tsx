@@ -28,7 +28,7 @@ const CITIES = [
 
 export default function HeroBanner({
   title = "Trải nghiệm kỳ nghỉ tuyệt vời",
-  subtitle = "Combo khách sạn · vé máy bay · giá tốt nhất",
+  subtitle = "Combo khách sạn · các dịch vụ ưu đãi · giá tốt nhất",
   images = [],
   showSearch = true,
   searchPlaceholder = "Bạn muốn đi đâu?",

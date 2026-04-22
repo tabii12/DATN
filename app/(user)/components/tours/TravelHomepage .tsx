@@ -155,22 +155,24 @@ export default function HomePage() {
       if (!json.success) return;
 
       const removeTones = (str: string) =>
-        str
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/đ/g, "d")
-          .replace(/Đ/g, "D")
-          .toLowerCase()
-          .replace(/\s+/g, "");
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d").replace(/Đ/g, "D")
+          .toLowerCase().replace(/\s+/g, "");
 
-      const tours = json.data.filter(
-        (t: any) =>
-          removeTones(t.hotel_id?.city ?? "") === removeTones(cityName),
-      );
-      if (!tours.length) return;
-      router.push(
-        `/tours/${tours[Math.floor(Math.random() * tours.length)].slug}`,
-      );
+      const tours = json.data.filter((t: any) => {
+        const city = removeTones(t.hotel_id?.city ?? "");
+        const startLoc = removeTones(t.start_location ?? "");
+        const target = removeTones(cityName);
+        return city === target || startLoc === target || city.includes(target) || startLoc.includes(target);
+      });
+
+      if (!tours.length) {
+        // Không tìm thấy tour → fallback về trang search
+        router.push(`/tours/search?q=${encodeURIComponent(cityName)}`);
+        return;
+      }
+      const randomTour = tours[Math.floor(Math.random() * tours.length)];
+      router.push(`/tours/${randomTour.slug}`);
     } catch (err) {
       console.error("Random tour error:", err);
     }
@@ -402,9 +404,7 @@ export default function HomePage() {
           }}
         >
           <a
-            onClick={() =>
-              domestic[3] && handleRandomTourByCity(domestic[3].name)
-            }
+            onClick={() => domestic[3] && handleRandomTourByCity(domestic[3].name)}
             className="relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm"
           >
             <img
@@ -421,9 +421,7 @@ export default function HomePage() {
           </a>
 
           <a
-            onClick={() =>
-              domestic[2] && handleRandomTourByCity(domestic[2].name)
-            }
+            onClick={() => domestic[2] && handleRandomTourByCity(domestic[2].name)}
             className="row-span-2 relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm"
           >
             <img
@@ -440,9 +438,7 @@ export default function HomePage() {
           </a>
 
           <a
-            onClick={() =>
-              domestic[1] && handleRandomTourByCity(domestic[1].name)
-            }
+            onClick={() => domestic[1] && handleRandomTourByCity(domestic[1].name)}
             className="relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm"
           >
             <img
@@ -460,9 +456,7 @@ export default function HomePage() {
 
           <div className="col-span-2 grid grid-cols-2 gap-2">
             <a
-              onClick={() =>
-                domestic[4] && handleRandomTourByCity(domestic[4].name)
-              }
+              onClick={() => domestic[4] && handleRandomTourByCity(domestic[4].name)}
               className="relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm"
             >
               <img
@@ -478,9 +472,7 @@ export default function HomePage() {
               </div>
             </a>
             <a
-              onClick={() =>
-                domestic[0] && handleRandomTourByCity(domestic[0].name)
-              }
+              onClick={() => domestic[0] && handleRandomTourByCity(domestic[0].name)}
               className="relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm"
             >
               <img
