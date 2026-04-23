@@ -42,29 +42,30 @@ function SearchContent() {
 
         // ✅ 2. Nếu thanh toán thành công, gọi API lưu vào database
         if (isSuccess && vnpTxnRef) {
-          const vnpParams = Object.fromEntries(searchParams.entries());
-          
-          const res = await fetch("https://db-pickyourway.vercel.app/api/bookings", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            body: JSON.stringify({
-              ...bookingData,
-              orderId: vnpTxnRef,
-              vnpay: {
-                ...vnpParams,
-                method: "vnpay",
-                amount: paymentAmount,
-                status: "paid",
-                bank_code: vnpBankCode || "NCB",
-                txnRef: vnpTxnRef,
-                transactionNo: vnpTransactionNo,
-              },
-            }),
-          });
+  const vnpParams = Object.fromEntries(searchParams.entries());
+  const bookingStatus = bookingData.paymentPct === 50 ? "paid_50" : "paid_100"; // ← THÊM
 
+  const res = await fetch("https://db-pickyourway.vercel.app/api/bookings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
+    },
+    body: JSON.stringify({
+      ...bookingData,
+      orderId: vnpTxnRef,
+      status: bookingStatus,     // ← THÊM
+      vnpay: {
+        ...vnpParams,
+        method: "vnpay",
+        amount: paymentAmount,
+        status: bookingStatus,   // ← ĐỔI từ "paid"
+        bank_code: vnpBankCode || "NCB",
+        txnRef: vnpTxnRef,
+        transactionNo: vnpTransactionNo,
+      },
+    }),
+  });
           if (res.ok) {
             // Cập nhật state để hiển thị UI
             setData(bookingData);

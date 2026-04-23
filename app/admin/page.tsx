@@ -303,20 +303,6 @@ export default function AdminDashboard() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-
-        {/* AI */}
-        <div className="bg-white p-4 rounded-2xl border h-[280px]">
-          <h2 className="font-bold mb-3">🤖 AI Dự đoán</h2>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={aiData}>
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
-              <Line dataKey="predicted" stroke="#a855f7" strokeDasharray="5 5" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
         <TourIsCommingSoon />
       </div>
     </div>

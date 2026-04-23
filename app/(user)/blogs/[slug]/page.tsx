@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { useParams } from "next/navigation";
 import Head from "next/head";
 
 interface Blog {
@@ -28,7 +28,9 @@ export default function BlogDetailPage() {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const response = await fetch(`https://db-pickyourway.vercel.app/api/blogs/${slug}`);
+        const response = await fetch(
+          `https://db-pickyourway.vercel.app/api/blogs/${slug}`
+        );
         if (!response.ok) throw new Error("Fetch failed");
 
         const data = await response.json();
@@ -37,7 +39,7 @@ export default function BlogDetailPage() {
         setBlog(blogData);
       } catch (error) {
         console.error(error);
-        setError('Không thể tải blog. Vui lòng thử lại sau.');
+        setError("Không thể tải blog. Vui lòng thử lại sau.");
       } finally {
         setLoading(false);
       }
@@ -50,7 +52,9 @@ export default function BlogDetailPage() {
   useEffect(() => {
     const fetchRelated = async () => {
       try {
-        const res = await fetch(`https://db-pickyourway.vercel.app/api/blogs`);
+        const res = await fetch(
+          `https://db-pickyourway.vercel.app/api/blogs`
+        );
         const data = await res.json();
         const list = data.data || data;
 
@@ -67,7 +71,7 @@ export default function BlogDetailPage() {
     if (slug) fetchRelated();
   }, [slug]);
 
-  // 👉 Loading đẹp hơn
+  // 👉 Loading
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -90,28 +94,19 @@ export default function BlogDetailPage() {
     );
   }
 
-  // 👉 Format content
-  const hasHtmlContent = /<\/?.+>/.test(blog.content);
-
-  const contentParagraphs = blog.content
-    .replace(/\r\n/g, "\n")
-    .split(/\n{2,}/)
-    .map(p => p.trim())
-    .filter(Boolean);
-
   return (
     <>
-      {/* SEO */}
       <Head>
         <title>{blog.title}</title>
         <meta name="description" content={blog.excerpt} />
       </Head>
 
-      <div className="min-h-screen font-sans">
+      <div className="min-h-screen font-sans bg-gray-50">
         {/* Breadcrumb */}
         <div className="max-w-7xl mx-auto px-4 pt-4">
           <div className="text-sm text-gray-400">
-            <a href="/">Trang chủ</a> / <a href="/blogs">Tin tức</a> /{" "}
+            <a href="/">Trang chủ</a> /{" "}
+            <a href="/blogs">Tin tức</a> /{" "}
             <span className="text-gray-600">{blog.title}</span>
           </div>
         </div>
@@ -121,9 +116,11 @@ export default function BlogDetailPage() {
 
             {/* Header */}
             <div className="p-8">
-              <h1 className="text-3xl font-bold mb-4">{blog.title}</h1>
+              <h1 className="text-3xl font-bold mb-4">
+                {blog.title}
+              </h1>
               <p className="text-sm text-gray-500">
-                📅 {new Date(blog.createdAt).toLocaleDateString('vi-VN')}
+                📅 {new Date(blog.createdAt).toLocaleDateString("vi-VN")}
               </p>
             </div>
 
@@ -142,18 +139,14 @@ export default function BlogDetailPage() {
               </div>
             )}
 
-            {/* Content */}
-            <div className="px-8 py-6 space-y-4 text-gray-700">
-              {hasHtmlContent ? (
-                <div
-                  className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: blog.content }}
-                />
-              ) : (
-                contentParagraphs.map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))
-              )}
+            {/* ✅ CONTENT FIX CHUẨN */}
+            <div className="px-8 py-8 text-gray-700">
+              <div
+                className="prose max-w-none prose-lg leading-7 whitespace-pre-line"
+                dangerouslySetInnerHTML={{
+                  __html: blog.content.replace(/\n/g, "<br/>"),
+                }}
+              />
             </div>
 
             {/* Footer */}
@@ -168,13 +161,15 @@ export default function BlogDetailPage() {
           </article>
         </div>
 
-        {/* 👉 Related Blogs */}
+        {/* Related Blogs */}
         {relatedBlogs.length > 0 && (
           <div className="max-w-7xl mx-auto px-4 pb-12">
-            <h2 className="text-2xl font-bold mb-6">Bài viết liên quan</h2>
+            <h2 className="text-2xl font-bold mb-6">
+              Bài viết liên quan
+            </h2>
 
             <div className="grid md:grid-cols-3 gap-6">
-              {relatedBlogs.map(item => (
+              {relatedBlogs.map((item) => (
                 <a
                   key={item._id}
                   href={`/blogs/${item.slug}`}
