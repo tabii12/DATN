@@ -103,10 +103,11 @@ export default function AdminCategories() {
     setCatTours([]);
     setCatToursLoading(true);
     try {
-      const res = await fetch(`${API}/tours`);
+      // Dùng admin endpoint để lấy cả tour ẩn
+      const res = await fetch(`${API}/tours/admin?page=1&limit=1000`);
       const data = await res.json();
       const tours: TourInCategory[] = (data.data ?? []).filter(
-        (t: { category_id?: { slug?: string } | null }) =>
+        (t: { category_id?: { slug?: string } | null; status?: string }) =>
           t.category_id?.slug === cat.slug,
       );
       setCatTours(tours);
@@ -116,7 +117,6 @@ export default function AdminCategories() {
       setCatToursLoading(false);
     }
   }
-
   useEffect(() => {
     fetch(`${API}/categories`)
       .then((r) => r.json())
