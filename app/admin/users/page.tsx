@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-const API = "https://db-pickyourway.vercel.app/api";
+const API = "https://db-pickyourway.vercel.app/api/users";
+const BOOKINGS_API = "https://db-pickyourway.vercel.app/api/bookings";
 const ITEMS_PER_PAGE = 10;
 
 interface User {
@@ -88,6 +89,10 @@ function formatDate(iso: string) {
   });
 }
 
+function parseApiDate(d: any): string {
+  return (d && typeof d === "object" && "$date" in d ? d.$date : d) || "";
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,6 +102,23 @@ export default function AdminUsers() {
   >("all");
   const [filterRole, setFilterRole] = useState<"all" | "user" | "admin">("all");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Details modal
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
+  const [detailUser, setDetailUser] = useState<User | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailBookingCount, setDetailBookingCount] = useState<number | null>(
+    null,
+  );
+  const [detailCustomerType, setDetailCustomerType] = useState<
+    "new" | "returning" | "none" | null
+  >(null);
+  const [detailFirstBookingAt, setDetailFirstBookingAt] = useState<string | null>(
+    null,
+  );
+  const [detailLastBookingAt, setDetailLastBookingAt] = useState<string | null>(
+    null,
+  );
 
   // Edit modal
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -123,7 +145,7 @@ export default function AdminUsers() {
   }
 
   useEffect(() => {
-    fetch(`${API}/users`, {
+    fetch(`${API}/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -161,27 +183,107 @@ export default function AdminUsers() {
     setEditStatus(user.status);
   }
 
+  async function openDetails(user: User) {
+    setDetailUserId(user._id);
+    setDetailUser(null);
+    setDetailLoading(true);
+    setDetailBookingCount(null);
+    setDetailCustomerType(null);
+    setDetailFirstBookingAt(null);
+    setDetailLastBookingAt(null);
+    try {
+      const token = localStorage.getItem("token");
+      const [resUser, resBookings] = await Promise.all([
+        fetch(`${API}/${user._id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        fetch(`${BOOKINGS_API}/admin/all`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      ]);
+
+      const dUser = await resUser.json().catch(() => null);
+      if (!resUser.ok) throw new Error();
+      setDetailUser((dUser?.data as User) || user);
+
+      const dBookings = await resBookings.json().catch(() => null);
+      const rawBookings: any[] = Array.isArray(dBookings)
+        ? dBookings
+        : (dBookings?.data ?? []);
+      const userBookings = rawBookings.filter(
+        (b) => b?.user_id?._id === user._id,
+      );
+
+      const dates = userBookings
+        .map((b) => parseApiDate(b?.createdAt))
+        .filter(Boolean)
+        .map((s) => new Date(s))
+        .filter((dt) => !isNaN(dt.getTime()))
+        .sort((a, b) => a.getTime() - b.getTime());
+
+      const count = userBookings.length;
+      setDetailBookingCount(count);
+      if (dates.length > 0) {
+        setDetailFirstBookingAt(dates[0].toISOString());
+        setDetailLastBookingAt(dates[dates.length - 1].toISOString());
+      }
+
+      if (count === 0) {
+        setDetailCustomerType("none");
+      } else {
+        // Heuristic: nếu chỉ có 1 booking và booking đầu trong 30 ngày => khách mới
+        const first = dates[0];
+        const within30Days =
+          first &&
+          Date.now() - first.getTime() <= 30 * 24 * 60 * 60 * 1000;
+        const isNew = count === 1 && within30Days;
+        setDetailCustomerType(isNew ? "new" : "returning");
+      }
+    } catch {
+      showToast("Không tải được chi tiết người dùng", "error");
+      setDetailUser(user);
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
   async function handleSave() {
     if (!editingUser) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API}/users/update/${editingUser._id}`, {
+      const resRole = await fetch(`${API}/role/${editingUser._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ role: editRole }),
+      });
+      if (!resRole.ok) throw new Error();
+
+      const resStatus = await fetch(`${API}/status/${editingUser._id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          name: editName,
-          role: editRole,
           status: editStatus,
         }),
       });
-      if (!res.ok) throw new Error();
+      if (!resStatus.ok) throw new Error();
+
       setUsers((prev) =>
         prev.map((u) =>
           u._id === editingUser._id
-            ? { ...u, name: editName, role: editRole, status: editStatus }
+            ? { ...u, role: editRole, status: editStatus }
             : u,
         ),
       );
@@ -198,16 +300,10 @@ export default function AdminUsers() {
     if (!deletingUser) return;
     setDeleting(true);
     try {
-      const res = await fetch(`${API}/users/${deletingUser._id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      if (!res.ok) throw new Error();
-      setUsers((prev) => prev.filter((u) => u._id !== deletingUser._id));
-      setDeletingUser(null);
-      showToast("Đã xóa người dùng!");
+      showToast(
+        "API hiện tại không có endpoint xóa user (chỉ có status/role).",
+        "error",
+      );
     } catch {
       showToast("Xóa thất bại, thử lại sau", "error");
     } finally {
@@ -395,7 +491,8 @@ export default function AdminUsers() {
               {paginated.map((user) => (
                 <tr
                   key={user._id}
-                  className="hover:bg-gray-50/60 transition-colors"
+                  onClick={() => openDetails(user)}
+                  className="hover:bg-gray-50/60 transition-colors cursor-pointer"
                 >
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
@@ -440,14 +537,20 @@ export default function AdminUsers() {
                   <td className="px-5 py-3.5">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => openEdit(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(user);
+                        }}
                         className="p-1.5 rounded-lg hover:bg-blue-50 text-gray-400 hover:text-blue-500 transition-colors"
                         title="Chỉnh sửa"
                       >
                         ✏️
                       </button>
                       <button
-                        onClick={() => setDeletingUser(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingUser(user);
+                        }}
                         className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                         title="Xóa"
                       >
@@ -585,6 +688,146 @@ export default function AdminUsers() {
                 className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold transition-colors disabled:opacity-60"
               >
                 {saving ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DETAILS MODAL ── */}
+      {detailUserId && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-gray-900">
+                Chi tiết người dùng
+              </h2>
+              <button
+                onClick={() => {
+                  setDetailUserId(null);
+                  setDetailUser(null);
+                  setDetailBookingCount(null);
+                  setDetailCustomerType(null);
+                  setDetailFirstBookingAt(null);
+                  setDetailLastBookingAt(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 mb-5 p-3 bg-gray-50 rounded-xl">
+              <Avatar name={detailUser?.name || "User"} />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate">
+                  {detailUser?.name || "Đang tải..."}
+                </p>
+                <p className="text-xs text-gray-400 truncate">
+                  {detailUser?.email || ""}
+                </p>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                {detailUser?.role && <RoleBadge role={detailUser.role} />}
+                {detailUser?.status && <StatusBadge status={detailUser.status} />}
+              </div>
+            </div>
+
+            {detailLoading ? (
+              <div className="flex items-center justify-center py-10 text-gray-400 gap-3">
+                <svg
+                  className="animate-spin w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8z"
+                  />
+                </svg>
+                Đang tải chi tiết...
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="border border-gray-100 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">User ID</p>
+                  <p className="font-mono text-gray-700 break-all">
+                    {detailUser?._id || ""}
+                  </p>
+                </div>
+                  <div className="border border-gray-100 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1">Số tour đã đặt</p>
+                    <p className="text-gray-700 font-semibold">
+                      {detailBookingCount === null ? "—" : detailBookingCount}
+                    </p>
+                  </div>
+                  <div className="border border-gray-100 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1">Loại khách</p>
+                    <p className="text-gray-700 font-semibold">
+                      {detailCustomerType === null
+                        ? "—"
+                        : detailCustomerType === "none"
+                          ? "Chưa đặt tour"
+                          : detailCustomerType === "new"
+                            ? "Khách hàng mới"
+                            : "Khách hàng cũ"}
+                    </p>
+                  </div>
+                <div className="border border-gray-100 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Xác thực</p>
+                  <p className="text-gray-700 font-semibold">
+                    {detailUser?.isVerified ? "Đã xác thực" : "Chưa xác thực"}
+                  </p>
+                </div>
+                <div className="border border-gray-100 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Ngày tạo</p>
+                  <p className="text-gray-700 font-semibold">
+                    {detailUser?.createdAt ? formatDate(detailUser.createdAt) : ""}
+                  </p>
+                </div>
+                <div className="border border-gray-100 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Cập nhật</p>
+                  <p className="text-gray-700 font-semibold">
+                    {detailUser?.updatedAt ? formatDate(detailUser.updatedAt) : ""}
+                  </p>
+                </div>
+                  <div className="border border-gray-100 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1">Lần đặt đầu</p>
+                    <p className="text-gray-700 font-semibold">
+                      {detailFirstBookingAt ? formatDate(detailFirstBookingAt) : "—"}
+                    </p>
+                  </div>
+                  <div className="border border-gray-100 rounded-xl p-3">
+                    <p className="text-xs text-gray-400 mb-1">Lần đặt gần nhất</p>
+                    <p className="text-gray-700 font-semibold">
+                      {detailLastBookingAt ? formatDate(detailLastBookingAt) : "—"}
+                    </p>
+                  </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setDetailUserId(null);
+                  setDetailUser(null);
+                  setDetailBookingCount(null);
+                  setDetailCustomerType(null);
+                  setDetailFirstBookingAt(null);
+                  setDetailLastBookingAt(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                Đóng
               </button>
             </div>
           </div>
