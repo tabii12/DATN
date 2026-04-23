@@ -311,17 +311,11 @@ export default function AdminComments() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             💬 Quản lý đánh giá tour
           </h1>
-          <p className="text-gray-600">
-            Duyệt, phê duyệt và quản lý tất cả đánh giá từ khách hàng
-          </p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <StatCard label="Tổng cộng" value={stats.total} color="bg-blue-500" />
-          <StatCard label="Chờ duyệt" value={stats.pending} color="bg-yellow-500" />
-          <StatCard label="Đã duyệt" value={stats.approved} color="bg-green-500" />
-          <StatCard label="Từ chối" value={stats.rejected} color="bg-red-500" />
           <StatCard label="Đánh giá TB" value={stats.avgRating} color="bg-orange-500" />
         </div>
 
@@ -332,58 +326,50 @@ export default function AdminComments() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Trạng thái
-              </label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">Tất cả</option>
-                <option value="pending">Chờ duyệt</option>
-                <option value="approved">Đã duyệt</option>
-                <option value="rejected">Từ chối</option>
-              </select>
-            </div>
+<div className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-gray-100">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+    
+    {/* Filter Rating */}
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-2">
+        ⭐ Đánh giá
+      </label>
+      <select
+        value={filterRating || ""}
+        onChange={(e) =>
+          setFilterRating(e.target.value ? parseInt(e.target.value) : null)
+        }
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg 
+        focus:outline-none focus:ring-2 focus:ring-orange-500 
+        transition-all duration-200 hover:border-orange-400"
+      >
+        <option value="">Tất cả sao</option>
+        <option value="5">⭐⭐⭐⭐⭐ 5 sao</option>
+        <option value="4">⭐⭐⭐⭐ 4 sao</option>
+        <option value="3">⭐⭐⭐ 3 sao</option>
+        <option value="2">⭐⭐ 2 sao</option>
+        <option value="1">⭐ 1 sao</option>
+      </select>
+    </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Đánh giá
-              </label>
-              <select
-                value={filterRating || ""}
-                onChange={(e) =>
-                  setFilterRating(e.target.value ? parseInt(e.target.value) : null)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">Tất cả sao</option>
-                <option value="5">⭐⭐⭐⭐⭐ 5 sao</option>
-                <option value="4">⭐⭐⭐⭐ 4 sao</option>
-                <option value="3">⭐⭐⭐ 3 sao</option>
-                <option value="2">⭐⭐ 2 sao</option>
-                <option value="1">⭐ 1 sao</option>
-              </select>
-            </div>
+    {/* Search */}
+    <div className="md:col-span-2">
+      <label className="block text-sm font-semibold text-gray-700 mb-2">
+        🔍 Tìm kiếm
+      </label>
+      <input
+        type="text"
+        placeholder="Nhập tên khách, tiêu đề hoặc nội dung..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg 
+        focus:outline-none focus:ring-2 focus:ring-orange-500 
+        transition-all duration-200 hover:border-orange-400"
+      />
+    </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Tìm kiếm
-              </label>
-              <input
-                type="text"
-                placeholder="Tìm theo tên, tiêu đề hoặc nội dung..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-          </div>
-        </div>
+  </div>
+</div>
 
         {/* Comments Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -403,19 +389,16 @@ export default function AdminComments() {
                       Tour
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                      Tiêu đề
+                      Nội dung
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                       Đánh giá
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                      Trạng thái
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                       Ngày
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                      Hành động
+                      Xem chi tiết
                     </th>
                   </tr>
                 </thead>
@@ -443,23 +426,7 @@ export default function AdminComments() {
                       <td className="px-4 py-3">
                         <StarRating count={comment.rating} />
                       </td>
-                      <td className="px-4 py-3 text-sm">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            comment.status === "pending"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : comment.status === "approved"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {comment.status === "pending"
-                            ? "⏳ Chờ duyệt"
-                            : comment.status === "approved"
-                            ? "✅ Đã duyệt"
-                            : "❌ Từ chối"}
-                        </span>
-                      </td>
+                      
                       <td className="px-4 py-3 text-sm text-gray-700">
                         {formatDate(comment.createdAt)}
                       </td>
@@ -479,33 +446,12 @@ export default function AdminComments() {
 
                           {comment.status === "pending" && (
                             <>
-                              <button
-                                onClick={() => handleApprove(comment._id)}
-                                className="text-green-600 hover:text-green-800"
-                                disabled={processingId === comment._id}
-                                title="Phê duyệt"
-                              >
-                                <CheckCircle size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleReject(comment._id)}
-                                className="text-red-600 hover:text-red-800"
-                                disabled={processingId === comment._id}
-                                title="Từ chối"
-                              >
-                                <XCircle size={16} />
-                              </button>
+                              
+                              
                             </>
                           )}
 
-                          <button
-                            onClick={() => handleDelete(comment._id)}
-                            className="text-red-600 hover:text-red-800"
-                            disabled={processingId === comment._id}
-                            title="Xóa"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                     
                         </div>
                       </td>
                     </tr>
@@ -554,24 +500,7 @@ export default function AdminComments() {
                   <span className="font-semibold">Ngày dánh giá:</span>{" "}
                   {formatDate(selectedComment.createdAt)}
                 </p>
-                <p>
-                  <span className="font-semibold">Trạng thái:</span>
-                  <span
-                    className={`ml-2 px-2 py-1 rounded-full text-xs font-semibold ${
-                      selectedComment.status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : selectedComment.status === "approved"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {selectedComment.status === "pending"
-                      ? "⏳ Chờ duyệt"
-                      : selectedComment.status === "approved"
-                      ? "✅ Đã duyệt"
-                      : "❌ Từ chối"}
-                  </span>
-                </p>
+               
               </div>
 
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
@@ -580,48 +509,13 @@ export default function AdminComments() {
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                {selectedComment.status === "pending" && (
-                  <>
-                    <button
-                      onClick={() => {
-                        handleApprove(selectedComment._id);
-                        setShowModal(false);
-                      }}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg"
-                    >
-                      ✅ Phê duyệt
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleReject(selectedComment._id);
-                        setShowModal(false);
-                      }}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg"
-                    >
-                      ❌ Từ chối
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={() => {
-                    handleDelete(selectedComment._id);
-                    setShowModal(false);
-                  }}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg"
-                >
-                  🗑️ Xóa
-                </button>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded-lg"
-                >
-                  Đóng
-                </button>
+             
+                
+               
+                
               </div>
             </div>
           </div>
-        </div>
       )}
     </div>
   );

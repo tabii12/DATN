@@ -28,17 +28,24 @@ export default function ChangePasswordPage() {
   }, []);
 
   // ✅ CHECK GOOGLE USER
-  const isGoogleUser = user?.provider === "google";
+  const isGoogleUser = user?.isGoogleLogin === true;
+
+  // ✅ AUTO THÔNG BÁO NGAY KHI VÀO TRANG
+  useEffect(() => {
+    if (user?.isGoogleLogin) {
+      alert("Tài khoản Google không thể đổi mật khẩu!");
+    }
+  }, [user]);
 
   // ===== CHANGE PASSWORD =====
   const handleChangePassword = async () => {
-    try {
-      // ✅ CHẶN GOOGLE USER
-      if (isGoogleUser) {
-        alert("Tài khoản Google không thể đổi mật khẩu!");
-        return;
-      }
+    // ✅ CHẶN NGAY TỪ ĐẦU
+    if (user?.isGoogleLogin) {
+      alert("Tài khoản Google không thể đổi mật khẩu!");
+      return;
+    }
 
+    try {
       if (!currentPassword || !newPassword || !confirmPassword) {
         alert("Vui lòng nhập đầy đủ thông tin!");
         return;
@@ -76,7 +83,6 @@ export default function ChangePasswordPage() {
         }
       );
 
-      // ✅ THÊM LOGOUT SAU KHI ĐỔI MẬT KHẨU
       alert("🎉 Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
 
       localStorage.clear();
@@ -122,7 +128,10 @@ export default function ChangePasswordPage() {
 
           <div className="border-t my-3"></div>
 
-          <MenuItem icon={<Lock size={18} />} label="Đổi mật khẩu" active />
+          {/* ✅ ẨN ĐỔI MẬT KHẨU NẾU LÀ GOOGLE USER */}
+          {!isGoogleUser && (
+            <MenuItem icon={<Lock size={18} />} label="Đổi mật khẩu" active />
+          )}
 
           <button
             onClick={handleLogout}
@@ -141,7 +150,6 @@ export default function ChangePasswordPage() {
             🔒 Đổi mật khẩu
           </h1>
 
-          {/* ✅ THÔNG BÁO GOOGLE */}
           {isGoogleUser && (
             <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-lg text-sm text-center">
               Bạn đang đăng nhập bằng Google nên không thể đổi mật khẩu.
@@ -213,7 +221,6 @@ export default function ChangePasswordPage() {
   );
 }
 
-// ===== MENU ITEM =====
 function MenuItem({ icon, label, active = false, onClick }: any) {
   return (
     <div

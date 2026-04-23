@@ -12,8 +12,7 @@ export interface Trip {
   status: "open" | "closed" | "full" | "deleted";
 }
 interface GlobalService { _id: string; serviceName: string; basePrice: number; unit: string; type: string }
-interface Props { tourId: string; trips: Trip[]; onRefresh: () => void }
-
+interface Props { tourId: string; trips: Trip[]; duration: number; onRefresh: () => void }
 const SERVICE_TYPES = [
   { value: "all", label: "Tất cả loại" },
   { value: "hotel", label: "Khách sạn" },
@@ -30,21 +29,21 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 const CheckedIcon = () => (
   <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shrink-0 shadow-md shadow-orange-200">
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
   </div>
 );
 
-export default function TourTrips({ tourId, trips, onRefresh }: Props) {
+export default function TourTrips({ tourId, trips, duration, onRefresh }: Props) {
   const today = new Date().toISOString().split("T")[0];
 
   // ── Services ──
   const [globalServices, setGlobalServices] = useState<GlobalService[]>([]);
-  const [searchTerm, setSearchTerm]         = useState("");
-  const [filterType, setFilterType]         = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
 
   // ── Form (dùng cho cả tạo và sửa) ──
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [loading, setLoading]             = useState(false);
+  const [loading, setLoading] = useState(false);
   const [tripForm, setTripForm] = useState({
     start_date: "", end_date: "", min_people: 1, max_people: 10,
     selected_services: [] as { service_id: string; quantity: number; note: string }[],
@@ -66,7 +65,7 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
       const matchType = filterType === "all" || s.type === filterType;
       return matchName && matchType;
     }),
-  [globalServices, searchTerm, filterType]);
+    [globalServices, searchTerm, filterType]);
 
   // ── Service handlers ──
   const toggleService = (service: GlobalService) => {
@@ -91,17 +90,25 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
   const handleEditClick = (trip: Trip) => {
     setEditingTripId(trip._id);
     const fmtDate = (d: string) => d ? new Date(d).toISOString().split("T")[0] : "";
+
+    // ✅ Thêm || [] để tránh crash khi services undefined
+    const services = trip.services || [];
+
     setTripForm({
       start_date: fmtDate(trip.start_date),
-      end_date:   fmtDate(trip.end_date),
+      end_date: fmtDate(trip.end_date),
       min_people: trip.min_people,
       max_people: trip.max_people,
-      selected_services: trip.services.map(s => ({
-        service_id: typeof s.service_id === "string" ? s.service_id : s.service_id._id,
-        quantity: s.quantity,
-        note: s.note || "",
-      })),
+      selected_services: services
+        .map(s => {
+          const serviceId = typeof s.service_id === "string"
+            ? s.service_id
+            : (s.service_id as any)?._id ?? "";
+          return { service_id: serviceId, quantity: s.quantity, note: s.note || "" };
+        })
+        .filter(s => globalServices.some(g => g._id === s.service_id)),
     });
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -180,28 +187,39 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
         {/* Ngày & số người */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div>
-            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày đi</label>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày khởi hành</label>
             <input type="date" value={tripForm.start_date} min={!editingTripId ? today : undefined}
-              onChange={e => setTripForm(f => ({ ...f, start_date: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+              onChange={e => {
+                const start = e.target.value;
+                let end = "";
+                if (start && duration) {
+                  const d = new Date(start);
+                  d.setDate(d.getDate() + duration - 1);
+                  end = d.toISOString().split("T")[0];
+                }
+                setTripForm(f => ({ ...f, start_date: start, end_date: end }));
+              }}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày về</label>
-            <input type="date" value={tripForm.end_date} min={tripForm.start_date}
-              onChange={e => setTripForm(f => ({ ...f, end_date: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Ngày kết thúc</label>
+            <input type="date" value={tripForm.end_date} disabled
+              className="w-full border border-gray-100 rounded-xl px-3 py-2.5 text-sm bg-gray-50 text-gray-400 cursor-not-allowed" />
+            {tripForm.end_date && (
+              <p className="text-[10px] text-orange-500 mt-1 font-semibold">Tự tính từ {duration} ngày tour</p>
+            )}
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 block mb-1">Tối thiểu (người)</label>
             <input type="number" min={1} value={tripForm.min_people}
               onChange={e => setTripForm(f => ({ ...f, min_people: Number(e.target.value) }))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 block mb-1">Tối đa (người)</label>
             <input type="number" min={1} value={tripForm.max_people}
               onChange={e => setTripForm(f => ({ ...f, max_people: Number(e.target.value) }))}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400"/>
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
           </div>
         </div>
 
@@ -217,7 +235,7 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Dịch vụ đi kèm ({filteredServices.length})</p>
             <div className="flex gap-2">
               <input type="text" placeholder="Tìm dịch vụ..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-orange-400 w-40"/>
+                className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-orange-400 w-40" />
               <select value={filterType} onChange={e => setFilterType(e.target.value)} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-orange-400 cursor-pointer">
                 {SERVICE_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
@@ -241,14 +259,14 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
                         <p className="text-xs font-bold text-gray-700 leading-tight">{service.serviceName}</p>
                         <p className="text-[10px] text-orange-500 font-bold mt-1">{service.basePrice.toLocaleString()}₫ <span className="text-gray-400 font-normal">/ {service.unit}</span></p>
                       </div>
-                      {selected && <CheckedIcon/>}
+                      {selected && <CheckedIcon />}
                     </div>
                     {selected && (
                       <div className="mt-2 pt-2 border-t border-orange-100" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
                           <span className="text-[9px] text-gray-400 font-bold uppercase">Qty:</span>
                           <input type="number" className="flex-1 p-1.5 bg-white border border-orange-100 rounded-lg text-center text-xs text-orange-500 font-black outline-none"
-                            value={selected.quantity} onChange={e => updateServiceQty(service._id, Number(e.target.value))}/>
+                            value={selected.quantity} onChange={e => updateServiceQty(service._id, Number(e.target.value))} />
                         </div>
                       </div>
                     )}
@@ -278,9 +296,9 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
           onClick={handleSubmitTrip}
           disabled={loading}
           className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold border-none cursor-pointer transition-colors disabled:opacity-60">
-          {loading ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Đang xử lý...</span>
+          {loading ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Đang xử lý...</span>
             : editingTripId ? "💾 Lưu cập nhật"
-            : "+ Thêm chuyến"}
+              : "+ Thêm chuyến"}
         </button>
       </div>
 
@@ -297,13 +315,13 @@ export default function TourTrips({ tourId, trips, onRefresh }: Props) {
           </div>
           <div className="divide-y divide-gray-50">
             {[...localTrips.filter(t => t.status !== "deleted")].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()).map(trip => {
-              const start      = new Date(trip.start_date);
-              const end        = new Date(trip.end_date);
-              const slotsLeft  = trip.max_people - trip.booked_people;
-              const isPast     = end < new Date();
-              const nights     = Math.ceil((end.getTime() - start.getTime()) / 86400000);
-              const dayLabels  = ["CN","T2","T3","T4","T5","T6","T7"];
-              const minPeople  = trip.min_people ?? 1;
+              const start = new Date(trip.start_date);
+              const end = new Date(trip.end_date);
+              const slotsLeft = trip.max_people - trip.booked_people;
+              const isPast = end < new Date();
+              const nights = Math.ceil((end.getTime() - start.getTime()) / 86400000);
+              const dayLabels = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+              const minPeople = trip.min_people ?? 1;
               const reachedMin = trip.booked_people >= minPeople;
               return (
                 <div key={trip._id} className={`px-5 py-4 ${isPast ? "opacity-40" : ""}`}>

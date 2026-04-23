@@ -9,6 +9,7 @@ interface Category {
   name: string;
   slug: string;
   status: "active" | "inactive";
+  image_url?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,7 +79,10 @@ export default function AdminCategories() {
   const [editName, setEditName] = useState("");
   const [editStatus, setEditStatus] = useState<"active" | "inactive">("active");
   const [saving, setSaving] = useState(false);
-
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string>("");
+  const [addImageFile, setAddImageFile] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string>("");
   // Delete confirm
   const [deletingCat, setDeletingCat] = useState<Category | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -133,11 +137,14 @@ export default function AdminCategories() {
     setEditingCat(cat);
     setEditName(cat.name);
     setEditStatus(cat.status);
+    setEditImageFile(null);
+    setEditImagePreview(cat.image_url || "");
   }
-
   function openAdd() {
     setAddName("");
     setAddStatus("active");
+    setAddImageFile(null);
+    setAddImagePreview("");
     setShowAdd(true);
   }
 
@@ -152,7 +159,18 @@ export default function AdminCategories() {
       });
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setCategories((prev) => [data.data, ...prev]);
+      let newCat = data.data;
+      // Upload ảnh nếu có
+      if (addImageFile && newCat?.slug) {
+        const fd = new FormData();
+        fd.append("image", addImageFile);
+        const upRes = await fetch(`${API}/categories/${newCat.slug}/upload`, { method: "POST", body: fd });
+        if (upRes.ok) {
+          const upData = await upRes.json();
+          newCat = { ...newCat, image_url: upData.data?.image_url || upData.image_url };
+        }
+      }
+      setCategories((prev) => [newCat, ...prev]);
       setShowAdd(false);
       showToast("Thêm danh mục thành công!");
     } catch {
@@ -161,15 +179,25 @@ export default function AdminCategories() {
       setAdding(false);
     }
   }
-
   async function handleSave() {
     if (!editingCat) return;
     setSaving(true);
     try {
+      let image_url = editingCat.image_url;
+      // Upload ảnh mới nếu có
+      if (editImageFile) {
+        const fd = new FormData();
+        fd.append("image", editImageFile);
+        const upRes = await fetch(`${API}/categories/${editingCat.slug}/upload`, { method: "POST", body: fd });
+        if (upRes.ok) {
+          const upData = await upRes.json();
+          image_url = upData.data?.image_url || upData.image_url || image_url;
+        }
+      }
       const res = await fetch(`${API}/categories/${editingCat.slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName, status: editStatus }),
+        body: JSON.stringify({ name: editName, status: editStatus, image_url }),
       });
       if (!res.ok) throw new Error();
 
@@ -363,13 +391,13 @@ export default function AdminCategories() {
               className={`bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-3 transition-all hover:shadow-md ${cat.status === "inactive" ? "opacity-60 border-gray-100" : "border-gray-100"}`}
             >
               {/* Icon + name — click để xem tours */}
-              <div
-                className="flex items-start justify-between gap-2 cursor-pointer"
-                onClick={() => openCatTours(cat)}
-              >
+              <div className="flex items-start justify-between gap-2 cursor-pointer"
+                onClick={() => openCatTours(cat)}>
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center text-2xl flex-shrink-0">
-                    {CATEGORY_ICONS[cat.slug] ?? "🏷️"}
+                  <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center text-2xl flex-shrink-0 overflow-hidden">
+                    {cat.image_url
+                      ? <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover" />
+                      : CATEGORY_ICONS[cat.slug] ?? "🏷️"}
                   </div>
                   <div>
                     <p className="font-bold text-gray-900 text-sm leading-tight hover:text-orange-500 transition-colors">
@@ -399,11 +427,10 @@ export default function AdminCategories() {
                   title={
                     cat.status === "active" ? "Tắt danh mục" : "Bật danh mục"
                   }
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    cat.status === "active"
-                      ? "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                      : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                  }`}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${cat.status === "active"
+                    ? "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                    }`}
                 >
                   {cat.status === "active" ? "Tắt" : "Bật"}
                 </button>
@@ -413,12 +440,12 @@ export default function AdminCategories() {
                 >
                   ✏️ Sửa
                 </button>
-                <button
+                {/* <button
                   onClick={() => setDeletingCat(cat)}
                   className="py-1.5 px-3 rounded-lg text-xs font-semibold bg-red-50 text-red-400 hover:bg-red-100 transition-colors"
                 >
                   🗑️
-                </button>
+                </button> */}
               </div>
             </div>
           ))}
@@ -458,14 +485,29 @@ export default function AdminCategories() {
                 </label>
                 <select
                   value={addStatus}
-                  onChange={(e) =>
-                    setAddStatus(e.target.value as "active" | "inactive")
-                  }
+                  onChange={(e) => setAddStatus(e.target.value as "active" | "inactive")}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
                   <option value="active">Hoạt động</option>
                   <option value="inactive">Tạm ẩn</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Ảnh danh mục</label>
+                <label className="flex items-center gap-3 cursor-pointer border-2 border-dashed border-gray-200 hover:border-orange-400 rounded-xl p-3 transition-colors group">
+                  {addImagePreview
+                    ? <img src={addImagePreview} className="w-14 h-14 object-cover rounded-lg shrink-0" />
+                    : <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl shrink-0 group-hover:bg-orange-50">🖼️</div>}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600 group-hover:text-orange-500">{addImagePreview ? "Đổi ảnh" : "Chọn ảnh"}</p>
+                    <p className="text-xs text-gray-400">JPG, PNG · tối đa 5MB</p>
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                    const f = e.target.files?.[0]; if (!f) return;
+                    setAddImageFile(f);
+                    setAddImagePreview(URL.createObjectURL(f));
+                  }} />
+                </label>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
@@ -530,14 +572,35 @@ export default function AdminCategories() {
                 </label>
                 <select
                   value={editStatus}
-                  onChange={(e) =>
-                    setEditStatus(e.target.value as "active" | "inactive")
-                  }
+                  onChange={(e) => setEditStatus(e.target.value as "active" | "inactive")}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
                 >
                   <option value="active">Hoạt động</option>
                   <option value="inactive">Tạm ẩn</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5">Ảnh danh mục</label>
+                <label className="flex items-center gap-3 cursor-pointer border-2 border-dashed border-gray-200 hover:border-orange-400 rounded-xl p-3 transition-colors group">
+                  {editImagePreview
+                    ? <img src={editImagePreview} className="w-14 h-14 object-cover rounded-lg shrink-0" />
+                    : <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl shrink-0 group-hover:bg-orange-50">🖼️</div>}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600 group-hover:text-orange-500">{editImagePreview ? "Đổi ảnh" : "Chọn ảnh"}</p>
+                    <p className="text-xs text-gray-400">JPG, PNG · tối đa 5MB</p>
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                    const f = e.target.files?.[0]; if (!f) return;
+                    setEditImageFile(f);
+                    setEditImagePreview(URL.createObjectURL(f));
+                  }} />
+                </label>
+                {editImagePreview && (
+                  <button onClick={() => { setEditImageFile(null); setEditImagePreview(""); }}
+                    className="mt-1.5 text-xs text-red-400 hover:text-red-600 bg-transparent border-none cursor-pointer">
+                    ✕ Xoá ảnh
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex gap-3 mt-6">
@@ -653,11 +716,10 @@ export default function AdminCategories() {
                       </div>
                       {/* Status */}
                       <span
-                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${
-                          tour.status === "active"
-                            ? "bg-emerald-50 text-emerald-600"
-                            : "bg-gray-100 text-gray-400"
-                        }`}
+                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${tour.status === "active"
+                          ? "bg-emerald-50 text-emerald-600"
+                          : "bg-gray-100 text-gray-400"
+                          }`}
                       >
                         {tour.status === "active" ? "Hoạt động" : "Tạm ẩn"}
                       </span>

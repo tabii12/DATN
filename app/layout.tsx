@@ -14,17 +14,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="vi">
       <body className="flex flex-col min-h-screen bg-[#F8FAFC] text-gray-800">
-        {/* ================= HEADER ================= */}
-        {/* ================= MAIN ================= */}
         <main className="grow w-full">{children}</main>
-
-        {/* ================= FOOTER ================= */}
       </body>
     </html>
   );
