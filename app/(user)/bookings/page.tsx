@@ -18,6 +18,7 @@ function formatVND(n: number) {
 }
 
 function formatDate(d: string) {
+  if (!d) return "";
   return new Date(d).toLocaleDateString("vi-VN");
 }
 
@@ -81,21 +82,46 @@ export default function BookingsPage() {
         const raw = json.data || [];
 
         const normalized: Booking[] = raw.map((b: any) => {
+          const adults = Number(b.adults || 0);
+          const children = Number(b.children || 0);
+          const infants = Number(b.infants || 0);
+          const basePrice = Number(b.trip_id?.price || 0);
+          const singleRooms = Number(b.singleRooms || 0);
+          const insuranceFee = 500000;
+
+          let total = Number(b.total_price || 0);
+
+          if (!total) {
+            total =
+              adults * basePrice +
+              children * basePrice +
+              singleRooms * 656775 +
+              insuranceFee;
+          }
+
           return {
             id: b._id,
             tourId: b.trip_id?._id || "",
-            tourName: b.trip_id?.title || "Không có tên",
-            thumbnail: b.trip_id?.thumbnail || "",
-            adults: b.adults || 0,
-            children: b.children || 0,
-            infants: b.infants || 0,
-            basePrice: b.trip_id?.price || 0,
-            total: b.total_price || 0,
-            singleRooms: b.singleRooms || 0,
-            insuranceFee: 500000,
+            tourName: b.tourName || b.trip_id?.title || "Không có tên",
+            thumbnail:
+              b.thumbnail ||
+              b.trip_id?.thumbnail ||
+              "https://via.placeholder.com/400x300?text=No+Image",
+
+            adults,
+            children,
+            infants,
+
+            basePrice,
+            total,
+
+            singleRooms,
+            insuranceFee,
+
             departureDate: b.departureDate,
             status: b.status,
             createdAt: b.createdAt,
+
             contactName: b.contactName,
             contactEmail: b.contactEmail,
             contactPhone: b.contactPhone,
@@ -139,23 +165,14 @@ export default function BookingsPage() {
 
     return (
       <div className="space-y-3">
-        {/* Progress */}
         <div className="flex items-center gap-4 text-xs">
-          {/* Step 1 */}
           <Step active={is50 || is100} label={is100 ? "Đã TT 100%" : "Đã TT 50%"} />
-
           <Line active={is100 || done} />
-
-          {/* Step 2 */}
           <Step active={is100 || done} label="Đã xác nhận" />
-
           <Line active={done} />
-
-          {/* Step 3 */}
           <Step active={done} label="Hoàn thành" />
         </div>
 
-        {/* Warning 50% */}
         {is50 && (
           <div className="bg-yellow-50 border border-yellow-300 text-yellow-700 text-sm p-3 rounded-xl">
             ⚠️ Vui lòng thanh toán 50% còn lại trước{" "}
@@ -226,7 +243,6 @@ export default function BookingsPage() {
 
                 <p>Ngày đi: {formatDate(b.departureDate)}</p>
 
-                {/* 🔥 PROGRESS */}
                 {renderProgress(b)}
 
                 {isTourCompleted(b) && (

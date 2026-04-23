@@ -267,15 +267,20 @@ const [loading, setLoading] = useState(true);
                       <StatusBadge status={b.status} />
                     </div>
                     <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <select
-                        value={b.status}
-                        onChange={(e) => handleUpdateStatus(b.id, e.target.value)}
-                        className="text-[11px] p-1.5 border rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
-                      >
-                        <option value="paid_50">Đã TT 50%</option>
-                        <option value="paid_100">Đã TT 100%</option>
-                        <option value="cancelled">Hủy đơn</option>
-                      </select>
+   {b.status === "cancelled" ? (
+  <span className="text-[11px] px-2 py-1.5 border rounded-lg bg-gray-100 text-gray-400 font-medium">
+    Đã hủy
+  </span>
+) : (
+  <select
+    value={b.status === "paid_50" ? "paid_100" : b.status}
+    onChange={(e) => handleUpdateStatus(b.id, e.target.value)}
+    className="text-[11px] p-1.5 border rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
+  >
+    <option value="paid_100">Đã TT 100%</option>
+    <option value="cancelled">Hủy đơn</option>
+  </select>
+)}
                     </div>
                   </div>
 
