@@ -17,6 +17,10 @@ function formatVND(n: number) {
   return (n || 0).toLocaleString("vi-VN") + "đ";
 }
 
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString("vi-VN");
+}
+
 interface Booking {
   id: string;
   tourId: string;
@@ -35,6 +39,7 @@ interface Booking {
 
   departureDate: string;
   status: string;
+  createdAt?: string;
 
   contactName: string;
   contactEmail: string;
@@ -76,61 +81,21 @@ export default function BookingsPage() {
         const raw = json.data || [];
 
         const normalized: Booking[] = raw.map((b: any) => {
-          let total = Number(b.total_price || 0);
-
-          // fix VNPay x100
-          if (total > 100000000) total = total / 100;
-
-          const basePrice = Number(
-            b.basePrice || b.trip_id?.price || 0
-          );
-
-          const adults = Number(b.adults || 0);
-          const children = Number(b.children || 0);
-          const infants = Number(b.infants || 0);
-          const singleRooms = Number(b.singleRooms || 0);
-
-          const insuranceFee = 500000;
-
-          // 🔥 LUÔN CỘNG 500K
-          total = total + insuranceFee;
-
-          // 👉 nếu BE không có total thì tự tính
-          if (!b.total_price) {
-            const adultTotal = adults * basePrice;
-            const childTotal = children * basePrice;
-            const singleRoomFee = singleRooms * 656775;
-
-            total =
-              adultTotal +
-              childTotal +
-              singleRoomFee +
-              insuranceFee;
-          }
-
           return {
             id: b._id,
             tourId: b.trip_id?._id || "",
-            tourName: b.tourName || b.trip_id?.title || "Không có tên",
-            thumbnail:
-              b.thumbnail ||
-              b.trip_id?.thumbnail ||
-              "https://via.placeholder.com/400x300",
-
-            adults,
-            children,
-            infants,
-
-            basePrice,
-            total,
-
-            singleRooms,
-            insuranceFee,
-
+            tourName: b.trip_id?.title || "Không có tên",
+            thumbnail: b.trip_id?.thumbnail || "",
+            adults: b.adults || 0,
+            children: b.children || 0,
+            infants: b.infants || 0,
+            basePrice: b.trip_id?.price || 0,
+            total: b.total_price || 0,
+            singleRooms: b.singleRooms || 0,
+            insuranceFee: 500000,
             departureDate: b.departureDate,
-
-            status: (b.status || "").toLowerCase(),
-
+            status: b.status,
+            createdAt: b.createdAt,
             contactName: b.contactName,
             contactEmail: b.contactEmail,
             contactPhone: b.contactPhone,
@@ -139,14 +104,14 @@ export default function BookingsPage() {
 
         setBookings(normalized);
       } catch (err) {
-        console.error("Fetch error:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, [router]);
+  }, []);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -160,6 +125,47 @@ export default function BookingsPage() {
     return end < new Date();
   };
 
+  const getDeadline48h = (createdAt?: string) => {
+    if (!createdAt) return "";
+    const d = new Date(createdAt);
+    d.setHours(d.getHours() + 48);
+    return formatDate(d.toISOString());
+  };
+
+  const renderProgress = (b: Booking) => {
+    const is50 = b.status === "paid_50";
+    const is100 = b.status === "paid_100";
+    const done = isTourCompleted(b);
+
+    return (
+      <div className="space-y-3">
+        {/* Progress */}
+        <div className="flex items-center gap-4 text-xs">
+          {/* Step 1 */}
+          <Step active={is50 || is100} label={is100 ? "Đã TT 100%" : "Đã TT 50%"} />
+
+          <Line active={is100 || done} />
+
+          {/* Step 2 */}
+          <Step active={is100 || done} label="Đã xác nhận" />
+
+          <Line active={done} />
+
+          {/* Step 3 */}
+          <Step active={done} label="Hoàn thành" />
+        </div>
+
+        {/* Warning 50% */}
+        {is50 && (
+          <div className="bg-yellow-50 border border-yellow-300 text-yellow-700 text-sm p-3 rounded-xl">
+            ⚠️ Vui lòng thanh toán 50% còn lại trước{" "}
+            <b>{getDeadline48h(b.createdAt)}</b>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) return <p className="p-6">Đang tải...</p>;
 
   return (
@@ -168,7 +174,7 @@ export default function BookingsPage() {
       <div className="w-72 bg-white rounded-2xl shadow-lg p-5">
         <div className="flex items-center gap-3 pb-5 border-b">
           <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white flex items-center justify-center font-bold">
-            {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+            {user?.name?.charAt(0) || "U"}
           </div>
           <div>
             <p className="font-semibold">{user?.name}</p>
@@ -177,9 +183,9 @@ export default function BookingsPage() {
         </div>
 
         <div className="mt-4 space-y-1">
-          <MenuItem icon={<User size={18} />} label="Thông tin cá nhân" href="/profile" active={pathname === "/profile"} />
+          <MenuItem icon={<User size={18} />} label="Thông tin cá nhân" href="/profile" />
           <MenuItem icon={<Briefcase size={18} />} label="Tour đã đặt" href="/bookings" active />
-          <MenuItem icon={<Heart size={18} />} label="Tour yêu thích" href="/favorites" active={pathname === "/favorites"} />
+          <MenuItem icon={<Heart size={18} />} label="Tour yêu thích" href="/favorites" />
 
           <div className="border-t my-3"></div>
 
@@ -211,27 +217,17 @@ export default function BookingsPage() {
                 <p className="font-bold text-lg">{b.tourName}</p>
 
                 <p>
-                  👨‍👩‍👧 {b.adults} NL - {b.children} TE -{" "}
-                  {b.infants > 0 ? b.infants + " TN" : "0 TN"}
+                  👨‍👩‍👧 {b.adults} NL - {b.children} TE - {b.infants} TN
                 </p>
 
                 <p className="text-xl font-bold text-indigo-600">
                   {formatVND(b.total)}
                 </p>
 
-                <p>
-                  Ngày đi:{" "}
-                  {new Date(b.departureDate).toLocaleDateString("vi-VN")}
-                </p>
+                <p>Ngày đi: {formatDate(b.departureDate)}</p>
 
-                <p>
-                  Trạng thái:{" "}
-                  <span className="font-semibold">
-                    {b.status === "paid"
-                      ? "Đã thanh toán"
-                      : "Chờ thanh toán"}
-                  </span>
-                </p>
+                {/* 🔥 PROGRESS */}
+                {renderProgress(b)}
 
                 {isTourCompleted(b) && (
                   <button
@@ -255,6 +251,31 @@ export default function BookingsPage() {
         />
       )}
     </div>
+  );
+}
+
+function Step({ active, label }: any) {
+  return (
+    <div className="flex flex-col items-center">
+      <div
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] ${
+          active ? "bg-indigo-600" : "bg-gray-300"
+        }`}
+      >
+        ✓
+      </div>
+      <span className="mt-1">{label}</span>
+    </div>
+  );
+}
+
+function Line({ active }: any) {
+  return (
+    <div
+      className={`h-1 w-10 ${
+        active ? "bg-indigo-600" : "bg-gray-300"
+      }`}
+    ></div>
   );
 }
 
