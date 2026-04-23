@@ -85,6 +85,7 @@ export default function BookingsPage() {
               "https://via.placeholder.com/400x300?text=No+Image",
             adults: Number(b.adults || 0),
             children: Number(b.children || 0),
+            
             total: Number(total),
             departureDate: b.departureDate,
             status: b.status,
