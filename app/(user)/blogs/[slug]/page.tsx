@@ -39,6 +39,7 @@ export default function BlogDetailPage() {
   const slug = params.slug as string;
 
   const [blog, setBlog] = useState<Blog | null>(null);
+  const [relatedBlogs, setRelatedBlogs] = useState<Blog[]>([]);
   const [relatedTours, setRelatedTours] = useState<RelatedTour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +63,23 @@ export default function BlogDetailPage() {
   }, [slug]);
 
   useEffect(() => {
+    if (!slug) return;
+    const fetchRelatedBlogs = async () => {
+      try {
+        const res = await fetch("https://db-pickyourway.vercel.app/api/blogs");
+        const data = await res.json();
+        const list: Blog[] = data.data || data;
+        const filtered = list.filter(b => b.slug !== slug);
+        const shuffled = filtered.sort(() => Math.random() - 0.5);
+        setRelatedBlogs(shuffled.slice(0, 3));
+      } catch (err) {
+        console.error("Error fetching related blogs:", err);
+      }
+    };
+    fetchRelatedBlogs();
+  }, [slug]);
+
+  useEffect(() => {
     if (!blog?.title) return;
     const city = extractCity(blog.title);
 
@@ -76,7 +94,9 @@ export default function BlogDetailPage() {
           : list;
 
         // Nếu không khớp city nào thì lấy 3 tour đầu
-        setRelatedTours((filtered.length > 0 ? filtered : list).slice(0, 3));
+        const pool = filtered.length > 0 ? filtered : list;
+        const shuffled = pool.sort(() => Math.random() - 0.5);
+        setRelatedTours(shuffled.slice(0, 3));
       } catch (err) {
         console.error("Error fetching related tours:", err);
       }
@@ -137,9 +157,21 @@ export default function BlogDetailPage() {
 
           {/* Content */}
           <div className="px-8 py-8 text-gray-700">
+            <style>{`
+              .blog-content p { margin-bottom: 1rem; line-height: 1.75; }
+              .blog-content img { width: 400px; height: 260px; object-fit: cover; border-radius: 8px; margin: 12px 0; }
+            `}</style>
             <div
-              className="prose max-w-none prose-lg leading-7 whitespace-pre-line"
-              dangerouslySetInnerHTML={{ __html: blog.content.replace(/\n/g, "<br/>") }}
+              className="blog-content text-base"
+              dangerouslySetInnerHTML={{
+                __html: blog.content
+                  .replace(/\r\n/g, "\n")
+                  .replace(/\n{3,}/g, "\n\n")
+                  .replace(/<img([^>]*)>/g, '<div style="display:flex;justify-content:center;margin:12px 0"><img$1 style="width:400px;height:260px;object-fit:cover;border-radius:8px"></div>')
+                  .split("\n\n")
+                  .map(p => p.trim().startsWith("<") ? p : `<p>${p.replace(/\n/g, "<br/>")}</p>`)
+                  .join("")
+              }}
             />
           </div>
 
@@ -149,6 +181,7 @@ export default function BlogDetailPage() {
           </div>
         </article>
       </div>
+
 
       {/* Tour liên quan */}
       {relatedTours.length > 0 && (
@@ -202,6 +235,42 @@ export default function BlogDetailPage() {
                 </a>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Bài viết liên quan */}
+      {relatedBlogs.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 pb-8">
+          <h2 className="text-2xl font-bold mb-6">📰 Bài viết liên quan</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            {relatedBlogs.map(item => (
+              <a
+                key={item._id}
+                href={`/blogs/${item.slug}`}
+                className="bg-white rounded-xl shadow hover:shadow-lg transition group overflow-hidden"
+              >
+                {item.images?.[0] && (
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src={item.images[0].image_url}
+                      alt={item.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      unoptimized
+                    />
+                  </div>
+                )}
+                <div className="p-4">
+                  <p className="text-xs text-gray-400 mb-1">
+                    📅 {new Date(item.createdAt).toLocaleDateString("vi-VN")}
+                  </p>
+                  <h3 className="font-semibold line-clamp-2 group-hover:text-orange-500 transition-colors">
+                    {item.title}
+                  </h3>
+                </div>
+              </a>
+            ))}
           </div>
         </div>
       )}
