@@ -203,14 +203,14 @@ export default function BookingsPage() {
             ) : (
               <div
                 className={`text-sm p-3 rounded-xl border ${
-                  time.hours < 6
+                  (time?.hours ?? 0) < 6
                     ? "bg-red-50 border-red-300 text-red-700"
                     : "bg-yellow-50 border-yellow-300 text-yellow-700"
                 }`}
               >
                 ⚠️ Còn{" "}
                 <b>
-                  {time.hours}h {time.minutes}m {time.seconds}s
+                  {(time?.hours ?? 0)}h {(time?.minutes ?? 0)}m {(time?.seconds ?? 0)}s
                 </b>{" "}
                 để thanh toán 50% còn lại
               </div>
