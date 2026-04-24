@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   User,
   Heart,
@@ -20,6 +20,21 @@ function formatVND(n: number) {
 function formatDate(d: string) {
   if (!d) return "";
   return new Date(d).toLocaleDateString("vi-VN");
+}
+
+function getCountdown(createdAt?: string, now?: number) {
+  if (!createdAt || !now) return null;
+
+  const deadline = new Date(createdAt).getTime() + 48 * 60 * 60 * 1000;
+  const diff = deadline - now;
+
+  if (diff <= 0) return { expired: true };
+
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+  return { hours, minutes, seconds, expired: false };
 }
 
 interface Booking {
@@ -52,9 +67,17 @@ export default function BookingsPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   const router = useRouter();
-  const pathname = usePathname();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -72,9 +95,7 @@ export default function BookingsPage() {
         const res = await fetch(
           "https://db-pickyourway.vercel.app/api/bookings/my-bookings",
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
@@ -106,7 +127,7 @@ export default function BookingsPage() {
             thumbnail:
               b.thumbnail ||
               b.trip_id?.thumbnail ||
-              "https://via.placeholder.com/400x300?text=No+Image",
+              "https://via.placeholder.com/400x300",
 
             adults,
             children,
@@ -151,17 +172,16 @@ export default function BookingsPage() {
     return end < new Date();
   };
 
-  const getDeadline48h = (createdAt?: string) => {
-    if (!createdAt) return "";
-    const d = new Date(createdAt);
-    d.setHours(d.getHours() + 48);
-    return formatDate(d.toISOString());
-  };
-
   const renderProgress = (b: Booking) => {
     const is50 = b.status === "paid_50";
     const is100 = b.status === "paid_100";
     const done = isTourCompleted(b);
+
+    const time = getCountdown(b.createdAt, now);
+
+    // 🌙 CHECK BAN ĐÊM (22h - 6h)
+    const hour = new Date(now).getHours();
+    const isNight = hour >= 22 || hour < 6;
 
     return (
       <div className="space-y-3">
@@ -173,12 +193,40 @@ export default function BookingsPage() {
           <Step active={done} label="Hoàn thành" />
         </div>
 
-        {is50 && (
-          <div className="bg-yellow-50 border border-yellow-300 text-yellow-700 text-sm p-3 rounded-xl">
-            ⚠️ Vui lòng thanh toán 50% còn lại trước{" "}
-            <b>{getDeadline48h(b.createdAt)}</b>
-          </div>
+        {/* COUNTDOWN */}
+        {is50 && time && (
+          <>
+            {time.expired ? (
+              <div className="bg-red-50 border border-red-300 text-red-700 text-sm p-3 rounded-xl">
+                ❌ Đã quá hạn thanh toán 50% còn lại
+              </div>
+            ) : (
+              <div
+                className={`text-sm p-3 rounded-xl border ${
+                  time.hours < 6
+                    ? "bg-red-50 border-red-300 text-red-700"
+                    : "bg-yellow-50 border-yellow-300 text-yellow-700"
+                }`}
+              >
+                ⚠️ Còn{" "}
+                <b>
+                  {time.hours}h {time.minutes}m {time.seconds}s
+                </b>{" "}
+                để thanh toán 50% còn lại
+              </div>
+            )}
+
+            {/* 🌙 THÔNG BÁO BAN ĐÊM */}
+            {isNight && (
+              <div className="bg-indigo-50 border border-indigo-300 text-indigo-700 text-sm p-3 rounded-xl">
+                🌙 Ban đêm: Hệ thống sẽ tự động gửi email nhắc thanh toán{" "}
+                <b>50% còn lại</b> đến bạn.
+              </div>
+            )}
+          </>
         )}
+
+        <CancelInfoToggle />
       </div>
     );
   };
@@ -187,7 +235,6 @@ export default function BookingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex gap-6">
-      {/* SIDEBAR */}
       <div className="w-72 bg-white rounded-2xl shadow-lg p-5">
         <div className="flex items-center gap-3 pb-5 border-b">
           <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white flex items-center justify-center font-bold">
@@ -218,17 +265,13 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      {/* CONTENT */}
       <div className="flex-1 space-y-6">
         <h1 className="text-2xl font-bold">Tour đã đặt</h1>
 
         {bookings.map((b) => (
           <div key={b.id} className="bg-white p-5 rounded-xl shadow space-y-4">
             <div className="flex gap-5">
-              <img
-                src={b.thumbnail}
-                className="w-56 h-40 object-cover rounded-xl"
-              />
+              <img src={b.thumbnail} className="w-56 h-40 object-cover rounded-xl" />
 
               <div className="flex-1 space-y-2">
                 <p className="font-bold text-lg">{b.tourName}</p>
@@ -270,6 +313,36 @@ export default function BookingsPage() {
   );
 }
 
+/* ---------- COMPONENT PHỤ ---------- */
+
+function CancelInfoToggle() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setOpen(!open)}
+        className="text-sm text-red-600 hover:underline"
+      >
+        {open ? "▲ Ẩn thông tin huỷ tour" : "▼ Muốn huỷ tour?"}
+      </button>
+
+      {open && (
+        <div className="mt-2 bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-xl space-y-1">
+          <p>📞 Hotline: <b>0336 323 498</b></p>
+          <p>📧 Email: <b>support@pickyourway.vn</b></p>
+          <p>
+            👉 Gửi yêu cầu tại{" "}
+            <Link href="/contact" className="underline font-semibold">
+              trang liên hệ
+            </Link>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Step({ active, label }: any) {
   return (
     <div className="flex flex-col items-center">
@@ -287,11 +360,7 @@ function Step({ active, label }: any) {
 
 function Line({ active }: any) {
   return (
-    <div
-      className={`h-1 w-10 ${
-        active ? "bg-indigo-600" : "bg-gray-300"
-      }`}
-    ></div>
+    <div className={`h-1 w-10 ${active ? "bg-indigo-600" : "bg-gray-300"}`}></div>
   );
 }
 
