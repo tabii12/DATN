@@ -135,7 +135,7 @@ function StatusSelect({
   onUpdate,
 }: {
   booking: Booking;
-  onUpdate: (id: string, newStatus: string) => void;
+  onUpdate: (id: string, newStatus: string, newPrice?: number) => void;
 }) {
   const s = booking.status;
 
@@ -148,7 +148,7 @@ function StatusSelect({
     );
   }
 
- // Đã hủy - chỉ được chuyển sang Đã hoàn
+  // Đã hủy - chỉ được chuyển sang Đã hoàn
   if (s === "cancelled") {
     return (
       <select
@@ -164,7 +164,7 @@ function StatusSelect({
     );
   }
 
-  // Đã TT 100% - chỉ được hủy hoặc hoàn
+  // Đã TT 100% - chỉ được hủy
   if (s === "paid_100") {
     return (
       <select
@@ -176,24 +176,46 @@ function StatusSelect({
       >
         <option value="" disabled>Cập nhật...</option>
         <option value="cancelled">✕ Đã hủy</option>
-        <option value="refunded">↩ Đã hoàn</option>
       </select>
     );
   }
 
-  // paid_50 / pending - được lên 100%, hủy, hoàn
+  // Đã TT 50% - chỉ được lên 100% (giá nhân đôi) hoặc hủy
+  if (s === "paid_50") {
+    return (
+      <select
+        defaultValue=""
+        onChange={(e) => {
+          if (!e.target.value) return;
+          const newPrice =
+            e.target.value === "paid_100"
+              ? booking.totalPrice * 2
+              : undefined;
+          onUpdate(booking.id, e.target.value, newPrice);
+        }}
+        className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
+      >
+        <option value="" disabled>Cập nhật...</option>
+        <option value="paid_100">✓ Đã TT 100%</option>
+        <option value="cancelled">✕ Đã hủy</option>
+      </select>
+    );
+  }
+
+  // pending - được lên 50%, 100%, hoặc hủy
   return (
     <select
       defaultValue=""
       onChange={(e) => {
-        if (e.target.value) onUpdate(booking.id, e.target.value);
+        if (!e.target.value) return;
+        onUpdate(booking.id, e.target.value);
       }}
       className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
     >
       <option value="" disabled>Cập nhật...</option>
+      <option value="paid_50">◑ Đã TT 50%</option>
       <option value="paid_100">✓ Đã TT 100%</option>
       <option value="cancelled">✕ Đã hủy</option>
-      <option value="refunded">↩ Đã hoàn</option>
     </select>
   );
 }
@@ -240,7 +262,11 @@ export function BookingTab() {
     fetchBookings();
   }, [fetchBookings]);
 
-  const handleUpdateStatus = async (id: string, newStatus: string) => {
+  const handleUpdateStatus = async (
+    id: string,
+    newStatus: string,
+    newPrice?: number
+  ) => {
     const token = localStorage.getItem("token");
     if (!token) return alert("Vui lòng đăng nhập!");
     try {
@@ -254,7 +280,15 @@ export function BookingTab() {
       });
       if (res.ok) {
         setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
+          prev.map((b) =>
+            b.id === id
+              ? {
+                  ...b,
+                  status: newStatus,
+                  ...(newPrice !== undefined ? { totalPrice: newPrice } : {}),
+                }
+              : b
+          )
         );
         alert("Cập nhật thành công!");
       }
