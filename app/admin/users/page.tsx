@@ -258,7 +258,7 @@ export default function AdminUsers() {
     if (!editingUser) return;
     setSaving(true);
     try {
-      const resRole = await fetch(`${API}/role/${editingUser._id}`, {
+      const resRole = await fetch(`${API}/update/${editingUser._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
