@@ -133,7 +133,7 @@ function StatusSelect({
 
   // Nếu đã hoàn tiền thì thường là quy trình cuối cùng, có thể khóa hoặc để mở tùy bạn.
   // Ở đây mình để mở luôn để Admin tối quyền.
-  
+
   return (
     <select
       value={s} // Dùng value={s} để nó luôn hiển thị đúng trạng thái hiện tại của đơn
@@ -197,6 +197,7 @@ export function BookingTab() {
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     const token = localStorage.getItem("token");
     if (!token) return alert("Vui lòng đăng nhập!");
+
     try {
       const res = await fetch(`${API}/bookings/detail/${id}/status`, {
         method: "PATCH",
@@ -206,15 +207,24 @@ export function BookingTab() {
         },
         body: JSON.stringify({ newStatus }),
       });
+
+      // QUAN TRỌNG: Phải parse JSON trước khi check res.ok
+      const result = await res.json();
+
       if (res.ok) {
-        const result = await res.json();
+        // Trường hợp 200 OK
         setBookings((prev) =>
           prev.map((b) => (b.id === id ? normalizeBooking(result.data) : b)),
         );
         alert("Cập nhật thành công!");
+      } else {
+        // Trường hợp lỗi từ Backend (400, 403, 500...)
+        // Backend của bạn trả về { success: false, message: "..." }
+        alert(`Lỗi: ${result.message || "Không thể cập nhật trạng thái"}`);
       }
-    } catch {
-      alert("Lỗi kết nối!");
+    } catch (err) {
+      // Trường hợp rớt mạng hoặc lỗi code
+      alert("Lỗi kết nối server!");
     }
   };
 
