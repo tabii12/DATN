@@ -3,14 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  User,
-  Heart,
-  LogOut,
-  Lock,
-  Briefcase,
-  Star,
-} from "lucide-react";
+import { User, Heart, LogOut, Lock, Briefcase, Star } from "lucide-react";
 import CommentForm from "../components/CommentForm";
 
 function formatVND(n: number) {
@@ -96,7 +89,7 @@ export default function BookingsPage() {
           "https://db-pickyourway.vercel.app/api/bookings/my-bookings",
           {
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
 
         const json = await res.json();
@@ -173,32 +166,31 @@ export default function BookingsPage() {
   };
 
   const renderProgress = (b: Booking) => {
-    const is50 = b.status === "paid_50";
-    const is100 = b.status === "paid_100";
+    const isConfirmed = b.status === "confirmed";
+    const isPaid = b.status === "paid";
     const done = isTourCompleted(b);
 
     const time = getCountdown(b.createdAt, now);
 
-    // 🌙 CHECK BAN ĐÊM (22h - 6h)
     const hour = new Date(now).getHours();
     const isNight = hour >= 22 || hour < 6;
 
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-4 text-xs">
-          <Step active={is50 || is100} label={is100 ? "Đã TT 100%" : "Đã TT 50%"} />
-          <Line active={is100 || done} />
-          <Step active={is100 || done} label="Đã xác nhận" />
+          <Step active={isConfirmed || isPaid} label="Đã xác nhận" />
+          <Line active={isPaid || done} />
+          <Step active={isPaid} label="Đã thanh toán" />
           <Line active={done} />
           <Step active={done} label="Hoàn thành" />
         </div>
 
-        {/* COUNTDOWN */}
-        {is50 && time && (
+        {/* COUNTDOWN: chỉ khi đã confirmed nhưng chưa paid */}
+        {isConfirmed && !isPaid && time && (
           <>
             {time.expired ? (
               <div className="bg-red-50 border border-red-300 text-red-700 text-sm p-3 rounded-xl">
-                ❌ Đã quá hạn thanh toán 50% còn lại
+                ❌ Đã quá hạn thanh toán
               </div>
             ) : (
               <div
@@ -210,17 +202,16 @@ export default function BookingsPage() {
               >
                 ⚠️ Còn{" "}
                 <b>
-                  {(time?.hours ?? 0)}h {(time?.minutes ?? 0)}m {(time?.seconds ?? 0)}s
+                  {time?.hours ?? 0}h {time?.minutes ?? 0}m {time?.seconds ?? 0}
+                  s
                 </b>{" "}
-                để thanh toán 50% còn lại
+                để hoàn tất thanh toán
               </div>
             )}
 
-            {/* 🌙 THÔNG BÁO BAN ĐÊM */}
             {isNight && (
               <div className="bg-indigo-50 border border-indigo-300 text-indigo-700 text-sm p-3 rounded-xl">
-                🌙 Ban đêm: Hệ thống sẽ tự động gửi email nhắc thanh toán{" "}
-                <b>50% còn lại</b> đến bạn.
+                🌙 Ban đêm: Hệ thống sẽ gửi email nhắc thanh toán cho bạn
               </div>
             )}
           </>
@@ -247,13 +238,30 @@ export default function BookingsPage() {
         </div>
 
         <div className="mt-4 space-y-1">
-          <MenuItem icon={<User size={18} />} label="Thông tin cá nhân" href="/profile" />
-          <MenuItem icon={<Briefcase size={18} />} label="Tour đã đặt" href="/bookings" active />
-          <MenuItem icon={<Heart size={18} />} label="Tour yêu thích" href="/favorites" />
+          <MenuItem
+            icon={<User size={18} />}
+            label="Thông tin cá nhân"
+            href="/profile"
+          />
+          <MenuItem
+            icon={<Briefcase size={18} />}
+            label="Tour đã đặt"
+            href="/bookings"
+            active
+          />
+          <MenuItem
+            icon={<Heart size={18} />}
+            label="Tour yêu thích"
+            href="/favorites"
+          />
 
           <div className="border-t my-3"></div>
 
-          <MenuItem icon={<Lock size={18} />} label="Đổi mật khẩu" href="/change-password" />
+          <MenuItem
+            icon={<Lock size={18} />}
+            label="Đổi mật khẩu"
+            href="/change-password"
+          />
 
           <button
             onClick={handleLogout}
@@ -271,7 +279,10 @@ export default function BookingsPage() {
         {bookings.map((b) => (
           <div key={b.id} className="bg-white p-5 rounded-xl shadow space-y-4">
             <div className="flex gap-5">
-              <img src={b.thumbnail} className="w-56 h-40 object-cover rounded-xl" />
+              <img
+                src={b.thumbnail}
+                className="w-56 h-40 object-cover rounded-xl"
+              />
 
               <div className="flex-1 space-y-2">
                 <p className="font-bold text-lg">{b.tourName}</p>
@@ -329,8 +340,12 @@ function CancelInfoToggle() {
 
       {open && (
         <div className="mt-2 bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-xl space-y-1">
-          <p>📞 Hotline: <b>0336 323 498</b></p>
-          <p>📧 Email: <b>support@pickyourway.vn</b></p>
+          <p>
+            📞 Hotline: <b>0336 323 498</b>
+          </p>
+          <p>
+            📧 Email: <b>support@pickyourway.vn</b>
+          </p>
           <p>
             👉 Gửi yêu cầu tại{" "}
             <Link href="/contact" className="underline font-semibold">
@@ -360,7 +375,9 @@ function Step({ active, label }: any) {
 
 function Line({ active }: any) {
   return (
-    <div className={`h-1 w-10 ${active ? "bg-indigo-600" : "bg-gray-300"}`}></div>
+    <div
+      className={`h-1 w-10 ${active ? "bg-indigo-600" : "bg-gray-300"}`}
+    ></div>
   );
 }
 
