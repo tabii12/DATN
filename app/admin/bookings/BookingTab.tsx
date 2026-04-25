@@ -1,28 +1,26 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 
+// --- Interfaces ---
 interface BookingRaw {
-  _id: string;
+  _id: { $oid: string } | string;
   tourName: string;
   contactName: string;
   contactEmail: string;
   contactPhone: string;
-  departureDate: any;
+  departureDate: { $date: string } | string;
   adults: number;
   children: number;
   infants: number;
-  total: number;
+  total_members: number;
+  total_price: number;
+  payNow: number;
+  remaining: number;
+  paymentPct: number;
   singleRooms: number;
-  status: string;
-  createdAt: any;
-  orderId: string;
-  vnpay?: {
-    amount?: number;
-    status?: string;
-    bank_code?: string;
-    txnRef?: string;
-    transactionNo?: string;
-  };
+  status: string; // Trực tiếp từ API: pending, confirmed, paid, cancelled, refunded
+  createdAt: { $date: string } | string;
+  thumbnail: string;
 }
 
 interface Booking {
@@ -35,49 +33,41 @@ interface Booking {
   adults: number;
   children: number;
   infants: number;
+  totalMembers: number;
   totalPrice: number;
+  payNow: number;
+  remaining: number;
+  paymentPct: number;
   status: string;
   singleRooms: number;
   createdAt: string;
+  thumbnail: string;
 }
 
-function normalizeStatus(raw: string): string {
-  const map: Record<string, string> = {
-    confirmed: "paid_100",
-    paid_100: "paid_100",
-    paid_50: "paid_50",
-    pending: "pending",
-    cancelled: "cancelled",
-    canceled: "cancelled",
-    refunded: "refunded",
-  };
-  return map[raw?.toLowerCase()] ?? raw ?? "pending";
-}
-
+// --- Logic xử lý dữ liệu ---
 function normalizeBooking(raw: any): Booking {
-  const parseDate = (d: any) => (d?.$date ? d.$date : d) || "";
-  const resolvedPrice = Number(raw.payNow ?? raw.total_price ?? raw.vnpay?.amount ?? 0);
-  const resolvedStatus = (() => {
-    const s = normalizeStatus(raw.status);
-    if (s === "refunded" || s === "cancelled") return s;
-    if (raw.paymentPct === 100) return "paid_100";
-    if (raw.paymentPct === 50) return "paid_50";
-    return s;
-  })();
+  const resolveId = (id: any) => (id?.$oid ? id.$oid : id) || "";
+  const resolveDate = (d: any) => (d?.$date ? d.$date : d) || "";
+
   return {
-    id: raw._id || raw.id,
+    id: resolveId(raw._id),
     customerName: raw.contactName || "—",
     email: raw.contactEmail || "—",
     phone: raw.contactPhone || "—",
     tourName: raw.tourName || "—",
-    departureDate: parseDate(raw.departureDate),
+    departureDate: resolveDate(raw.departureDate),
     adults: Number(raw.adults ?? 0),
     children: Number(raw.children ?? 0),
     infants: Number(raw.infants ?? 0),
-    totalPrice: resolvedPrice,
-    status: resolvedStatus,
+    totalMembers: Number(raw.total_members ?? 0),
+    totalPrice: Number(raw.total_price ?? 0),
+    payNow: Number(raw.payNow ?? 0),
+    remaining: Number(raw.remaining ?? 0),
+    paymentPct: Number(raw.paymentPct ?? 0),
+    status: raw.status || "pending", // Dùng trực tiếp giá trị từ API
     singleRooms: Number(raw.singleRooms ?? 0),
-    createdAt: parseDate(raw.createdAt),
+    createdAt: resolveDate(raw.createdAt),
+    thumbnail: raw.thumbnail || "",
   };
 }
 
@@ -88,18 +78,24 @@ function fmtDate(str: string) {
   const d = new Date(str);
   return isNaN(d.getTime())
     ? str
-    : d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    : d.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
 }
 
+// --- Giao diện hiển thị Badge theo Status API ---
 function StatusBadge({ status }: { status: string }) {
   const s = status.toLowerCase();
-  if (s === "paid_100")
+
+  if (s === "paid")
     return (
       <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
         ✓ Đã TT 100%
       </span>
     );
-  if (s === "paid_50")
+  if (s === "confirmed")
     return (
       <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
         ◑ Đã TT 50%
@@ -117,105 +113,41 @@ function StatusBadge({ status }: { status: string }) {
         ↩ Đã hoàn
       </span>
     );
-  if (s === "pending")
-    return (
-      <span className="inline-flex items-center gap-1 bg-yellow-50 text-yellow-700 border border-yellow-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-        ○ Chưa xác nhận
-      </span>
-    );
+
   return (
-    <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 border border-gray-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-      ○ {status}
+    <span className="inline-flex items-center gap-1 bg-yellow-50 text-yellow-700 border border-yellow-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
+      ○ Chờ xác nhận
     </span>
   );
 }
 
+// --- Menu cập nhật trạng thái ---
 function StatusSelect({
   booking,
   onUpdate,
 }: {
   booking: Booking;
-  onUpdate: (id: string, newStatus: string, newPrice?: number) => void;
+  onUpdate: (id: string, newStatus: string) => void;
 }) {
   const s = booking.status;
 
-  // Đã hoàn - khóa hoàn toàn
-  if (s === "refunded") {
-    return (
-      <span className="text-[11px] px-2 py-1.5 border border-gray-200 rounded-lg bg-gray-100 text-gray-400 font-medium cursor-not-allowed select-none">
-        ↩ Đã hoàn
-      </span>
-    );
-  }
-
-  // Đã hủy - chỉ được chuyển sang Đã hoàn
-  if (s === "cancelled") {
-    return (
-      <select
-        defaultValue=""
-        onChange={(e) => {
-          if (e.target.value) onUpdate(booking.id, e.target.value);
-        }}
-        className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
-      >
-        <option value="" disabled>Cập nhật...</option>
-        <option value="refunded">↩ Đã hoàn</option>
-      </select>
-    );
-  }
-
-  // Đã TT 100% - chỉ được hủy
-  if (s === "paid_100") {
-    return (
-      <select
-        defaultValue=""
-        onChange={(e) => {
-          if (e.target.value) onUpdate(booking.id, e.target.value);
-        }}
-        className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
-      >
-        <option value="" disabled>Cập nhật...</option>
-        <option value="cancelled">✕ Đã hủy</option>
-      </select>
-    );
-  }
-
-  // Đã TT 50% - chỉ được lên 100% (giá nhân đôi) hoặc hủy
-  if (s === "paid_50") {
-    return (
-      <select
-        defaultValue=""
-        onChange={(e) => {
-          if (!e.target.value) return;
-          const newPrice =
-            e.target.value === "paid_100"
-              ? booking.totalPrice * 2
-              : undefined;
-          onUpdate(booking.id, e.target.value, newPrice);
-        }}
-        className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
-      >
-        <option value="" disabled>Cập nhật...</option>
-        <option value="paid_100">✓ Đã TT 100%</option>
-        <option value="cancelled">✕ Đã hủy</option>
-      </select>
-    );
-  }
-
-  // pending - được lên 50%, 100%, hoặc hủy
+  // Nếu đã hoàn tiền thì thường là quy trình cuối cùng, có thể khóa hoặc để mở tùy bạn.
+  // Ở đây mình để mở luôn để Admin tối quyền.
+  
   return (
     <select
-      defaultValue=""
+      value={s} // Dùng value={s} để nó luôn hiển thị đúng trạng thái hiện tại của đơn
       onChange={(e) => {
-        if (!e.target.value) return;
-        onUpdate(booking.id, e.target.value);
+        if (e.target.value && e.target.value !== s) {
+          onUpdate(booking.id, e.target.value);
+        }
       }}
-      className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer"
+      className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer shadow-sm"
     >
-      <option value="" disabled>Cập nhật...</option>
-      <option value="paid_50">◑ Đã TT 50%</option>
-      <option value="paid_100">✓ Đã TT 100%</option>
-      <option value="cancelled">✕ Đã hủy</option>
+      <option value="pending">○ Chờ xác nhận</option>
+      <option value="confirmed">◑ Đã xác nhận (50%)</option>
+      <option value="paid">✓ Đã thanh toán (100%)</option>
+      <option value="cancelled">✕ Đã hủy đơn</option>
     </select>
   );
 }
@@ -224,9 +156,9 @@ const API = "https://db-pickyourway.vercel.app/api";
 
 const FILTER_OPTIONS = [
   { value: "all", label: "Tất cả" },
-  { value: "pending", label: "Chưa xác nhận" },
-  { value: "paid_50", label: "Đã TT 50%" },
-  { value: "paid_100", label: "Đã TT 100%" },
+  { value: "pending", label: "Chờ xác nhận" },
+  { value: "confirmed", label: "Đã TT 50%" },
+  { value: "paid", label: "Đã TT 100%" },
   { value: "cancelled", label: "Đã hủy" },
   { value: "refunded", label: "Đã hoàn" },
 ];
@@ -262,15 +194,11 @@ export function BookingTab() {
     fetchBookings();
   }, [fetchBookings]);
 
-  const handleUpdateStatus = async (
-    id: string,
-    newStatus: string,
-    newPrice?: number
-  ) => {
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
     const token = localStorage.getItem("token");
     if (!token) return alert("Vui lòng đăng nhập!");
     try {
-      const res = await fetch(`${API}/bookings/admin/${id}/status`, {
+      const res = await fetch(`${API}/bookings/detail/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -279,16 +207,9 @@ export function BookingTab() {
         body: JSON.stringify({ newStatus }),
       });
       if (res.ok) {
+        const result = await res.json();
         setBookings((prev) =>
-          prev.map((b) =>
-            b.id === id
-              ? {
-                  ...b,
-                  status: newStatus,
-                  ...(newPrice !== undefined ? { totalPrice: newPrice } : {}),
-                }
-              : b
-          )
+          prev.map((b) => (b.id === id ? normalizeBooking(result.data) : b)),
         );
         alert("Cập nhật thành công!");
       }
@@ -311,77 +232,91 @@ export function BookingTab() {
 
   const revenue = bookings
     .filter((b) => b.status !== "cancelled" && b.status !== "refunded")
-    .reduce((s, b) => s + b.totalPrice, 0);
+    .reduce((s, b) => s + b.payNow, 0); // Doanh thu tính trên số tiền thực thu
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="mx-auto px-4 py-6 space-y-5">
-
-        {/* Header */}
+        {/* Header & Stats Giữ nguyên UI cũ của bạn */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-xl font-black text-gray-900">📋 Quản lý Booking</h1>
+            <h1 className="text-xl font-black text-gray-900">
+              📋 Quản lý Booking
+            </h1>
             <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-emerald-500" : "bg-amber-400"}`} />
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-emerald-500" : "bg-amber-400"}`}
+              />
               {isLive ? "Dữ liệu thật từ API" : "Chưa tải được dữ liệu"}
             </p>
           </div>
           <button
             onClick={fetchBookings}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60"
+            className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-xl disabled:opacity-60"
           >
             {loading ? "Đang tải..." : "↻ Làm mới"}
           </button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-[11px] text-gray-500 font-semibold mb-1">Tổng đơn</p>
-            <p className="text-2xl font-black text-gray-900">{bookings.length}</p>
+            <p className="text-[11px] text-gray-500 font-semibold mb-1">
+              Tổng đơn
+            </p>
+            <p className="text-2xl font-black text-gray-900">
+              {bookings.length}
+            </p>
           </div>
           <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
-            <p className="text-[11px] text-yellow-600 font-semibold mb-1">Chưa xác nhận</p>
+            <p className="text-[11px] text-yellow-600 font-semibold mb-1">
+              Chờ xác nhận
+            </p>
             <p className="text-2xl font-black text-yellow-700">
               {bookings.filter((b) => b.status === "pending").length}
             </p>
           </div>
           <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
-            <p className="text-[11px] text-blue-600 font-semibold mb-1">Đã TT 50%</p>
+            <p className="text-[11px] text-blue-600 font-semibold mb-1">
+              Đã TT 50%
+            </p>
             <p className="text-2xl font-black text-blue-700">
-              {bookings.filter((b) => b.status === "paid_50").length}
+              {bookings.filter((b) => b.status === "confirmed").length}
             </p>
           </div>
           <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
-            <p className="text-[11px] text-emerald-600 font-semibold mb-1">Đã TT 100%</p>
+            <p className="text-[11px] text-emerald-600 font-semibold mb-1">
+              Đã TT 100%
+            </p>
             <p className="text-2xl font-black text-emerald-700">
-              {bookings.filter((b) => b.status === "paid_100").length}
+              {bookings.filter((b) => b.status === "paid").length}
             </p>
           </div>
-          <div className="bg-orange-500 rounded-xl p-4 text-white shadow-lg shadow-orange-200 col-span-2 md:col-span-1">
-            <p className="text-[11px] text-white/80 font-semibold mb-1">Doanh thu</p>
+          <div className="bg-orange-500 rounded-xl p-4 text-white shadow-lg col-span-2 md:col-span-1">
+            <p className="text-[11px] text-white/80 font-semibold mb-1">
+              Thực thu (payNow)
+            </p>
             <p className="text-xl font-black">{fmt(revenue)}</p>
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters & List Giữ nguyên giao diện */}
         <div className="flex flex-col sm:flex-row gap-3">
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm theo tên, email, SĐT, tour..."
-            className="flex-1 px-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:border-orange-400 bg-white shadow-sm"
+            className="flex-1 px-4 py-2.5 text-sm border border-gray-200 rounded-xl outline-none bg-white shadow-sm"
           />
           <div className="flex gap-1.5 bg-white border border-gray-200 rounded-xl p-1 shadow-sm overflow-x-auto">
             {FILTER_OPTIONS.map((f) => (
               <button
                 key={f.value}
                 onClick={() => setFilter(f.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                   filterStatus === f.value
                     ? "bg-orange-500 text-white"
-                    : "text-gray-500 hover:bg-gray-50"
+                    : "text-gray-500"
                 }`}
               >
                 {f.label}
@@ -390,95 +325,90 @@ export function BookingTab() {
           </div>
         </div>
 
-        {/* List */}
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
           <div className="divide-y divide-gray-50">
-            {filtered.length === 0 && (
-              <div className="py-16 text-center text-sm text-gray-400">
-                Không tìm thấy booking nào.
-              </div>
-            )}
             {filtered.map((b) => {
               const isExpanded = expandedId === b.id;
-              const isTerminal = b.status === "refunded";
+              const isTerminal =
+                b.status === "refunded" || b.status === "cancelled";
 
               return (
                 <div
                   key={b.id}
-                  className={`transition-colors ${
-                    isTerminal
-                      ? "opacity-50 bg-gray-50"
-                      : isExpanded
-                      ? "bg-orange-50/30"
-                      : "hover:bg-gray-50/60"
-                  }`}
+                  className={`${isTerminal ? "opacity-60 bg-gray-50" : isExpanded ? "bg-orange-50/30" : "hover:bg-gray-50/60"}`}
                 >
                   <div
                     className="px-5 py-4 flex items-center gap-4 cursor-pointer"
                     onClick={() => setExpanded(isExpanded ? null : b.id)}
                   >
-                    {/* Avatar */}
-                    <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0 ${
-                        isTerminal
-                          ? "bg-gray-300"
-                          : "bg-gradient-to-br from-orange-400 to-amber-400"
-                      }`}
-                    >
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0 bg-gradient-to-br from-orange-400 to-amber-400">
                       {b.customerName.charAt(0).toUpperCase()}
                     </div>
-
-                    {/* Name + Tour */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-bold ${isTerminal ? "text-gray-400" : "text-gray-900"}`}>
+                      <p className="text-sm font-bold text-gray-900 truncate">
                         {b.customerName}
                       </p>
-                      <p className="text-xs text-gray-400 truncate">{b.tourName}</p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {b.tourName}
+                      </p>
                     </div>
-
-                    {/* Departure */}
                     <div className="hidden md:block shrink-0 text-right">
-                      <p className="text-xs font-semibold text-gray-700">{fmtDate(b.departureDate)}</p>
-                      <p className="text-[10px] text-gray-400 uppercase">Khởi hành</p>
+                      <p className="text-xs font-semibold text-gray-700">
+                        {fmtDate(b.departureDate)}
+                      </p>
+                      <p className="text-[10px] text-gray-400 uppercase">
+                        Khởi hành
+                      </p>
                     </div>
-
-                    {/* Price + Badge */}
                     <div className="shrink-0 text-right">
-                      <p className={`text-sm font-black ${isTerminal ? "text-gray-400" : "text-orange-600"}`}>
+                      <p className="text-sm font-black text-orange-600">
                         {fmt(b.totalPrice)}
                       </p>
                       <StatusBadge status={b.status} />
                     </div>
-
-                    {/* Status select */}
-                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <StatusSelect booking={b} onUpdate={handleUpdateStatus} />
                     </div>
                   </div>
 
-                  {/* Expanded detail */}
                   {isExpanded && (
-                    <div className="px-5 pb-5 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="px-5 pb-5">
                       <div className="bg-white rounded-xl border border-gray-100 p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs shadow-inner">
                         <div>
-                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Liên hệ</p>
-                          <p className="font-medium text-slate-700">{b.email}</p>
-                          <p className="font-medium text-slate-700">{b.phone}</p>
+                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1 text-orange-500">
+                            Thanh toán
+                          </p>
+                          <p className="font-medium">
+                            Đã thu: {fmt(b.payNow)} ({b.paymentPct}%)
+                          </p>
+                          <p className="font-medium text-red-500">
+                            Còn lại: {fmt(b.remaining)}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Số lượng khách</p>
-                          <p className="text-slate-700">{b.adults} Người lớn</p>
-                          {b.children > 0 && <p className="text-slate-700">{b.children} Trẻ em</p>}
-                          {b.infants > 0 && <p className="text-slate-700">{b.infants} Em bé</p>}
-                          {b.singleRooms > 0 && <p className="text-slate-700">+{b.singleRooms} Phòng đơn</p>}
+                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">
+                            Khách đi
+                          </p>
+                          <p>
+                            {b.totalMembers} khách ({b.adults}L, {b.children}T,{" "}
+                            {b.infants}EB)
+                          </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Ngày đặt đơn</p>
-                          <p className="text-slate-700">{fmtDate(b.createdAt)}</p>
+                          <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">
+                            Liên hệ
+                          </p>
+                          <p>{b.phone}</p>
+                          <p className="truncate">{b.email}</p>
                         </div>
-                        <div className="flex flex-col justify-center gap-1">
-                          <p className="text-gray-400 font-bold uppercase text-[9px]">Mã đơn hàng</p>
-                          <code className="text-[10px] bg-gray-100 p-1 rounded text-gray-600 break-all">
+                        <div className="flex flex-col justify-center">
+                          <p className="text-gray-400 font-bold uppercase text-[9px]">
+                            Mã đơn
+                          </p>
+                          <code className="text-[10px] bg-gray-100 p-1 rounded break-all">
                             {b.id}
                           </code>
                         </div>
@@ -490,7 +420,6 @@ export function BookingTab() {
             })}
           </div>
         </div>
-
       </div>
     </div>
   );
