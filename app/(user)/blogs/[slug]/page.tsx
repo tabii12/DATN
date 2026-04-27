@@ -19,7 +19,7 @@ interface RelatedTour {
   name: string;
   slug: string;
   images: { image_url: string }[];
-  hotel_id: { city: string; price_per_night: number };
+  start_location?: string;
   trips?: { price: number; status: string; start_date: string }[];
 }
 
@@ -27,11 +27,22 @@ const CITIES = [
   "Hà Nội", "Hồ Chí Minh", "TP.HCM", "TP. HCM", "Đà Nẵng", "Hội An", "Huế",
   "Nha Trang", "Đà Lạt", "Phú Quốc", "Hạ Long", "Sapa", "Ninh Bình",
   "Vũng Tàu", "Cần Thơ", "Phan Thiết", "Mũi Né", "Quy Nhơn", "Lagi", "Hồ Tràm",
+  "Phú Yên", "Bình Định", "Quảng Nam", "Quảng Ngãi", "Quảng Bình", "Quảng Trị",
+  "Hà Tĩnh", "Nghệ An", "Thanh Hóa", "Hải Phòng", "Quảng Ninh", "Lào Cai",
+  "Kon Tum", "Gia Lai", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Lai Châu",
 ];
 
+function removeAccents(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+}
+
 function extractCity(title: string): string | null {
-  const lower = title.toLowerCase();
-  return CITIES.find(c => lower.includes(c.toLowerCase())) ?? null;
+  const normalized = removeAccents(title).toLowerCase();
+  return CITIES.find(c => normalized.includes(removeAccents(c).toLowerCase())) ?? null;
 }
 
 export default function BlogDetailPage() {
@@ -43,6 +54,14 @@ export default function BlogDetailPage() {
   const [relatedTours, setRelatedTours] = useState<RelatedTour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Reset khi slug thay đổi
+  useEffect(() => {
+    setBlog(null);
+    setRelatedTours([]);
+    setLoading(true);
+    setError(null);
+  }, [slug]);
 
   useEffect(() => {
     if (!slug) return;
@@ -70,8 +89,7 @@ export default function BlogDetailPage() {
         const data = await res.json();
         const list: Blog[] = data.data || data;
         const filtered = list.filter(b => b.slug !== slug);
-        const shuffled = filtered.sort(() => Math.random() - 0.5);
-        setRelatedBlogs(shuffled.slice(0, 3));
+        setRelatedBlogs(filtered.sort(() => Math.random() - 0.5).slice(0, 3));
       } catch (err) {
         console.error("Error fetching related blogs:", err);
       }
@@ -82,6 +100,11 @@ export default function BlogDetailPage() {
   useEffect(() => {
     if (!blog?.title) return;
     const city = extractCity(blog.title);
+    if (!city) {
+      setRelatedTours([]);
+      return;
+    }
+    const cityNorm = removeAccents(city).toLowerCase();
 
     const fetchTours = async () => {
       try {
@@ -89,16 +112,14 @@ export default function BlogDetailPage() {
         const data = await res.json();
         const list: RelatedTour[] = data.data || [];
 
-        const filtered = city
-          ? list.filter(t => t.hotel_id?.city?.toLowerCase().includes(city.toLowerCase()))
-          : list;
+        const filtered = list.filter(t =>
+          removeAccents(t.name ?? "").toLowerCase().includes(cityNorm)
+        );
 
-        // Nếu không khớp city nào thì lấy 3 tour đầu
-        const pool = filtered.length > 0 ? filtered : list;
-        const shuffled = pool.sort(() => Math.random() - 0.5);
-        setRelatedTours(shuffled.slice(0, 3));
+        setRelatedTours(filtered.slice(0, 3));
       } catch (err) {
         console.error("Error fetching related tours:", err);
+        setRelatedTours([]);
       }
     };
     fetchTours();
@@ -182,55 +203,28 @@ export default function BlogDetailPage() {
         </article>
       </div>
 
-
-      {/* Tour liên quan */}
-      {relatedTours.length > 0 && (
+      {/* Tour liên quan - chỉ hiện khi có city VÀ có tour khớp */}
+      {city && relatedTours.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 pb-12">
           <h2 className="text-2xl font-bold mb-2">🗺️ Tour liên quan</h2>
-          {city && (
-            <p className="text-sm text-gray-400 mb-6">Các tour tại <span className="text-orange-500 font-semibold">{city}</span></p>
-          )}
+          <p className="text-sm text-gray-400 mb-6">Các tour tại <span className="text-orange-500 font-semibold">{city}</span></p>
           <div className="grid md:grid-cols-3 gap-6">
             {relatedTours.map(tour => {
               const openTrips = tour.trips?.filter(t => t.status === "open" && new Date(t.start_date) >= new Date()) ?? [];
-              const minPrice = openTrips.length > 0
-                ? Math.min(...openTrips.map(t => t.price))
-                : tour.hotel_id?.price_per_night ?? 0;
-              const nextTrip = openTrips.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())[0];
-
+              const minPrice = openTrips.length > 0 ? Math.min(...openTrips.map(t => t.price)) : 0;
+              const nextTrip = [...openTrips].sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())[0];
               return (
-                <a
-                  key={tour._id}
-                  href={`/tours/${tour.slug}`}
-                  className="bg-white rounded-xl shadow hover:shadow-lg transition group overflow-hidden"
-                >
+                <a key={tour._id} href={`/tours/${tour.slug}`} className="bg-white rounded-xl shadow hover:shadow-lg transition group overflow-hidden">
                   {tour.images?.[0] && (
                     <div className="relative h-48 overflow-hidden">
-                      <Image
-                        src={tour.images[0].image_url}
-                        alt={tour.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        unoptimized
-                      />
+                      <Image src={tour.images[0].image_url} alt={tour.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" unoptimized />
                     </div>
                   )}
                   <div className="p-4">
-                    <p className="text-xs text-orange-500 font-semibold mb-1">📍 {tour.hotel_id?.city}</p>
-                    <h3 className="font-semibold line-clamp-2 group-hover:text-orange-500 transition-colors mb-2">
-                      {tour.name}
-                    </h3>
-                    {nextTrip && (
-                      <p className="text-xs text-gray-400 mb-1">
-                        🗓 {new Date(nextTrip.start_date).toLocaleDateString("vi-VN")}
-                      </p>
-                    )}
-                    {minPrice > 0 && (
-                      <p className="text-sm font-bold text-orange-500">
-                        Từ {minPrice.toLocaleString("vi-VN")}đ
-                        <span className="text-xs font-normal text-gray-400">/người</span>
-                      </p>
-                    )}
+                    <p className="text-xs text-orange-500 font-semibold mb-1">📍 {city}</p>
+                    <h3 className="font-semibold line-clamp-2 group-hover:text-orange-500 transition-colors mb-2">{tour.name}</h3>
+                    {nextTrip && <p className="text-xs text-gray-400 mb-1">🗓 {new Date(nextTrip.start_date).toLocaleDateString("vi-VN")}</p>}
+                    {minPrice > 0 && <p className="text-sm font-bold text-orange-500">Từ {minPrice.toLocaleString("vi-VN")}đ<span className="text-xs font-normal text-gray-400">/người</span></p>}
                   </div>
                 </a>
               );

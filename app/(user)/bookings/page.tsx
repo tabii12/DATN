@@ -115,7 +115,7 @@ export default function BookingsPage() {
 
           return {
             id: b._id,
-            tourId: b.trip_id?._id || "",
+            tourId: b.tour_id?._id || b.tour_id || "",
             tourName: b.tourName || b.trip_id?.title || "Không có tên",
             thumbnail:
               b.thumbnail ||
@@ -159,10 +159,9 @@ export default function BookingsPage() {
   };
 
   const isTourCompleted = (b: Booking) => {
+    if (b.status !== "paid_100") return false;
     const dep = new Date(b.departureDate);
-    const end = new Date(dep);
-    end.setDate(end.getDate() + 3);
-    return end < new Date();
+    return dep < new Date();
   };
 
   const renderProgress = (b: Booking) => {
@@ -301,11 +300,21 @@ export default function BookingsPage() {
 
                 {isTourCompleted(b) && (
                   <button
-                    onClick={() => setReviewBooking(b)}
-                    className="mt-2 bg-yellow-500 text-white px-3 py-1 rounded flex items-center gap-2"
+                    onClick={() => setReviewBooking(reviewBooking?.id === b.id ? null : b)}
+                    className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded flex items-center gap-2"
                   >
-                    <Star size={14} /> Đánh giá
+                    <Star size={14} /> {reviewBooking?.id === b.id ? "Đóng đánh giá" : "Đánh giá tour"}
                   </button>
+                )}
+
+                {reviewBooking?.id === b.id && (
+                  <div className="mt-4">
+                    <CommentForm
+                      tourId={b.tourId}
+                      tourName={b.tourName}
+                      onCommentAdded={() => setReviewBooking(null)}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -313,13 +322,7 @@ export default function BookingsPage() {
         ))}
       </div>
 
-      {reviewBooking && (
-        <CommentForm
-          tourId={reviewBooking.tourId}
-          tourName={reviewBooking.tourName}
-          onCommentAdded={() => setReviewBooking(null)}
-        />
-      )}
+
     </div>
   );
 }
