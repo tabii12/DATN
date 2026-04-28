@@ -74,38 +74,51 @@ function InlineField({ label, value, onSave, mono, icon, readOnly, renderDisplay
     </div>
   );
 }
-function DurationSetForm({ onSave }: { onSave: (n: number) => Promise<void> }) {
-  const [val, setVal] = useState("");
+function DurationSetForm({ onSave }: { onSave: (days: number, nights: number) => Promise<void> }) {
+  const [days, setDays] = useState("");
+  const [nights, setNights] = useState("");
   const [saving, setSaving] = useState(false);
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-base shrink-0">📅</span>
-      <div className="flex-1">
-        <p className="text-[11px] font-semibold text-gray-400 mb-1.5">Số ngày</p>
-        <div className="flex items-center gap-2">
-          <input
-            type="number" min={1} max={30} placeholder="VD: 3"
-            value={val} onChange={e => setVal(e.target.value)}
-            className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 transition-all"
-          />
-          {val && Number(val) > 0 && (
-            <span className="text-xs text-gray-400">{val} ngày {Number(val) - 1} đêm</span>
-          )}
-          <button
-            onClick={async () => {
-              const n = Number(val);
-              if (!n || n < 1) return alert("Số ngày phải lớn hơn 0");
-              setSaving(true);
-              await onSave(n);
-              setSaving(false);
-            }}
-            disabled={saving || !val || Number(val) < 1}
-            className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer transition-colors disabled:opacity-60"
-          >
-            {saving ? <><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Đang lưu...</> : "Thiết lập"}
-          </button>
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[11px] font-semibold text-gray-400 mb-1.5">📅 Số ngày</p>
+          <input type="number" min={1} max={30} placeholder="VD: 3"
+            value={days} onChange={e => setDays(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 transition-all text-center font-bold" />
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold text-gray-400 mb-1.5">🌙 Số đêm</p>
+          <input type="number" min={0} max={30} placeholder="VD: 2"
+            value={nights} onChange={e => setNights(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-orange-400 transition-all text-center font-bold" />
         </div>
       </div>
+      {days && Number(days) > 0 && (
+        <p className="text-xs text-orange-500 font-semibold">→ {days} ngày {nights || 0} đêm</p>
+      )}
+      <div className="flex gap-1.5 flex-wrap">
+        {[{ d: 2, n: 1 }, { d: 2, n: 2 }, { d: 3, n: 2 }, { d: 3, n: 3 }, { d: 4, n: 3 }, { d: 5, n: 4 }, { d: 7, n: 6 }].map(({ d, n }) => (
+          <button key={`${d}N${n}`} type="button"
+            onClick={() => { setDays(String(d)); setNights(String(n)); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer transition-colors ${days === String(d) && nights === String(n) ? "bg-orange-500 text-white border-orange-500" : "bg-gray-50 text-gray-500 border-gray-200 hover:border-orange-300"}`}>
+            {d}N{n}Đ
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={async () => {
+          const d = Number(days), n = Number(nights);
+          if (!d || d < 1) return alert("Số ngày phải lớn hơn 0");
+          setSaving(true);
+          await onSave(d, n);
+          setSaving(false);
+        }}
+        disabled={saving || !days || Number(days) < 1}
+        className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer transition-colors disabled:opacity-60"
+      >
+        {saving ? <><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Đang lưu...</> : "Thiết lập"}
+      </button>
     </div>
   );
 }
@@ -201,7 +214,7 @@ export default function TourInfo({ tour, categories, onRefresh }: { tour: Tour; 
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <SectionTitle>Thời lượng tour</SectionTitle>
         {!tour.duration ? (
-          <DurationSetForm onSave={async (n) => { await saveField({ duration: n } as any); }} />
+          <DurationSetForm onSave={async (d, n) => { await saveField({ duration: d, nights: n } as any); }} />
         ) : (
           <InlineField label="Số ngày" value={String(tour.duration)} icon="📅"
             onSave={async val => {
@@ -210,7 +223,7 @@ export default function TourInfo({ tour, categories, onRefresh }: { tour: Tour; 
               await saveField({ duration: n } as any);
             }}
             renderDisplay={val => (
-              <span className="text-sm font-bold text-gray-800">{val} ngày {Number(val) - 1} đêm</span>
+              <span className="text-sm font-bold text-gray-800">{val} ngày {(tour as any).nights ?? Number(val) - 1} đêm</span>
             )}
             renderEdit={(val, set) => (
               <div className="space-y-2">

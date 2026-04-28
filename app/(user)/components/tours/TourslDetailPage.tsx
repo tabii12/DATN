@@ -364,7 +364,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
           setAvgCommentRating(null);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [tour?._id, commentRefresh]);
 
   const handleBook = () => {
@@ -373,26 +373,26 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     const trip = departureDates.find((t) => t._id === selectedTripId);
 
     // ✅ SAVE TO LOCALSTORAGE
- const bookingData = {
-  trip_id: selectedTripId,
-  adults,
-  children,
-  infants,
-  singleRooms: pricing.singleRooms,
-  tourSlug: slug,
-  tourName: tour?.name ?? "",
-  hotelName: tour?.hotel_id?.name ?? "",
-  city: tour?.hotel_id?.city ?? "",
-  thumbnail: tour?.images?.[0]?.image_url ?? "",
-  basePrice,
-  pricePerAdult: basePrice,
-  pricePerChild: pricing.childPrice,
-  infantPrice: pricing.infantPrice,      // ✅ thêm
-  infantTotal: pricing.infantTotal,      // ✅ thêm
-  singleSupplement: pricing.singleSupplement, // ✅ thêm
-  grandTotal: pricing.grandTotal,
-  departureDate: trip ? new Date(trip.start_date).toLocaleDateString("vi-VN") : "",
-};
+    const bookingData = {
+      trip_id: selectedTripId,
+      adults,
+      children,
+      infants,
+      singleRooms: pricing.singleRooms,
+      tourSlug: slug,
+      tourName: tour?.name ?? "",
+      hotelName: tour?.hotel_id?.name ?? "",
+      city: tour?.hotel_id?.city ?? "",
+      thumbnail: tour?.images?.[0]?.image_url ?? "",
+      basePrice,
+      pricePerAdult: basePrice,
+      pricePerChild: pricing.childPrice,
+      infantPrice: pricing.infantPrice,      // ✅ thêm
+      infantTotal: pricing.infantTotal,      // ✅ thêm
+      singleSupplement: pricing.singleSupplement, // ✅ thêm
+      grandTotal: pricing.grandTotal,
+      departureDate: trip ? new Date(trip.start_date).toLocaleDateString("vi-VN") : "",
+    };
     localStorage.setItem("booking_data", JSON.stringify(bookingData));
 
     const params = new URLSearchParams({
@@ -437,8 +437,11 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
     </div>
   );
 
-  const hotel = tour.hotel_id;
-  const images = tour.images ?? [];
+  const hotel = tour.hotel_id ?? null;
+  const hotelName = hotel?.name ?? tour.name;
+  const hotelCity = hotel?.city ?? "";
+  const hotelAddress = hotel?.address ?? "";
+  const hotelRating = hotel?.rating ?? 0; const images = tour.images ?? [];
   const score = avgCommentRating !== null
     ? Math.min(9.9, parseFloat((avgCommentRating * 1.8 + 0.8).toFixed(1)))
     : null;
@@ -494,7 +497,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   <div className="grid gap-1 h-80" style={{ gridTemplateColumns: "2fr 1fr 1fr" }}>
                     {mainImgs.map((img, i) => (
                       <div key={i} onClick={() => { setLightboxIdx(i); setLightboxOpen(true); }} className="overflow-hidden rounded cursor-pointer group">
-                        <img src={img.image_url} alt={hotel.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <img src={img.image_url} alt={hotelName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       </div>
                     ))}
                   </div>
@@ -515,16 +518,22 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                 </div>
                 {/* Map + Review */}
                 <div className="w-72.5 shrink-0 flex flex-col gap-2">
-                  <div className="h-50 rounded-lg overflow-hidden border border-gray-200 relative">
-                    <iframe width="100%" height="100%" frameBorder="0" scrolling="no"
-                      src={"https://maps.google.com/maps?q=" + encodeURIComponent(hotel.address + ", " + hotel.city) + "&hl=vi&z=14&ie=UTF8&iwloc=&output=embed"}
-                    />
-                    <a href={"https://maps.google.com/maps?q=" + encodeURIComponent(hotel.address + ", " + hotel.city)}
-                      target="_blank" rel="noreferrer"
-                      className="absolute top-2 right-2 bg-white text-xs text-blue-600 font-semibold px-2 py-1 rounded shadow no-underline hover:bg-blue-50 transition-colors">
-                      Xem bản đồ lớn hơn
-                    </a>
-                  </div>
+                  {hotelCity ? (
+                    <div className="h-50 rounded-lg overflow-hidden border border-gray-200 relative">
+                      <iframe width="100%" height="100%" frameBorder="0" scrolling="no"
+                        src={"https://maps.google.com/maps?q=" + encodeURIComponent((hotelAddress || hotelCity) + ", Việt Nam") + "&hl=vi&z=14&ie=UTF8&iwloc=&output=embed"}
+                      />
+                      <a href={"https://maps.google.com/maps?q=" + encodeURIComponent((hotelAddress || hotelCity) + ", Việt Nam")}
+                        target="_blank" rel="noreferrer"
+                        className="absolute top-2 right-2 bg-white text-xs text-blue-600 font-semibold px-2 py-1 rounded shadow no-underline hover:bg-blue-50 transition-colors">
+                        Xem bản đồ lớn hơn
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="h-50 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center">
+                      <p className="text-xs text-gray-400">Chưa có thông tin địa chỉ</p>
+                    </div>
+                  )}
                   <div className="flex-1 border border-gray-200 rounded-lg overflow-hidden bg-white flex flex-col">
                     <div className="flex items-center gap-2.5 px-3 py-2.5">
                       <span className={`text-xl font-black text-white ${scoreColor} px-2 py-0.5 rounded-md leading-tight`}>
@@ -583,7 +592,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
               <div className="flex transition-transform duration-300" style={{ transform: `translate3d(-${activeImg * 100}vw,0,0)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="relative shrink-0 h-65" style={{ minWidth: "100vw" }}>
-                    <img src={img.image_url} alt={hotel.name} className="w-full h-full object-cover" />
+                    <img src={img.image_url} alt={hotelName} className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -901,7 +910,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
       </div>
 
       {/* Related */}
-      <RelatedTours city={hotel.city} currentSlug={slug} />
+      {hotelCity && <RelatedTours city={hotelCity} currentSlug={slug} />}
 
       {/* Mobile sticky bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex items-center gap-3 z-40">
