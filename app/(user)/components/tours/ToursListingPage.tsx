@@ -51,7 +51,13 @@ interface Hotel {
     trips: TripAPI[]; // ← thêm trips
 }
 
-function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[], commentMap: Record<string, { avg: number; count: number }>): Hotel {
+function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[], commentMap: Record<string, { avg: number; count: number }>, categoryMap: Record<string, string> = {}): Hotel {
+    const rawCatId = typeof tour.category_id === "object"
+        ? (tour.category_id as any)?._id
+        : tour.category_id as string;
+    const categoryName = (tour.category_id as any)?.name
+        ?? categoryMap[rawCatId]
+        ?? "Tour du lịch";
     const hotel = tour.hotel_id;
     const hotelStars = Math.round(hotel?.rating ?? 0);
     const commentData = commentMap[tour._id];
@@ -85,12 +91,13 @@ function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[], commentMap: Record<s
         reviewCount: commentData?.count ?? 0,
         address: `${hotel?.address ?? ""}, ${hotel?.city ?? ""}`,
         city: hotel?.city ?? "",
-        tags: [hotel?.city ?? "", tour.category_id?.name ?? "Tour du lịch", `${hotelStars} sao`],
+        tags: [hotel?.city ?? "", categoryName, `${hotelStars} sao`],
         stars: hotelStars,
         days,
         route,
         trips,
     };
+
 }
 
 
@@ -107,7 +114,7 @@ const DAY_OPTIONS = [
 
 const REGION_MAP: Record<string, string[]> = {
     "Miền Bắc": ["Hà Nội", "Hạ Long", "Sapa", "Ninh Bình", "Hải Phòng"],
-    "Miền Trung": ["Đà Nẵng", "Hội An", "Huế", "Quảng Bình", "Thanh Hóa"],
+    "Miền Trung": ["Đà Nẵng", "Hội An", "Huế", "Quảng Bình", "Thanh Hóa", "Nha Trang", "Quy Nhơn", "Khánh Hòa", "Bình Định"],
     "Miền Nam": ["TP. HCM", "Vũng Tàu", "Cần Thơ", "Phú Quốc", "Hồ Chí Minh", "Lagi", "Hồ Tràm", "Phan Thiết", "Mũi Né"],
     "Tây Nguyên": ["Đà Lạt", "Buôn Ma Thuột", "Pleiku"],
 };
@@ -384,6 +391,7 @@ function HotelListingContent() {
     const dateParam = searchParams.get("date") ?? "";
     const fromParam = searchParams.get("from") ?? "";
     const saleParam = searchParams.get("sale") === "1";
+    const categoryParam = searchParams.get("category") ?? "";
 
     useEffect(() => {
         // Fetch tours + trips song song
@@ -392,8 +400,9 @@ function HotelListingContent() {
             fetch("https://db-pickyourway.vercel.app/api/trips/").then(r => r.json()),
             fetch("https://db-pickyourway.vercel.app/api/sales").then(r => r.json()).catch(() => ({ data: [] })),
             fetch("https://db-pickyourway.vercel.app/api/comments").then(r => r.json()).catch(() => ({ data: [] })),
+            fetch("https://db-pickyourway.vercel.app/api/categories").then(r => r.json()).catch(() => ({ data: [] })),
         ])
-            .then(([toursRes, tripsRes, salesRes, commentsRes]) => {
+            .then(([toursRes, tripsRes, salesRes, commentsRes, categoriesRes]) => { // thêm categoriesRes
                 if (toursRes.success && Array.isArray(toursRes.data)) {
                     const allTrips: TripAPI[] = Array.isArray(tripsRes.data) ? tripsRes.data : [];
                     const ids = new Set<string>((salesRes.data ?? []).map((s: any) => s.tour_id as string));
@@ -408,11 +417,17 @@ function HotelListingContent() {
                         commentMap[c.tour_id].avg += c.rating;
                         commentMap[c.tour_id].count += 1;
                     });
+                    const categoryMap: Record<string, string> = {};
+                    (categoriesRes.data ?? []).forEach((c: any) => {
+                        categoryMap[c._id] = c.name;
+                    });
                     Object.keys(commentMap).forEach(id => {
                         commentMap[id].avg = commentMap[id].avg / commentMap[id].count;
                     });
 
-                    setHotels(toursRes.data.map((t: TourAPI) => mapTourToHotel(t, allTrips, commentMap)));
+                    setHotels(toursRes.data.map((t: TourAPI) => mapTourToHotel(t, allTrips, commentMap, categoryMap)));
+                    console.log("sample cities:", toursRes.data.slice(0, 5).map((t: any) => t.hotel_id?.city));
+
                 } else setError(true);
             })
             .catch(() => setError(true))
@@ -469,16 +484,17 @@ function HotelListingContent() {
         if (searchName) {
             const q = searchName.toLowerCase();
             const regionCitiesForQ = Object.entries(REGION_MAP).find(([key]) => key.toLowerCase() === q)?.[1] ?? [];
-            const isCategoryQuery = CATEGORY_NAMES.some(c => c === q);
             const hotelName = (h.name ?? "").toLowerCase();
             const hotelCity = (h.city ?? "").toLowerCase();
             const hotelTags = Array.isArray(h.tags) ? h.tags : [];
+
             if (regionCitiesForQ.length > 0) {
                 if (!regionCitiesForQ.some(c => hotelCity.includes(c.toLowerCase()))) return false;
-            } else if (isCategoryQuery) {
-                if (!hotelTags.some(t => (t ?? "").toLowerCase().includes(q))) return false;
             } else {
-                if (!hotelName.includes(q) && !hotelCity.includes(q)) return false;
+                const matchName = hotelName.includes(q);
+                const matchCity = hotelCity.includes(q);
+                const matchTag = hotelTags.some(t => (t ?? "").toLowerCase().includes(q));
+                if (!matchName && !matchCity && !matchTag) return false;
             }
         }
 
@@ -505,9 +521,23 @@ function HotelListingContent() {
         // Lọc theo vùng từ ?region=
         if (regionParam) {
             const cities = REGION_MAP[regionParam] ?? [];
-            if (cities.length > 0 && !cities.some(c => h.city.toLowerCase().includes(c.toLowerCase()))) return false;
-        }
+            if (cities.length === 0) return true;
 
+            const normalize = (str: string) =>
+                str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+            // Match theo tên tour (vì city không có)
+            const hotelName = normalize(h.name ?? "");
+            const matched = cities.some(c => hotelName.includes(normalize(c)));
+            if (!matched) return false;
+        }
+        const normalize = (str: string) =>
+            str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        if (categoryParam) {
+            const cat = normalize(categoryParam).replace(/-/g, " ");  // ← thêm dòng này
+            if (!h.tags.some(t => normalize(t ?? "").includes(cat))) return false;
+        }
         return true;
     });
 
@@ -554,7 +584,7 @@ function HotelListingContent() {
                                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden">
                                     <div className="px-4 py-2 border-b border-gray-50 flex items-center justify-between">
                                         <span className="text-[11px] text-gray-400 font-semibold">
-                                         {totalMatch} kết quả · hiển thị {suggestions.length}
+                                            {totalMatch} kết quả · hiển thị {suggestions.length}
                                         </span>
                                     </div>
                                     {suggestions.map(s => (
@@ -638,6 +668,12 @@ function HotelListingContent() {
                     <span className="text-gray-600 font-medium">Tour du lịch</span>
                     {searchName && <><span>/</span><span className="text-gray-600 font-medium">"{searchName}"</span></>}
                     {regionParam && !searchName && <><span>/</span><span className="text-gray-600 font-medium">{regionParam}</span></>}
+                    {categoryParam && !searchName && (
+                        <>
+                            <span>/</span>
+                            <span className="text-gray-600 font-medium">{categoryParam}</span>
+                        </>
+                    )}
                 </div>
 
                 {/* TOOLBAR */}

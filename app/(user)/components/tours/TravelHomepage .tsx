@@ -5,29 +5,29 @@ import { useRouter } from "next/navigation";
 import HeroBanner from "../HeroBanner";
 
 interface BannerSlide { id: number; image: string }
-interface ComboDeal { id: number; name: string; location: string; slug: string; image: string; price: string; stars: number; tag: "Hot"|"Sale"|"Combo"|null; nights: number; discount_percent: number; amenities: string[] }
+interface ComboDeal { id: number; name: string; location: string; slug: string; image: string; price: string; stars: number; tag: "Hot" | "Sale" | "Combo" | null; nights: number; discount_percent: number; amenities: string[] }
 interface TravelStyle { id: number; title: string; subtitle: string; count: string; href: string; image: string; color: string }
 interface Destination { id: number; name: string; slug: string; hotel_count: number; image: string }
 
 function useHomeData() {
-  const [banners, setBanners]   = useState<BannerSlide[]>([]);
-  const [combos, setCombos]     = useState<ComboDeal[]>([]);
-  const [styles, setStyles]     = useState<TravelStyle[]>([]);
+  const [banners, setBanners] = useState<BannerSlide[]>([]);
+  const [combos, setCombos] = useState<ComboDeal[]>([]);
+  const [styles, setStyles] = useState<TravelStyle[]>([]);
   const [domestic, setDomestic] = useState<Destination[]>([]);
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function fetchHome() {
       setLoading(true);
       try {
-        const res  = await fetch("https://db-pickyourway.vercel.app/api/home");
+        const res = await fetch("https://db-pickyourway.vercel.app/api/home");
         const json = await res.json();
         if (!json.success) return;
         const data = json.data;
-        setBanners(data.banners.map((b: any, i: number) => ({ id: i+1, image: b.image_url })));
-        setCombos(data.combos.map((c: any, i: number) => ({ id: i+1, name: c.slug.replaceAll("-"," ").toUpperCase(), location: c.location, slug: c.slug, image: c.image_url, price: c.price.toLocaleString("vi-VN"), stars: 5, tag: c.tag, nights: 2, discount_percent: c.discount_percent, amenities: c.amenities ?? [] })));
-        setStyles(data.styles.map((s: any, i: number) => ({ id: i+1, title: s.title, subtitle: s.subtitle, count: s.count, href: s.href, image: s.image_url, color: s.color })));
-        const mapped = data.destinations.map((d: any, i: number) => ({ id: i+1, name: d.name, slug: d.slug, hotel_count: d.hotel_count, image: d.image_url }));
+        setBanners(data.banners.map((b: any, i: number) => ({ id: i + 1, image: b.image_url })));
+        setCombos(data.combos.map((c: any, i: number) => ({ id: i + 1, name: c.slug.replaceAll("-", " ").toUpperCase(), location: c.location, slug: c.slug, image: c.image_url, price: c.price.toLocaleString("vi-VN"), stars: 5, tag: c.tag, nights: 2, discount_percent: c.discount_percent, amenities: c.amenities ?? [] })));
+        setStyles(data.styles.map((s: any, i: number) => ({ id: i + 1, title: s.title, subtitle: s.subtitle, count: s.count, href: s.href, image: s.image_url, color: s.color })));
+        const mapped = data.destinations.map((d: any, i: number) => ({ id: i + 1, name: d.name, slug: d.slug, hotel_count: d.hotel_count, image: d.image_url }));
         setDomestic([...mapped].sort(() => 0.5 - Math.random()).slice(0, 5));
       } catch (err) { console.error("Fetch home failed:", err); }
       finally { setLoading(false); }
@@ -40,11 +40,11 @@ function useHomeData() {
 
 // ── Destination Card ─────────────────────────────────────────
 function DestCard({ dest, onClick, className }: { dest?: Destination; onClick: () => void; className?: string }) {
-  if (!dest) return <div className={`rounded-2xl bg-gray-200 animate-pulse ${className}`}/>;
+  if (!dest) return <div className={`rounded-2xl bg-gray-200 animate-pulse ${className}`} />;
   return (
     <div onClick={onClick} className={`relative rounded-2xl overflow-hidden group cursor-pointer shadow-sm ${className}`}>
-      <img src={dest.image} alt={dest.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"/>
+      <img src={dest.image} alt={dest.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       <div className="absolute bottom-3 left-4">
         <p className="text-white font-bold text-lg drop-shadow">{dest.name}</p>
       </div>
@@ -59,41 +59,42 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!combos.length) return;
-    const t = setInterval(() => setSlideIdx(p => (p+1) % combos.length), 3000);
+    const t = setInterval(() => setSlideIdx(p => (p + 1) % combos.length), 3000);
     return () => clearInterval(t);
   }, [combos.length]);
 
   const handleRandomTourByCity = async (cityName?: string) => {
     if (!cityName) return;
     try {
-      const res  = await fetch("https://db-pickyourway.vercel.app/api/tours");
+      const res = await fetch("https://db-pickyourway.vercel.app/api/tours");
       const json = await res.json();
       if (!json.success) return;
 
       const removeTones = (str: string) =>
-        str.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-          .replace(/đ/g,"d").replace(/Đ/g,"D")
-          .toLowerCase().replace(/\s+/g,"");
+        str.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d").replace(/Đ/g, "D")
+          .toLowerCase();
 
-      const target = removeTones(cityName); // vd: "dalat"
+      const target = removeTones(cityName); // vd: "ha long"
 
-      const tours = json.data.filter((t: any) => {
-        const city     = removeTones(t.hotel_id?.city ?? "");
-        const startLoc = removeTones(t.start_location ?? "");
-        const tourName = removeTones(t.name ?? "");
+      // Ưu tiên match theo tên tour trước
+      let tours = json.data.filter((t: any) =>
+        removeTones(t.name ?? "").includes(target)
+      );
 
-        // Match nếu city/startLoc/name chứa target HOẶC target chứa city
-        return (
-          city.includes(target) || target.includes(city) ||
-          startLoc.includes(target) || target.includes(startLoc) ||
-          tourName.includes(target)
+      // Nếu không có thì fallback theo city
+      if (!tours.length) {
+        tours = json.data.filter((t: any) =>
+          removeTones(t.hotel_id?.city ?? "").includes(target)
         );
-      });
+      }
 
+      // Vẫn không có thì redirect sang search
       if (!tours.length) {
         router.push(`/tours/search?q=${encodeURIComponent(cityName)}`);
         return;
       }
+
       router.push(`/tours/${tours[Math.floor(Math.random() * tours.length)].slug}`);
     } catch (err) { console.error("Random tour error:", err); }
   };
@@ -118,14 +119,14 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <a href="/tours/search?sale=1" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:underline">
               Xem tất cả
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7"/></svg>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
             </a>
             <div className="flex gap-2">
-              <button onClick={() => setSlideIdx(p => Math.max(0, p-1))} disabled={slideIdx === 0} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-30 transition-all">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7"/></svg>
+              <button onClick={() => setSlideIdx(p => Math.max(0, p - 1))} disabled={slideIdx === 0} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-30 transition-all">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
               </button>
-              <button onClick={() => setSlideIdx(p => Math.min(combos.length-1, p+1))} disabled={slideIdx === combos.length-1} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-30 transition-all">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7"/></svg>
+              <button onClick={() => setSlideIdx(p => Math.min(combos.length - 1, p + 1))} disabled={slideIdx === combos.length - 1} className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-orange-400 hover:text-orange-500 disabled:opacity-30 transition-all">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
               </button>
             </div>
           </div>
@@ -135,11 +136,11 @@ export default function HomePage() {
           <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${slideIdx * 100}%)` }}>
             {combos.map(deal => (
               <a key={deal.id} href="/tours/search?sale=1" className="relative w-full shrink-0 h-56 md:h-72 block">
-                <img src={deal.image} alt={deal.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"/>
-                <div className="absolute inset-0 bg-gradient-to-l from-black/80 via-black/40 to-transparent"/>
+                <img src={deal.image} alt={deal.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-l from-black/80 via-black/40 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-end justify-center pr-8 md:pr-14 text-right gap-1">
                   {deal.discount_percent > 0 && <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-1">Combo tiết kiệm đến {deal.discount_percent}%</span>}
-                  <p className="text-white/70 text-xs tracking-[0.2em] uppercase">Combo {deal.nights}N{deal.nights-1}Đ</p>
+                  <p className="text-white/70 text-xs tracking-[0.2em] uppercase">Combo {deal.nights}N{deal.nights - 1}Đ</p>
                   <h3 className="text-white font-black text-2xl md:text-3xl leading-tight uppercase tracking-wide drop-shadow">{deal.name}</h3>
                   <p className="text-white/80 text-sm mt-0.5">{deal.amenities.join(" · ")}</p>
                   <div className="flex items-center gap-3 mt-2">
@@ -153,7 +154,7 @@ export default function HomePage() {
 
         <div className="flex justify-center gap-1.5 mt-3">
           {combos.map((_, i) => (
-            <button key={i} onClick={() => setSlideIdx(i)} className={`h-1.5 rounded-full transition-all duration-300 ${i === slideIdx ? "w-6 bg-orange-500" : "w-1.5 bg-gray-300"}`}/>
+            <button key={i} onClick={() => setSlideIdx(i)} className={`h-1.5 rounded-full transition-all duration-300 ${i === slideIdx ? "w-6 bg-orange-500" : "w-1.5 bg-gray-300"}`} />
           ))}
         </div>
       </section>
@@ -169,8 +170,8 @@ export default function HomePage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {styles.map(style => (
             <a key={style.id} href={style.href} className="group relative rounded-2xl overflow-hidden h-48 block cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-              <img src={style.image} alt={style.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"/>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"/>
+              <img src={style.image} alt={style.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 w-full p-4 z-10">
                 <h3 className="text-white font-bold text-base leading-tight">{style.title}</h3>
                 <p className="text-white/90 text-xs mt-1 line-clamp-2">{style.subtitle}</p>
@@ -190,7 +191,7 @@ export default function HomePage() {
           </div>
           <a href="/tours/search" className="text-sm font-semibold text-orange-500 flex items-center gap-1 hover:underline">
             Xem tất cả
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7"/></svg>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
           </a>
         </div>
 
@@ -198,18 +199,18 @@ export default function HomePage() {
         <div className="grid gap-2" style={{ gridTemplateColumns: "843fr 353fr", gridTemplateRows: "352px 352px 704px" }}>
 
           {/* [0,0] — domestic[3] */}
-          <DestCard dest={domestic[3]} onClick={() => handleRandomTourByCity(domestic[3]?.name)}/>
+          <DestCard dest={domestic[3]} onClick={() => handleRandomTourByCity(domestic[3]?.name)} />
 
           {/* [0,1] — domestic[2] — row-span-2 */}
-          <DestCard dest={domestic[2]} onClick={() => handleRandomTourByCity(domestic[2]?.name)} className="row-span-2"/>
+          <DestCard dest={domestic[2]} onClick={() => handleRandomTourByCity(domestic[2]?.name)} className="row-span-2" />
 
           {/* [1,0] — domestic[1] */}
-          <DestCard dest={domestic[1]} onClick={() => handleRandomTourByCity(domestic[1]?.name)}/>
+          <DestCard dest={domestic[1]} onClick={() => handleRandomTourByCity(domestic[1]?.name)} />
 
           {/* [2,0–1] — domestic[4] & domestic[0] */}
           <div className="col-span-2 grid grid-cols-2 gap-2">
-            <DestCard dest={domestic[4]} onClick={() => handleRandomTourByCity(domestic[4]?.name)}/>
-            <DestCard dest={domestic[0]} onClick={() => handleRandomTourByCity(domestic[0]?.name)}/>
+            <DestCard dest={domestic[4]} onClick={() => handleRandomTourByCity(domestic[4]?.name)} />
+            <DestCard dest={domestic[0]} onClick={() => handleRandomTourByCity(domestic[0]?.name)} />
           </div>
 
         </div>
