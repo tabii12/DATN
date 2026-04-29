@@ -47,9 +47,7 @@ function StatCard({ icon, label, value, color }: any) {
       <div className={`absolute top-0 left-0 right-0 h-1 ${color}`} />
       <p className="text-xs text-gray-400 font-bold uppercase">{label}</p>
       <p className="text-2xl font-black text-gray-900 mt-1">{value}</p>
-      <div className="absolute right-4 top-4 text-2xl opacity-70">
-        {icon}
-      </div>
+      <div className="absolute right-4 top-4 text-2xl opacity-70">{icon}</div>
     </div>
   );
 }
@@ -86,33 +84,65 @@ export default function AdminDashboard() {
   const [topTours, setTopTours] = useState<any[]>([]);
   const [topUsers, setTopUsers] = useState<any[]>([]);
   const [aiData, setAiData] = useState<any[]>([]);
-  const [visitorData, setVisitorData] = useState<any[]>([]);
 
-  // ================= VISITOR (FIXED SAFE) =================
+  // ================= LOGIN HISTORY =================
+  const [loginDayStats, setLoginDayStats] = useState<any[]>([]);
+  const [loginMonthStats, setLoginMonthStats] = useState<any[]>([]);
+
+  // ================= LOGIN HISTORY FETCH =================
   useEffect(() => {
-    const fetchVisitors = async () => {
+    const fetchLoginHistory = async () => {
       try {
-        const res = await fetch(`${API}/visitors/stats`);
-        const json = await res.json();
+        const token = localStorage.getItem("token");
 
-        const data = json?.data || json || [];
+        const month = 4;
+        const day = 23;
 
-        setVisitorData(
-          data.map((item: any) => ({
-            name: item._id,
-            visitors: item.visitors,
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
+
+        const [dayRes, monthRes] = await Promise.all([
+          fetch(
+            `${API}/login-history/stats?type=day&day=${day}&month=${month}`,
+            { headers }
+          ),
+          fetch(
+            `${API}/login-history/stats?type=month&month=${month}`,
+            { headers }
+          ),
+        ]);
+
+        const dayJson = await dayRes.json();
+        const monthJson = await monthRes.json();
+
+        const dayData = Array.isArray(dayJson?.data) ? dayJson.data : [];
+        const monthData = Array.isArray(monthJson?.data) ? monthJson.data : [];
+
+        setLoginDayStats(
+          dayData.map((i: any) => ({
+            name: `Day ${i._id || day}`,
+            value: i.count || 0,
+          }))
+        );
+
+        setLoginMonthStats(
+          monthData.map((i: any) => ({
+            name: `Month ${i._id || month}`,
+            value: i.count || 0,
           }))
         );
       } catch (err) {
-        console.log("Visitor API error:", err);
-        setVisitorData([]);
+        console.log("Login history error:", err);
+        setLoginDayStats([]);
+        setLoginMonthStats([]);
       }
     };
 
-    fetchVisitors();
+    fetchLoginHistory();
   }, []);
 
-  // ================= FETCH =================
+  // ================= FETCH MAIN DATA =================
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -146,7 +176,6 @@ export default function AdminDashboard() {
     bookings.forEach((b) => {
       const key = new Date(b.createdAt).toLocaleDateString("vi-VN");
       const price = b.vnpay?.amount ?? b.total_price ?? 0;
-
       map[key] = (map[key] || 0) + price;
     });
 
@@ -158,13 +187,13 @@ export default function AdminDashboard() {
     );
   }, [bookings]);
 
-  // ================= TOP TOUR =================
+  // ================= TOP TOUR (FIXED) =================
   useEffect(() => {
     const map: any = {};
 
     bookings.forEach((b) => {
       const id = b.tour_id?._id || "unknown";
-      const name = b.tour_id?.name || "Unknown";
+      const name = b.tour_id?.name || `Tour ${id.slice(-4)}`;
       const price = b.vnpay?.amount ?? b.total_price ?? 0;
 
       if (!map[id]) {
@@ -210,7 +239,6 @@ export default function AdminDashboard() {
     setAiData(predictNext7Days(bookings));
   }, [bookings]);
 
-  // ================= STATS =================
   const stats = useMemo(() => {
     const revenue = bookings.reduce(
       (s, b) => s + (b.vnpay?.amount ?? b.total_price ?? 0),
@@ -277,7 +305,6 @@ export default function AdminDashboard() {
         {/* TOP USERS */}
         <div className="bg-white p-5 rounded-2xl border">
           <h2 className="font-bold mb-4">👑 Top Users chi tiêu nhiều nhất</h2>
-
           <div className="grid md:grid-cols-3 gap-4">
             {topUsers.map((u: any, i) => (
               <div key={i} className="p-4 bg-gray-50 rounded-xl border">
@@ -291,18 +318,35 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* VISITOR */}
-        <div className="bg-white p-4 rounded-2xl border h-[280px]">
-          <h2 className="font-bold mb-3">👁 Visitors (REAL DATA)</h2>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={visitorData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Line dataKey="visitors" stroke="#3b82f6" />
-            </LineChart>
-          </ResponsiveContainer>
+        {/* LOGIN HISTORY */}
+        <div className="grid md:grid-cols-2 gap-6">
+
+          <div className="bg-white p-4 rounded-2xl border h-[280px]">
+            <h2 className="font-bold mb-3">🔐 Login theo ngày</h2>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={loginDayStats}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line dataKey="value" stroke="#3b82f6" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border h-[280px]">
+            <h2 className="font-bold mb-3">📅 Login theo tháng</h2>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={loginMonthStats}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#f97316" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
         </div>
+
         <TourIsCommingSoon />
       </div>
     </div>
