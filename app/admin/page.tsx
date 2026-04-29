@@ -89,58 +89,64 @@ export default function AdminDashboard() {
   const [loginDayStats, setLoginDayStats] = useState<any[]>([]);
   const [loginMonthStats, setLoginMonthStats] = useState<any[]>([]);
 
-  // ================= LOGIN HISTORY FETCH =================
+
   useEffect(() => {
-    const fetchLoginHistory = async () => {
-      try {
-        const token = localStorage.getItem("token");
+  const fetchLoginHistory = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-        const month = 4;
-        const day = 23;
+      const month = 4;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
 
-        const headers = {
-          Authorization: `Bearer ${token}`,
+      // ===== FETCH ALL DAYS (1 → 31) =====
+      const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+      const dayPromises = days.map((d) =>
+        fetch(
+          `${API}/login-history/stats?type=day&day=${d}&month=${month}`,
+          { headers }
+        ).then((r) => r.json())
+      );
+
+      const dayResults = await Promise.all(dayPromises);
+
+      const fullDayData = dayResults.map((res, index) => {
+       const item = res?.data;
+
+        return {
+          name: `Day ${index + 1}`,
+          value: item?.count || 0,
         };
+      });
 
-        const [dayRes, monthRes] = await Promise.all([
-          fetch(
-            `${API}/login-history/stats?type=day&day=${day}&month=${month}`,
-            { headers }
-          ),
-          fetch(
-            `${API}/login-history/stats?type=month&month=${month}`,
-            { headers }
-          ),
-        ]);
+      setLoginDayStats(fullDayData);
 
-        const dayJson = await dayRes.json();
-        const monthJson = await monthRes.json();
+      // ===== FETCH MONTH =====
+      const monthRes = await fetch(
+        `${API}/login-history/stats?type=month&month=${month}`,
+        { headers }
+      );
 
-        const dayData = Array.isArray(dayJson?.data) ? dayJson.data : [];
-        const monthData = Array.isArray(monthJson?.data) ? monthJson.data : [];
+      const monthJson = await monthRes.json();
 
-        setLoginDayStats(
-          dayData.map((i: any) => ({
-            name: `Day ${i._id || day}`,
-            value: i.count || 0,
-          }))
-        );
+       const monthItem = monthJson?.data;
+      setLoginMonthStats([
+        {
+          name: `Month ${month}`,
+          value: monthItem?.count || 0,
+        },
+      ]);
+    } catch (err) {
+      console.log("Login history error:", err);
+      setLoginDayStats([]);
+      setLoginMonthStats([]);
+    }
+  };
 
-        setLoginMonthStats(
-          monthData.map((i: any) => ({
-            name: `Month ${i._id || month}`,
-            value: i.count || 0,
-          }))
-        );
-      } catch (err) {
-        console.log("Login history error:", err);
-        setLoginDayStats([]);
-        setLoginMonthStats([]);
-      }
-    };
-
-    fetchLoginHistory();
-  }, []);
+  fetchLoginHistory();
+}, []);
 
   // ================= FETCH MAIN DATA =================
   useEffect(() => {
@@ -318,35 +324,42 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* LOGIN HISTORY */}
-        <div className="grid md:grid-cols-2 gap-6">
+       {/* LOGIN HISTORY COMBINED */}
+<div className="grid md:grid-cols-2 gap-6">
 
-          <div className="bg-white p-4 rounded-2xl border h-[280px]">
-            <h2 className="font-bold mb-3">🔐 Login theo ngày</h2>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={loginDayStats}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line dataKey="value" stroke="#3b82f6" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+  {/* LOGIN DAY */}
+  <div className="bg-white p-4 rounded-2xl border min-h-[300px]">
+    <h2 className="font-bold mb-3">🔐 Login theo ngày</h2>
+    <ResponsiveContainer width="100%" height={280}>
+      <LineChart data={loginDayStats}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Line
+          dataKey="value"
+          stroke="#3b82f6"
+          strokeWidth={3}
+          dot={{ r: 4 }}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  </div>
 
-          <div className="bg-white p-4 rounded-2xl border h-[280px]">
-            <h2 className="font-bold mb-3">📅 Login theo tháng</h2>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={loginMonthStats}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#f97316" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+  {/* LOGIN MONTH */}
+  <div className="bg-white p-4 rounded-2xl border min-h-[300px]">
+    <h2 className="font-bold mb-3">📅 Login theo tháng</h2>
+    <ResponsiveContainer width="100%" height={280}>
+      <BarChart data={loginMonthStats}>
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="value" fill="#f97316" />
+      </BarChart>
+    </ResponsiveContainer>
+  </div>
 
-        </div>
-
+</div>
         <TourIsCommingSoon />
       </div>
     </div>
