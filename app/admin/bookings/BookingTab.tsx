@@ -148,6 +148,7 @@ function StatusSelect({
       <option value="confirmed">◑ Đã xác nhận (50%)</option>
       <option value="paid">✓ Đã thanh toán (100%)</option>
       <option value="cancelled">✕ Đã hủy đơn</option>
+      <option value="refunded">↩ Đã hoàn</option>
     </select>
   );
 }
