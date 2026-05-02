@@ -19,7 +19,7 @@ interface RelatedTour {
   name: string;
   slug: string;
   images: { image_url: string }[];
-  start_location?: string;
+  hotel_id?: { city: string; price_per_night: number };
   trips?: { price: number; status: string; start_date: string }[];
 }
 
@@ -30,6 +30,8 @@ const CITIES = [
   "Phú Yên", "Bình Định", "Quảng Nam", "Quảng Ngãi", "Quảng Bình", "Quảng Trị",
   "Hà Tĩnh", "Nghệ An", "Thanh Hóa", "Hải Phòng", "Quảng Ninh", "Lào Cai",
   "Kon Tum", "Gia Lai", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Lai Châu",
+  "Hà Giang", "Sa Pa", "Cao Bằng", "Lạng Sơn", "Bắc Kạn", "Thái Nguyên",
+  "Tuyên Quang", "Yên Bái", "Hòa Bình", "Sơn La", "Mộc Châu", "Bắc Ninh",
 ];
 
 function removeAccents(str: string): string {
@@ -41,8 +43,8 @@ function removeAccents(str: string): string {
 }
 
 function extractCity(title: string): string | null {
-  const normalized = removeAccents(title).toLowerCase();
-  return CITIES.find(c => normalized.includes(removeAccents(c).toLowerCase())) ?? null;
+  const normalized = removeAccents(title).toLowerCase().replace(/\s+/g, "");
+  return CITIES.find(c => normalized.includes(removeAccents(c).toLowerCase().replace(/\s+/g, ""))) ?? null;
 }
 
 export default function BlogDetailPage() {
@@ -104,7 +106,7 @@ export default function BlogDetailPage() {
       setRelatedTours([]);
       return;
     }
-    const cityNorm = removeAccents(city).toLowerCase();
+    const cityNorm = removeAccents(city).toLowerCase().replace(/\s+/g, "");
 
     const fetchTours = async () => {
       try {
@@ -112,9 +114,11 @@ export default function BlogDetailPage() {
         const data = await res.json();
         const list: RelatedTour[] = data.data || [];
 
-        const filtered = list.filter(t =>
-          removeAccents(t.name ?? "").toLowerCase().includes(cityNorm)
-        );
+        const filtered = list.filter(t => {
+          const nameNorm = removeAccents(t.name ?? "").toLowerCase().replace(/\s+/g, "");
+          const cityNorm2 = removeAccents(t.hotel_id?.city ?? "").toLowerCase().replace(/\s+/g, "");
+          return nameNorm.includes(cityNorm) || cityNorm2.includes(cityNorm);
+        });
 
         setRelatedTours(filtered.slice(0, 3));
       } catch (err) {
@@ -221,7 +225,7 @@ export default function BlogDetailPage() {
                     </div>
                   )}
                   <div className="p-4">
-                    <p className="text-xs text-orange-500 font-semibold mb-1">📍 {city}</p>
+                    <p className="text-xs text-orange-500 font-semibold mb-1">📍 {tour.hotel_id?.city || city}</p>
                     <h3 className="font-semibold line-clamp-2 group-hover:text-orange-500 transition-colors mb-2">{tour.name}</h3>
                     {nextTrip && <p className="text-xs text-gray-400 mb-1">🗓 {new Date(nextTrip.start_date).toLocaleDateString("vi-VN")}</p>}
                     {minPrice > 0 && <p className="text-sm font-bold text-orange-500">Từ {minPrice.toLocaleString("vi-VN")}đ<span className="text-xs font-normal text-gray-400">/người</span></p>}
