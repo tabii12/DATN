@@ -615,20 +615,50 @@ function HotelListingContent() {
                         </div>
                         <div className="w-px h-8 bg-gray-200 shrink-0" />
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-50 transition-colors shrink-0">
-                            <svg className="w-4 h-4 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+
+                            <svg
+                                className="w-4 h-4 text-orange-500 shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                />
                             </svg>
-                            <div>
-                                <p className="text-[10px] text-gray-400 leading-none mb-0.5">Ngày khởi hành</p>
-                                <input type="date" min={new Date().toISOString().split("T")[0]}
-                                    defaultValue={dateParam}
-                                    className="text-sm font-medium outline-none bg-transparent text-gray-700 cursor-pointer w-28"
-                                    onChange={e => {
-                                        const val = e.target.value;
-                                        const params = new URLSearchParams(searchParams.toString());
-                                        if (val) params.set("date", val); else params.delete("date");
-                                        router.push(`/tours/search?${params.toString()}`);
-                                    }} />
+
+                            <div className="flex-1">
+                                <p className="text-[10px] text-gray-400 leading-none mb-0.5">
+                                    Ngày khởi hành
+                                </p>
+
+                                <div className="relative w-28">
+                                    <input
+                                        type="date"
+                                        min={new Date().toISOString().split("T")[0]}
+                                        value={dateParam || ""}
+                                        className={`text-sm font-medium outline-none bg-transparent cursor-pointer w-full ${dateParam ? "text-gray-700" : "text-transparent"
+                                            }`}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            const params = new URLSearchParams(searchParams.toString());
+                                            if (val) params.set("date", val);
+                                            else params.delete("date");
+                                            router.push(`/tours/search?${params.toString()}`);
+                                        }}
+                                    />
+
+                                    {!dateParam && (
+                                        <div className="absolute inset-0 flex items-center pointer-events-none">
+                                            <span className="text-sm font-medium text-gray-500">
+                                                Linh hoạt
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="w-px h-8 bg-gray-200 shrink-0" />

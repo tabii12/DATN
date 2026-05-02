@@ -97,7 +97,7 @@ export default function HomePage() {
 
       router.push(`/tours/${tours[Math.floor(Math.random() * tours.length)].slug}`);
     } catch (err) { console.error("Random tour error:", err); }
-  };
+  };  
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] font-sans text-gray-800">
@@ -106,7 +106,7 @@ export default function HomePage() {
       <HeroBanner
         images={banners.map(b => b.image)}
         title="Trải nghiệm kỳ nghỉ tuyệt vời"
-        subtitle="Combo khách sạn · vé máy bay · giá tốt nhất"
+        subtitle="Combo khách sạn · giá tốt nhất"
       />
 
       {/* ── COMBO ── */}

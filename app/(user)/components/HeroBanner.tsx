@@ -272,14 +272,24 @@ export default function HeroBanner({
                     </svg>
                     <div className="flex-1">
                       <p className="text-[10px] text-gray-400 leading-none">Ngày khởi hành</p>
-                      <input
-                        type="date"
-                        min={new Date().toISOString().split("T")[0]}
-                        className="text-sm font-medium outline-none bg-transparent w-full"
-                        value={checkIn}
-                        // ✅ Dùng onChange (không phải defaultValue) để lưu vào state
-                        onChange={(e) => setCheckIn(e.target.value)}
-                      />
+                      <div className="relative">
+                        <input
+                          type="date"
+                          min={new Date().toISOString().split("T")[0]}
+                          value={checkIn}
+                          onChange={(e) => setCheckIn(e.target.value)}
+                          className={`text-sm font-medium outline-none bg-transparent w-full ${checkIn ? "text-gray-700" : "text-transparent"
+                            }`}
+                        />
+
+                        {!checkIn && (
+                          <div className="absolute inset-0 flex items-center pointer-events-none">
+                            <span className="text-sm font-medium text-gray-500">
+                              Linh hoạt
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
