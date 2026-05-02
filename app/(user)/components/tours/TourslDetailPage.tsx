@@ -439,9 +439,28 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
   const hotel = tour.hotel_id ?? null;
   const hotelName = hotel?.name ?? tour.name;
-  const hotelCity = hotel?.city ?? "";
+  const hotelRating = hotel?.rating ?? 0;
+
+  // Extract city từ tên tour nếu hotel không có city
+  const extractCityFromName = (name: string): string => {
+    const CITIES = [
+      "Đà Lạt", "Nha Trang", "Đà Nẵng", "Hội An", "Huế", "Phú Quốc",
+      "Hạ Long", "Sapa", "Hà Nội", "Vũng Tàu", "Cần Thơ",
+      "Phan Thiết", "Mũi Né", "Quy Nhơn", "Ninh Bình", "Quảng Bình",
+      "Buôn Ma Thuột", "Pleiku", "Hải Phòng", "Hà Giang", "Tây Ninh"
+    ];
+    // So sánh trực tiếp unicode — không normalize
+    return CITIES.find(c => name.includes(c)) ?? "";
+  };
+
+  const hotelCity = hotel?.city
+    || extractCityFromName(tour.name)
+    || (tour as any).start_location
+    || "";
   const hotelAddress = hotel?.address ?? "";
-  const hotelRating = hotel?.rating ?? 0; const images = tour.images ?? [];
+  // Query map: dùng địa chỉ đầy đủ nếu có, fallback về city
+  const mapQuery = hotelAddress ? `${hotelAddress}, ${hotelCity}, Việt Nam` : `${hotelCity}, Việt Nam`;
+  const images = tour.images ?? [];
   const score = avgCommentRating !== null
     ? Math.min(9.9, parseFloat((avgCommentRating * 1.8 + 0.8).toFixed(1)))
     : null;
@@ -521,9 +540,9 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   {hotelCity ? (
                     <div className="h-50 rounded-lg overflow-hidden border border-gray-200 relative">
                       <iframe width="100%" height="100%" frameBorder="0" scrolling="no"
-                        src={"https://maps.google.com/maps?q=" + encodeURIComponent((hotelAddress || hotelCity) + ", Việt Nam") + "&hl=vi&z=14&ie=UTF8&iwloc=&output=embed"}
+                        src={"https://maps.google.com/maps?q=" + encodeURIComponent(mapQuery) + "&hl=vi&z=14&ie=UTF8&iwloc=&output=embed"}
                       />
-                      <a href={"https://maps.google.com/maps?q=" + encodeURIComponent((hotelAddress || hotelCity) + ", Việt Nam")}
+                      <a href={"https://maps.google.com/maps?q=" + encodeURIComponent(mapQuery)}
                         target="_blank" rel="noreferrer"
                         className="absolute top-2 right-2 bg-white text-xs text-blue-600 font-semibold px-2 py-1 rounded shadow no-underline hover:bg-blue-50 transition-colors">
                         Xem bản đồ lớn hơn
