@@ -102,7 +102,7 @@ export default function AdminComments() {
 
       // Lấy tất cả comments
       const response = await fetch(
-        `https://db-pickyourway.vercel.app/api/comments/admin/all?status=${filterStatus === "all" ? "" : filterStatus}`,
+        `https://db-pickyourway.vercel.app/api/comments`,
         {
           headers: {
             Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
@@ -123,7 +123,7 @@ export default function AdminComments() {
         if (!tourMap.has(comment.tour_id)) {
           try {
             const tourRes = await fetch(
-              `https://db-pickyourway.vercel.app/api/tours/${comment.tour_id}`,
+              `https://db-pickyourway.vercel.app/api/tours/detailid/${comment.tour_id}`,
               {
                 headers: {
                   Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
@@ -220,6 +220,7 @@ export default function AdminComments() {
     }
   };
 
+
   const handleDelete = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa đánh giá này?")) return;
 
@@ -251,6 +252,7 @@ export default function AdminComments() {
     }
   };
 
+
   // Lọc và tìm kiếm
   let filteredComments = comments.filter((c) => {
     if (filterRating && c.rating !== filterRating) return false;
@@ -264,6 +266,8 @@ export default function AdminComments() {
     }
     return true;
   });
+
+  console.log("Filtered Comments:", filteredComments);
 
   const stats = {
     total: comments.length,
