@@ -79,6 +79,7 @@ export default function CommentsDisplay({
         {
           headers: {
             "Content-Type": "application/json",
+             Authorization: `Bearer ${localStorage.getItem("token")}`, // ✅ thêm cái này
           },
         }
       );
