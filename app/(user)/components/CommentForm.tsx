@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
 
 interface CommentFormProps {
-  tourId: string;
-  tourName: string;
+  trip_id: string;
+  tour_id?: string;
   onCommentAdded?: () => void;
 }
 
 export default function CommentForm({
-  tourId,
-  tourName,
+  trip_id,
+  tour_id,
   onCommentAdded,
 }: CommentFormProps) {
   const [rating, setRating] = useState(5);
@@ -28,19 +28,19 @@ export default function CommentForm({
     const checkUserBooking = async () => {
       try {
         const token = localStorage.getItem("token");
-        const user = localStorage.getItem("user");
+        // const user = localStorage.getItem("user");
 
-        if (!token || !user) {
-          setHasBooked(false);
-          setCheckingBooking(false);
-          return;
-        }
+        // if (!token || !user) {
+        //   setHasBooked(false);
+        //   setCheckingBooking(false);
+        //   return;
+        // }
 
-        const userObj = JSON.parse(user);
+        // const userObj = JSON.parse(user);
 
         // Gọi API để kiểm tra booking
         const response = await fetch(
-          `https://db-pickyourway.vercel.app/api/bookings/check-booked/${tourId}`,
+          `https://db-pickyourway.vercel.app/api/bookings/check-booked/${trip_id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -50,6 +50,7 @@ export default function CommentForm({
 
         if (response.ok) {
           const data = await response.json();
+          console.log("Booking check response:", data);
           setHasBooked(data.hasBooked || false);
         }
       } catch (err) {
@@ -61,7 +62,7 @@ export default function CommentForm({
     };
 
     checkUserBooking();
-  }, [tourId]);
+  }, [tour_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,21 +104,17 @@ export default function CommentForm({
       const userObj = JSON.parse(user);
 
       const response = await fetch(
-        "https://db-pickyourway.vercel.app/api/comments",
+        "https://db-pickyourway.vercel.app/api/comments/create",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            tour_id: tourId,
-            rating,
-            title,
+            tour_id: tour_id,
+            user_id: localStorage.getItem("user.id"),
             content,
-            user_id: userObj._id,
-            user_name: userObj.name,
-            user_email: userObj.email,
+            rating,
           }),
         }
       );

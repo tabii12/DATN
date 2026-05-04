@@ -922,9 +922,9 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
       {/* Review */}
       <div ref={reviewRef}>
-        <CommentsDisplay tourId={tour._id} tourName={tour.name} refreshTrigger={commentRefresh} />
+        <CommentsDisplay tour_id={tour._id} tourName={tour.name} refreshTrigger={commentRefresh} />
         <div className="mt-6">
-          <CommentForm tourId={tour._id} tourName={tour.name} onCommentAdded={() => setCommentRefresh((prev) => prev + 1)} />
+          <CommentForm tour_id={tour._id} trip_id={tour.name} onCommentAdded={() => setCommentRefresh((prev) => prev + 1)} />
         </div>
       </div>
 

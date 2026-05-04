@@ -42,6 +42,10 @@ interface Booking {
 
   basePrice: number;
   total: number;
+  payNow: number;
+
+  trip_id: string;
+  tour_id?: string;
 
   singleRooms: number;
   insuranceFee: number;
@@ -100,6 +104,7 @@ export default function BookingsPage() {
           const children = Number(b.children || 0);
           const infants = Number(b.infants || 0);
           const basePrice = Number(b.trip_id?.price || 0);
+          const payNow = Number(b.payNow || 0);
           const singleRooms = Number(b.singleRooms || 0);
           const insuranceFee = 500000;
 
@@ -128,9 +133,12 @@ export default function BookingsPage() {
 
             basePrice,
             total,
-
+            payNow,
             singleRooms,
             insuranceFee,
+
+            trip_id: b.trip_id?._id || b.trip_id || "",
+            tour_id: b.trip_id?.tour_id || b.tour_id || "",
 
             departureDate: b.departureDate,
             status: b.status,
@@ -159,25 +167,27 @@ export default function BookingsPage() {
   };
 
   const isTourCompleted = (b: Booking) => {
-    if (b.status !== "paid_100") return false;
+    if (b.status !== "paid") return false;
+
     const dep = new Date(b.departureDate);
-    return dep < new Date();
+    const now = new Date();
+    return dep <= now;
   };
 
   const renderProgress = (b: Booking) => {
-    const isConfirmed = b.status === "confirmed";
     const isPaid = b.status === "paid";
     const done = isTourCompleted(b);
+    const now = Date.now();
 
     const time = getCountdown(b.createdAt, now);
 
     const hour = new Date(now).getHours();
-    const isNight = hour >= 22 || hour < 6;
+    const isNight = hour >= 12 || hour < 6;
 
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-4 text-xs">
-          <Step active={isConfirmed || isPaid} label="Đã xác nhận" />
+          <Step active={isPaid} label="Đã xác nhận" />
           <Line active={isPaid || done} />
           <Step active={isPaid} label="Đã thanh toán" />
           <Line active={done} />
@@ -185,7 +195,7 @@ export default function BookingsPage() {
         </div>
 
         {/* COUNTDOWN: chỉ khi đã confirmed nhưng chưa paid */}
-        {isConfirmed && !isPaid && time && (
+        {!isPaid && time && (
           <>
             {time.expired ? (
               <div className="bg-red-50 border border-red-300 text-red-700 text-sm p-3 rounded-xl">
@@ -291,7 +301,7 @@ export default function BookingsPage() {
                 </p>
 
                 <p className="text-xl font-bold text-indigo-600">
-                  {formatVND(b.total)}
+                  {formatVND(b.payNow)}
                 </p>
 
                 <p>Ngày đi: {formatDate(b.departureDate)}</p>
@@ -310,8 +320,8 @@ export default function BookingsPage() {
                 {reviewBooking?.id === b.id && (
                   <div className="mt-4">
                     <CommentForm
-                      tourId={b.tourId}
-                      tourName={b.tourName}
+                      trip_id={b.trip_id}
+                      tour_id={b.tour_id}
                       onCommentAdded={() => setReviewBooking(null)}
                     />
                   </div>
