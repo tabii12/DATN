@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { 
-  Trash2, CheckCircle, XCircle, Eye, Star
-} from "lucide-react";
+import { Trash2, CheckCircle, XCircle, Eye, Star } from "lucide-react";
 
 // --- Interfaces ---
 interface Comment {
@@ -122,9 +120,12 @@ export default function AdminComments() {
     return matchesRating && matchesSearch;
   });
 
-  const avgRating = comments.length > 0 
-    ? (comments.reduce((sum, c) => sum + c.rating, 0) / comments.length).toFixed(1) 
-    : 0;
+  const avgRating =
+    comments.length > 0
+      ? (
+          comments.reduce((sum, c) => sum + c.rating, 0) / comments.length
+        ).toFixed(1)
+      : 0;
 
   if (loading) return (
     <div className="h-screen flex items-center justify-center">
@@ -183,7 +184,8 @@ export default function AdminComments() {
                 </td>
                 <td className="p-4"><StarRating count={c.rating} /></td>
                 <td className="p-4 text-sm text-gray-600 italic">
-                  "{c.content.substring(0, 50)}{c.content.length > 50 ? "..." : ""}"
+                  "{c.content.substring(0, 50)}
+                  {c.content.length > 50 ? "..." : ""}"
                 </td>
                 <td className="p-4 text-right flex justify-end gap-2">
                   <button 
