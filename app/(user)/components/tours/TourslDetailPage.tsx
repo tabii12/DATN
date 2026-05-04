@@ -556,12 +556,12 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                   <div className="flex-1 border border-gray-200 rounded-lg overflow-hidden bg-white flex flex-col">
                     <div className="flex items-center gap-2.5 px-3 py-2.5">
                       <span className={`text-xl font-black text-white ${scoreColor} px-2 py-0.5 rounded-md leading-tight`}>
-                        {score !== null ? score.toFixed(1) : "—"}
+                        {typeof score === "number" ? score.toFixed(1) : "—"}
                       </span>
-                      <span className="text-sm font-bold text-green-600">{label ?? "Chưa có đánh giá"}</span>
+                      <span className="text-sm font-bold text-green-600">{label || "Chưa có đánh giá"}</span>
                     </div>
                     <div className="h-px bg-gray-100" />
-                    {latestComment ? (
+                    {latestComment && latestComment.content ? (
                       <div className="flex-1 p-3 flex flex-col justify-between">
                         <div className="flex gap-0.5 mb-1">
                           {Array.from({ length: Math.min(5, Math.max(0, latestComment.rating || 0)) }).map((_, i) => (

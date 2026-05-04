@@ -175,6 +175,7 @@ export default function BookingsPage() {
   };
 
   const renderProgress = (b: Booking) => {
+    const isConfirmed = b.status === "confirmed";
     const isPaid = b.status === "paid";
     const done = isTourCompleted(b);
     const now = Date.now();
@@ -187,8 +188,8 @@ export default function BookingsPage() {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-4 text-xs">
-          <Step active={isPaid} label="Đã xác nhận" />
-          <Line active={isPaid || done} />
+          <Step active={isConfirmed || isPaid } label="Đã xác nhận" />
+          <Line active={isConfirmed || isPaid || done} />
           <Step active={isPaid} label="Đã thanh toán" />
           <Line active={done} />
           <Step active={done} label="Hoàn thành" />
