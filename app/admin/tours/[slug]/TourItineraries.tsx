@@ -205,7 +205,7 @@ export default function TourItineraries({ tourId, itineraries, onRefresh }: Prop
                       <textarea value={editDetailContent} onChange={e => setEditDetailContent(e.target.value)} rows={3} placeholder="Mô tả chi tiết..." className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 resize-none"/>
 
                       {/* Upload ảnh (chỉ khi không gắn địa điểm) */}
-                      {!editDetailPlaceId && (
+                      {/* {!editDetailPlaceId && (
                         <div>
                           <p className="text-xs font-semibold text-gray-600 mb-2">Hình ảnh hoạt động</p>
                           <div className="flex flex-wrap gap-2">
@@ -222,7 +222,7 @@ export default function TourItineraries({ tourId, itineraries, onRefresh }: Prop
                             </label>
                           </div>
                         </div>
-                      )}
+                      )} */}
 
                       <div className="flex gap-2">
                         <button onClick={() => updateDetail(dt._id)} className="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg border-none cursor-pointer">Lưu</button>
