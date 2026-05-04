@@ -61,7 +61,6 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 };
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: "pending",   label: "○ Chờ xác nhận" },
   { value: "confirmed", label: "◑ Đã TT 50%" },
   { value: "paid",      label: "✓ Đã TT 100%" },
   { value: "cancelled", label: "✕ Đã hủy" },
@@ -138,12 +137,6 @@ function StatusBadge({ status }: { status: string }) {
       </span>
     );
 
-  // pending
-  return (
-    <span className="inline-flex items-center gap-1 bg-yellow-50 text-yellow-700 border border-yellow-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-      ○ Chờ xác nhận
-    </span>
-  );
 }
 
 // --- Dropdown chuyển trạng thái ---
@@ -209,7 +202,6 @@ const API = "https://db-pickyourway.vercel.app/api";
 
 const FILTER_OPTIONS = [
   { value: "all",       label: "Tất cả" },
-  { value: "pending",   label: "Chờ xác nhận" },
   { value: "confirmed", label: "Đã TT 50%" },
   { value: "paid",      label: "Đã TT 100%" },
   { value: "cancelled", label: "Đã hủy" },

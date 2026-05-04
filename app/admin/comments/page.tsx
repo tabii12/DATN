@@ -117,6 +117,7 @@ export default function AdminComments() {
       const data = await response.json();
       setComments(data.data && data.data.length > 0 ? data.data : []);
 
+<<<<<<< HEAD
       // Tải thông tin tour (FIXED)
 const tourMap = new Map<string, string>();
 
@@ -132,6 +133,30 @@ for (const comment of data.data || []) {
         headers: {
           Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
         },
+=======
+      // Tải thông tin tour
+      const tourMap = new Map<string, string>([["tour-demo", "Tour thử nghiệm"]]);
+      for (const comment of data.data || []) {
+        if (!tourMap.has(comment.tour_id)) {
+          try {
+            const tourRes = await fetch(
+              `https://db-pickyourway.vercel.app/api/tours/detailid/${comment.tour_id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
+                },
+              }
+            );
+            if (tourRes.ok) {
+              const tourData = await tourRes.json();
+              tourMap.set(comment.tour_id, tourData.data?.name || "N/A");
+            }
+          } catch (e) {
+            console.error("Lỗi khi tải tour:", e);
+            tourMap.set(comment.tour_id, "N/A");
+          }
+        }
+>>>>>>> 3848df34b92135ac304fc312c11c7118474f1796
       }
     );
 
@@ -227,6 +252,7 @@ for (const comment of data.data || []) {
     }
   };
 
+
   const handleDelete = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa đánh giá này?")) return;
 
@@ -258,6 +284,7 @@ for (const comment of data.data || []) {
     }
   };
 
+
   // Lọc và tìm kiếm
   let filteredComments = comments.filter((c) => {
     if (filterRating && c.rating !== filterRating) return false;
@@ -271,6 +298,8 @@ for (const comment of data.data || []) {
     }
     return true;
   });
+
+  console.log("Filtered Comments:", filteredComments);
 
   const stats = {
     total: comments.length,
