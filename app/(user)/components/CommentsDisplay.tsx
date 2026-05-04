@@ -19,7 +19,7 @@ interface Comment {
 }
 
 interface CommentsDisplayProps {
-  tourId: string;
+  tour_id: string;
   tourName?: string;
   refreshTrigger?: number;
 }
@@ -55,7 +55,7 @@ function formatDate(dateString: string) {
 }
 
 export default function CommentsDisplay({
-  tourId,
+  tour_id,
   tourName,
   refreshTrigger,
 }: CommentsDisplayProps) {
@@ -67,7 +67,7 @@ export default function CommentsDisplay({
 
   useEffect(() => {
     fetchComments();
-  }, [tourId, refreshTrigger]);
+  }, [tour_id, refreshTrigger]);
 
   const fetchComments = async () => {
     setLoading(true);
@@ -75,10 +75,11 @@ export default function CommentsDisplay({
 
     try {
       const response = await fetch(
-        `https://db-pickyourway.vercel.app/api/comments/tour/${tourId}`,
+        `https://db-pickyourway.vercel.app/api/comments/tour/${tour_id}`,
         {
           headers: {
             "Content-Type": "application/json",
+             Authorization: `Bearer ${localStorage.getItem("token")}`, // ✅ thêm cái này
           },
         }
       );
