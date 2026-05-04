@@ -187,6 +187,7 @@ function StatusSelect({
       }}
       className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer shadow-sm"
     >
+<<<<<<< HEAD
       {/* Option hiện tại — disabled để không chọn lại */}
       <option value={currentStatus} disabled>
         {STATUS_OPTIONS.find((o) => o.value === currentStatus)?.label ?? currentStatus}
@@ -201,6 +202,13 @@ function StatusSelect({
           </option>
         ) : null;
       })}
+=======
+      <option value="pending">○ Chờ xác nhận</option>
+      <option value="confirmed">◑ Đã xác nhận (50%)</option>
+      <option value="paid">✓ Đã thanh toán (100%)</option>
+      <option value="cancelled">✕ Đã hủy đơn</option>
+      <option value="refunded">↩ Đã hoàn</option>
+>>>>>>> 70cb1aab7006091fb234b0f4064b19de42b61de0
     </select>
   );
 }

@@ -203,7 +203,7 @@ export default function ToursLandingPage() {
           <SectionHeader emoji="🗺️" title="Khám Phá Theo Vùng" sub="Chọn điểm đến theo miền"/>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {REGIONS.map(r => (
-              <a key={r.label} href={`/tours/search?q=${encodeURIComponent(r.label)}`}
+              <a key={r.label} href={`/tours/search?region=${encodeURIComponent(r.label)}`}
                 className="group relative rounded-2xl overflow-hidden h-40 no-underline shadow-sm hover:shadow-lg transition-all duration-300">
                 <img src={r.img} alt={r.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"/>

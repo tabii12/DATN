@@ -258,27 +258,28 @@ export default function AdminUsers() {
     if (!editingUser) return;
     setSaving(true);
     try {
-      const resRole = await fetch(`${API}/update/${editingUser._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ role: editRole }),
-      });
-      if (!resRole.ok) throw new Error();
+      const token = localStorage.getItem("token");
+      const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
-      const resStatus = await fetch(`${API}/status/${editingUser._id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          status: editStatus,
+      const [resRole, resStatus] = await Promise.all([
+        fetch(`${API}/role/${editingUser._id}`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ role: editRole }),
         }),
-      });
-      if (!resStatus.ok) throw new Error();
+        fetch(`${API}/status/${editingUser._id}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ status: editStatus }),
+        }),
+      ]);
+
+      const roleData = await resRole.json().catch(() => null);
+      const statusData = await resStatus.json().catch(() => null);
+      console.log("Role response:", resRole.status, roleData);
+      console.log("Status response:", resStatus.status, statusData);
+
+      if (!resRole.ok || !resStatus.ok) throw new Error();
 
       setUsers((prev) =>
         prev.map((u) =>
@@ -546,7 +547,7 @@ export default function AdminUsers() {
                       >
                         ✏️
                       </button>
-                      <button
+                      {/* <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setDeletingUser(user);
@@ -555,7 +556,7 @@ export default function AdminUsers() {
                         title="Xóa"
                       >
                         🗑️
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>
@@ -644,16 +645,21 @@ export default function AdminUsers() {
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">
                   Vai trò
                 </label>
-                <select
-                  value={editRole}
-                  onChange={(e) =>
-                    setEditRole(e.target.value as "user" | "admin")
-                  }
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
-                >
-                  <option value="user">user</option>
-                  <option value="admin">admin</option>
-                </select>
+                {editingUser?.role === "admin" ? (
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-xl">
+                    <span className="text-sm font-semibold text-indigo-600">👑 Admin</span>
+                    <span className="text-xs text-gray-400 ml-1">· Không thể hạ xuống User</span>
+                  </div>
+                ) : (
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as "user" | "admin")}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300"
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5">
@@ -764,24 +770,24 @@ export default function AdminUsers() {
                     {detailUser?._id || ""}
                   </p>
                 </div>
-                  <div className="border border-gray-100 rounded-xl p-3">
-                    <p className="text-xs text-gray-400 mb-1">Số tour đã đặt</p>
-                    <p className="text-gray-700 font-semibold">
-                      {detailBookingCount === null ? "—" : detailBookingCount}
-                    </p>
-                  </div>
-                  <div className="border border-gray-100 rounded-xl p-3">
-                    <p className="text-xs text-gray-400 mb-1">Loại khách</p>
-                    <p className="text-gray-700 font-semibold">
-                      {detailCustomerType === null
-                        ? "—"
-                        : detailCustomerType === "none"
-                          ? "Chưa đặt tour"
-                          : detailCustomerType === "new"
-                            ? "Khách hàng mới"
-                            : "Khách hàng cũ"}
-                    </p>
-                  </div>
+                <div className="border border-gray-100 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Số tour đã đặt</p>
+                  <p className="text-gray-700 font-semibold">
+                    {detailBookingCount === null ? "—" : detailBookingCount}
+                  </p>
+                </div>
+                <div className="border border-gray-100 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Loại khách</p>
+                  <p className="text-gray-700 font-semibold">
+                    {detailCustomerType === null
+                      ? "—"
+                      : detailCustomerType === "none"
+                        ? "Chưa đặt tour"
+                        : detailCustomerType === "new"
+                          ? "Khách hàng mới"
+                          : "Khách hàng cũ"}
+                  </p>
+                </div>
                 <div className="border border-gray-100 rounded-xl p-3">
                   <p className="text-xs text-gray-400 mb-1">Xác thực</p>
                   <p className="text-gray-700 font-semibold">
@@ -800,18 +806,18 @@ export default function AdminUsers() {
                     {detailUser?.updatedAt ? formatDate(detailUser.updatedAt) : ""}
                   </p>
                 </div>
-                  <div className="border border-gray-100 rounded-xl p-3">
-                    <p className="text-xs text-gray-400 mb-1">Lần đặt đầu</p>
-                    <p className="text-gray-700 font-semibold">
-                      {detailFirstBookingAt ? formatDate(detailFirstBookingAt) : "—"}
-                    </p>
-                  </div>
-                  <div className="border border-gray-100 rounded-xl p-3">
-                    <p className="text-xs text-gray-400 mb-1">Lần đặt gần nhất</p>
-                    <p className="text-gray-700 font-semibold">
-                      {detailLastBookingAt ? formatDate(detailLastBookingAt) : "—"}
-                    </p>
-                  </div>
+                <div className="border border-gray-100 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Lần đặt đầu</p>
+                  <p className="text-gray-700 font-semibold">
+                    {detailFirstBookingAt ? formatDate(detailFirstBookingAt) : "—"}
+                  </p>
+                </div>
+                <div className="border border-gray-100 rounded-xl p-3">
+                  <p className="text-xs text-gray-400 mb-1">Lần đặt gần nhất</p>
+                  <p className="text-gray-700 font-semibold">
+                    {detailLastBookingAt ? formatDate(detailLastBookingAt) : "—"}
+                  </p>
+                </div>
               </div>
             )}
 

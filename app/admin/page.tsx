@@ -47,9 +47,7 @@ function StatCard({ icon, label, value, color }: any) {
       <div className={`absolute top-0 left-0 right-0 h-1 ${color}`} />
       <p className="text-xs text-gray-400 font-bold uppercase">{label}</p>
       <p className="text-2xl font-black text-gray-900 mt-1">{value}</p>
-      <div className="absolute right-4 top-4 text-2xl opacity-70">
-        {icon}
-      </div>
+      <div className="absolute right-4 top-4 text-2xl opacity-70">{icon}</div>
     </div>
   );
 }
@@ -86,33 +84,66 @@ export default function AdminDashboard() {
   const [topTours, setTopTours] = useState<any[]>([]);
   const [topUsers, setTopUsers] = useState<any[]>([]);
   const [aiData, setAiData] = useState<any[]>([]);
-  const [visitorData, setVisitorData] = useState<any[]>([]);
 
-  // ================= VISITOR (FIXED SAFE) =================
+  // ================= LOGIN HISTORY =================
+  const [loginDayStats, setLoginDayStats] = useState<any[]>([]);
+  const [loginMonthStats, setLoginMonthStats] = useState<any[]>([]);
+
   useEffect(() => {
-    const fetchVisitors = async () => {
+    const fetchLoginHistory = async () => {
       try {
-        const res = await fetch(`${API}/visitors/stats`);
-        const json = await res.json();
+        const token = localStorage.getItem("token");
 
-        const data = json?.data || json || [];
+        const month = 5;
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
 
-        setVisitorData(
-          data.map((item: any) => ({
-            name: item._id,
-            visitors: item.visitors,
-          }))
+        // ===== FETCH ALL DAYS (1 → 31) =====
+        const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+        const dayPromises = days.map((d) =>
+fetch(`${API}/login-history/stats?type=day&day=${d}&month=${month}`, {
+            headers,
+          }).then((r) => r.json()),
         );
+
+        const dayResults = await Promise.all(dayPromises);
+
+        const fullDayData = dayResults.map((res, index) => {
+          return {
+            name: `Day ${index + 1}`,
+            value: res?.total_logins || 0,
+          };
+        });
+
+        setLoginDayStats(fullDayData);
+
+        // ===== FETCH MONTH =====
+        const monthRes = await fetch(
+          `${API}/login-history/stats?type=month&month=${month}`,
+          { headers },
+        );
+
+        const monthJson = await monthRes.json();
+
+        setLoginMonthStats([
+          {
+            name: `Month ${month}`,
+            value: monthJson?.total_logins || 0,
+          },
+        ]);
       } catch (err) {
-        console.log("Visitor API error:", err);
-        setVisitorData([]);
+        console.log("Login history error:", err);
+        setLoginDayStats([]);
+        setLoginMonthStats([]);
       }
     };
 
-    fetchVisitors();
+    fetchLoginHistory();
   }, []);
 
-  // ================= FETCH =================
+  // ================= FETCH MAIN DATA =================
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -146,7 +177,6 @@ export default function AdminDashboard() {
     bookings.forEach((b) => {
       const key = new Date(b.createdAt).toLocaleDateString("vi-VN");
       const price = b.vnpay?.amount ?? b.total_price ?? 0;
-
       map[key] = (map[key] || 0) + price;
     });
 
@@ -154,17 +184,17 @@ export default function AdminDashboard() {
       Object.entries(map).map(([name, revenue]) => ({
         name,
         revenue,
-      }))
+      })),
     );
   }, [bookings]);
 
-  // ================= TOP TOUR =================
+  // ================= TOP TOUR (FIXED) =================
   useEffect(() => {
     const map: any = {};
 
     bookings.forEach((b) => {
       const id = b.tour_id?._id || "unknown";
-      const name = b.tour_id?.name || "Unknown";
+      const name = b.tour_id?.name || `Tour ${id.slice(-4)}`;
       const price = b.vnpay?.amount ?? b.total_price ?? 0;
 
       if (!map[id]) {
@@ -177,7 +207,7 @@ export default function AdminDashboard() {
     setTopTours(
       Object.values(map)
         .sort((a: any, b: any) => b.revenue - a.revenue)
-        .slice(0, 6)
+        .slice(0, 6),
     );
   }, [bookings]);
 
@@ -188,7 +218,7 @@ export default function AdminDashboard() {
     bookings.forEach((b) => {
       const uid = b.user_id?._id || "unknown";
       const name = b.user_id?.name || "User";
-      const price = b.vnpay?.amount ?? b.total_price ?? 0;
+const price = b.vnpay?.amount ?? b.total_price ?? 0;
 
       if (!map[uid]) {
         map[uid] = { name, total: 0, count: 0 };
@@ -201,7 +231,7 @@ export default function AdminDashboard() {
     setTopUsers(
       Object.values(map)
         .sort((a: any, b: any) => b.total - a.total)
-        .slice(0, 6)
+        .slice(0, 6),
     );
   }, [bookings]);
 
@@ -210,11 +240,10 @@ export default function AdminDashboard() {
     setAiData(predictNext7Days(bookings));
   }, [bookings]);
 
-  // ================= STATS =================
   const stats = useMemo(() => {
     const revenue = bookings.reduce(
       (s, b) => s + (b.vnpay?.amount ?? b.total_price ?? 0),
-      0
+      0,
     );
 
     return {
@@ -234,23 +263,44 @@ export default function AdminDashboard() {
       </div>
 
       <div className="p-6 space-y-6">
-
         {/* STATS */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon="🗺️" label="Tours" value={stats.tours} color="bg-orange-500" />
-          <StatCard icon="👤" label="Users" value={stats.users} color="bg-blue-500" />
-          <StatCard icon="📦" label="Bookings" value={stats.bookings} color="bg-purple-500" />
-          <StatCard icon="💰" label="Revenue" value={stats.revenue.toLocaleString()} color="bg-green-500" />
+          <StatCard
+            icon="🗺️"
+            label="Tours"
+            value={stats.tours}
+            color="bg-orange-500"
+          />
+          <StatCard
+            icon="👤"
+            label="Users"
+            value={stats.users}
+            color="bg-blue-500"
+          />
+          <StatCard
+            icon="📦"
+            label="Bookings"
+            value={stats.bookings}
+            color="bg-purple-500"
+          />
+          <StatCard
+            icon="💰"
+            label="Revenue"
+            value={stats.revenue.toLocaleString()}
+            color="bg-green-500"
+          />
         </div>
 
         {/* CHARTS */}
-        <div className="grid md:grid-cols-2 gap-6">
-
+        <div className="grid md:grid-cols-1 gap-6">
           {/* REVENUE */}
           <div className="bg-white p-4 rounded-2xl border h-[320px]">
             <h2 className="font-bold mb-3">💰 Doanh thu</h2>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={revenueData}>
+              <LineChart
+  data={revenueData}
+  margin={{ top: 10, right: 20, left: 40, bottom: 5 }}
+>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -260,30 +310,18 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* TOP TOUR */}
-          <div className="bg-white p-4 rounded-2xl border h-[320px]">
-            <h2 className="font-bold mb-3">🔥 Top Tour</h2>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topTours}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="revenue" fill="#f97316" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          
         </div>
 
         {/* TOP USERS */}
         <div className="bg-white p-5 rounded-2xl border">
           <h2 className="font-bold mb-4">👑 Top Users chi tiêu nhiều nhất</h2>
-
           <div className="grid md:grid-cols-3 gap-4">
             {topUsers.map((u: any, i) => (
               <div key={i} className="p-4 bg-gray-50 rounded-xl border">
                 <p className="font-bold">{u.name}</p>
                 <p className="text-sm text-gray-500">{u.count} đơn</p>
-                <p className="text-orange-600 font-black">
+<p className="text-orange-600 font-black">
                   {u.total.toLocaleString()}đ
                 </p>
               </div>
@@ -291,17 +329,39 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* VISITOR */}
-        <div className="bg-white p-4 rounded-2xl border h-[280px]">
-          <h2 className="font-bold mb-3">👁 Visitors (REAL DATA)</h2>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={visitorData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Line dataKey="visitors" stroke="#3b82f6" />
-            </LineChart>
-          </ResponsiveContainer>
+        {/* LOGIN HISTORY COMBINED */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* LOGIN DAY */}
+          <div className="bg-white p-4 rounded-2xl border min-h-[300px]">
+            <h2 className="font-bold mb-3">🔐 Login theo ngày</h2>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={loginDayStats}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line
+                  dataKey="value"
+                  stroke="#3b82f6"
+                  strokeWidth={3}
+                  dot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* LOGIN MONTH */}
+          <div className="bg-white p-4 rounded-2xl border min-h-[300px]">
+            <h2 className="font-bold mb-3">📅 Login theo tháng</h2>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={loginMonthStats}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#f97316" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
         <TourIsCommingSoon />
       </div>
