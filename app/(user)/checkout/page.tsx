@@ -1,5 +1,5 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Plane,
@@ -44,9 +44,19 @@ function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // ✅ READ LOCALSTORAGE
-  const rawBooking = localStorage.getItem("booking_data");
-  const bookingData = rawBooking ? JSON.parse(rawBooking) : {};
+  // ✅ READ LOCALSTORAGE — safe for SSR
+  const [bookingData, setBookingData] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const rawBooking = localStorage.getItem("booking_data");
+    if (rawBooking) {
+      try {
+        setBookingData(JSON.parse(rawBooking));
+      } catch {
+        setBookingData({});
+      }
+    }
+  }, []);
 
   const tourName = bookingData.tourName ?? searchParams.get("tourName") ?? "";
   const hotelName =
@@ -58,8 +68,9 @@ function SearchContent() {
   const pricePerAdult = parseInt(
     bookingData.basePrice ?? searchParams.get("pricePerAdult") ?? "0",
   );
- const pricePerChild = parseInt(
-  bookingData.pricePerChild ?? searchParams.get("pricePerChild") ?? "0")
+  const pricePerChild = parseInt(
+    bookingData.pricePerChild ?? searchParams.get("pricePerChild") ?? "0",
+  );
   const adults = parseInt(
     bookingData.adults ?? searchParams.get("adults") ?? "1",
   );
@@ -82,28 +93,28 @@ function SearchContent() {
   // Payment option: 50 = đặt cọc 50%, 100 = thanh toán đầy đủ
   const [paymentPct, setPaymentPct] = useState<50 | 100>(50);
 
- const infantTotal = parseInt(bookingData.infantTotal ?? "0");
-const singleSupplement = parseInt(bookingData.singleSupplement ?? "0");
-const infantPrice = parseInt(bookingData.infantPrice ?? "0");
+  const infantTotal = parseInt(bookingData.infantTotal ?? "0");
+  const singleSupplement = parseInt(bookingData.singleSupplement ?? "0");
+  const infantPrice = parseInt(bookingData.infantPrice ?? "0");
 
-const INSURANCE = 500_000;
-const total = grandTotal + INSURANCE;
-const payNow = Math.round((total * paymentPct) / 100);
-const remaining = total - payNow;
+  const INSURANCE = 500_000;
+  const total = grandTotal + INSURANCE;
+  const payNow = Math.round((total * paymentPct) / 100);
+  const remaining = total - payNow;
 
-const orderItems = [
-  { label: `Người lớn × ${adults}`, value: formatVND(adults * pricePerAdult) },
-  ...(children > 0
-    ? [{ label: `Trẻ em × ${children} (${formatVND(pricePerChild)}/bé)`, value: formatVND(children * pricePerChild) }]
-    : []),
-  ...(infants > 0
-    ? [{ label: `Trẻ nhỏ × ${infants}${infantPrice === 0 ? " (miễn phí)" : ` (${formatVND(infantPrice)}/bé)`}`, value: formatVND(infantTotal) }]
-    : []),
-  ...(singleSupplement > 0
-    ? [{ label: `Phụ thu phòng đơn × ${singleRooms}`, value: formatVND(singleSupplement) }]
-    : []),
-  { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
-];
+  const orderItems = [
+    { label: `Người lớn × ${adults}`, value: formatVND(adults * pricePerAdult) },
+    ...(children > 0
+      ? [{ label: `Trẻ em × ${children} (${formatVND(pricePerChild)}/bé)`, value: formatVND(children * pricePerChild) }]
+      : []),
+    ...(infants > 0
+      ? [{ label: `Trẻ nhỏ × ${infants}${infantPrice === 0 ? " (miễn phí)" : ` (${formatVND(infantPrice)}/bé)`}`, value: formatVND(infantTotal) }]
+      : []),
+    ...(singleSupplement > 0
+      ? [{ label: `Phụ thu phòng đơn × ${singleRooms}`, value: formatVND(singleSupplement) }]
+      : []),
+    { label: "Bảo hiểm du lịch", value: formatVND(INSURANCE) },
+  ];
 
   const FIELDS = ["name", "email", "phone"];
 
@@ -121,7 +132,6 @@ const orderItems = [
   };
 
   const handleNext = () => {
-    // 1. Validation logic
     const newTouched = Object.fromEntries(FIELDS.map((f) => [f, true]));
     const newErrors = Object.fromEntries(
       FIELDS.map((f) => [f, validate(f, (form as Record<string, string>)[f])]),
@@ -132,10 +142,8 @@ const orderItems = [
 
     if (Object.values(newErrors).some(Boolean)) return;
 
-    // 2. Gom tất cả dữ liệu cần thiết vào một object duy nhất
-    // Kết hợp thông tin từ bookingData gốc và các dữ liệu từ form/tính toán hiện tại
     const finalBookingPayload = {
-      ...bookingData, // trip_id, adults, children, infants, singleRooms, grandTotal...
+      ...bookingData,
       tourName,
       hotelName,
       city,
@@ -148,19 +156,15 @@ const orderItems = [
       paymentPct,
       payNow,
       remaining,
-      total, // Tổng tiền cuối cùng sau khi cộng bảo hiểm/phí
-      updatedAt: new Date().toISOString(), // Optional: Để kiểm tra tính mới của dữ liệu
+      total,
+      updatedAt: new Date().toISOString(),
     };
 
     try {
-      // 3. Lưu vào localStorage với key 'booking_data'
       localStorage.setItem("booking_data", JSON.stringify(finalBookingPayload));
-
-      // 4. Chuyển hướng sang trang payment (URL giờ đây cực kỳ sạch)
       router.push("/checkout/payment");
     } catch (error) {
       console.error("Lỗi khi lưu dữ liệu đặt chỗ:", error);
-      // Bạn có thể thêm thông báo lỗi cho người dùng ở đây nếu localStorage bị đầy (rất hiếm)
     }
   };
 
@@ -217,6 +221,8 @@ const orderItems = [
                 Chi tiết chuyến đi
               </h2>
             </div>
+
+            {/* Tour info card */}
             <div className="flex gap-5 items-start bg-linear-to-r from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-100">
               {thumbnail ? (
                 <img
@@ -250,10 +256,23 @@ const orderItems = [
                     <Users size={13} className="text-indigo-400" />
                     {adults} người lớn
                     {children > 0 ? ` · ${children} trẻ em` : ""}
+                    {infants > 0 ? ` · ${infants} trẻ nhỏ` : ""}
+                  </div>
+                  {singleSupplement > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span>🛏️</span>
+                      Phụ thu phòng đơn × {singleRooms}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Shield size={13} className="text-green-500" />
+                    Bảo hiểm du lịch
                   </div>
                 </div>
               </div>
             </div>
+
+
           </div>
 
           {/* Thông tin liên hệ */}
