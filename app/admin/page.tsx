@@ -94,7 +94,7 @@ export default function AdminDashboard() {
       try {
         const token = localStorage.getItem("token");
 
-        const month = 4;
+        const month = 5;
         const headers = {
           Authorization: `Bearer ${token}`,
         };
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
         const days = Array.from({ length: 31 }, (_, i) => i + 1);
 
         const dayPromises = days.map((d) =>
-          fetch(`${API}/login-history/stats?type=day&day=${d}&month=${month}`, {
+fetch(`${API}/login-history/stats?type=day&day=${d}&month=${month}`, {
             headers,
           }).then((r) => r.json()),
         );
@@ -218,7 +218,7 @@ export default function AdminDashboard() {
     bookings.forEach((b) => {
       const uid = b.user_id?._id || "unknown";
       const name = b.user_id?.name || "User";
-      const price = b.vnpay?.amount ?? b.total_price ?? 0;
+const price = b.vnpay?.amount ?? b.total_price ?? 0;
 
       if (!map[uid]) {
         map[uid] = { name, total: 0, count: 0 };
@@ -292,12 +292,15 @@ export default function AdminDashboard() {
         </div>
 
         {/* CHARTS */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-1 gap-6">
           {/* REVENUE */}
           <div className="bg-white p-4 rounded-2xl border h-[320px]">
             <h2 className="font-bold mb-3">💰 Doanh thu</h2>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={revenueData}>
+              <LineChart
+  data={revenueData}
+  margin={{ top: 10, right: 20, left: 40, bottom: 5 }}
+>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -307,18 +310,7 @@ export default function AdminDashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* TOP TOUR */}
-          <div className="bg-white p-4 rounded-2xl border h-[320px]">
-            <h2 className="font-bold mb-3">🔥 Top Tour</h2>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topTours}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="revenue" fill="#f97316" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          
         </div>
 
         {/* TOP USERS */}
@@ -329,7 +321,7 @@ export default function AdminDashboard() {
               <div key={i} className="p-4 bg-gray-50 rounded-xl border">
                 <p className="font-bold">{u.name}</p>
                 <p className="text-sm text-gray-500">{u.count} đơn</p>
-                <p className="text-orange-600 font-black">
+<p className="text-orange-600 font-black">
                   {u.total.toLocaleString()}đ
                 </p>
               </div>
