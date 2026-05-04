@@ -27,11 +27,11 @@ const CITIES = [
   "Hà Nội", "Hồ Chí Minh", "TP.HCM", "TP. HCM", "Đà Nẵng", "Hội An", "Huế",
   "Nha Trang", "Đà Lạt", "Phú Quốc", "Hạ Long", "Sapa", "Ninh Bình",
   "Vũng Tàu", "Cần Thơ", "Phan Thiết", "Mũi Né", "Quy Nhơn", "Lagi", "Hồ Tràm",
-  "Phú Yên", "Bình Định", "Quảng Nam", "Quảng Ngãi", "Quảng Bình", "Quảng Trị",
+  "Phú Yên", "Bình Định", "Lý Sơn", "Quảng Nam", "Quảng Ngãi", "Quảng Bình", "Quảng Trị",
   "Hà Tĩnh", "Nghệ An", "Thanh Hóa", "Hải Phòng", "Quảng Ninh", "Lào Cai",
   "Kon Tum", "Gia Lai", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Lai Châu",
   "Hà Giang", "Sa Pa", "Cao Bằng", "Lạng Sơn", "Bắc Kạn", "Thái Nguyên",
-  "Tuyên Quang", "Yên Bái", "Hòa Bình", "Sơn La", "Mộc Châu", "Bắc Ninh",
+  "Tuyên Quang", "Yên Bái", "Hòa Bình", "Sơn La", "Mộc Châu", "Bắc Ninh", "Lý Sơn", "Vĩnh Long", "Bến Tre", "Trà Vinh", "Phan Thiết"
 ];
 
 function removeAccents(str: string): string {

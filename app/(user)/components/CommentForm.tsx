@@ -28,7 +28,7 @@ export default function CommentForm({
         const token = localStorage.getItem("token");
 
         const response = await fetch(
-          `https://db-pickyourway.vercel.app/api/bookings/check-booked/${trip_id}`,
+          `https://db-pickyourway.vercel.app/api/bookings/check-booked/${tourId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
