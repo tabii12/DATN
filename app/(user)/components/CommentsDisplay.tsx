@@ -60,6 +60,7 @@ export default function CommentsDisplay({
   refreshTrigger,
 }: CommentsDisplayProps) {
   const [comments, setComments] = useState<Comment[]>([]);
+  const [userNames, setUserNames] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">("newest");
@@ -72,24 +73,39 @@ export default function CommentsDisplay({
   const fetchComments = async () => {
     setLoading(true);
     setError("");
-
     try {
+      const token = localStorage.getItem("token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
       const response = await fetch(
         `https://db-pickyourway.vercel.app/api/comments/tour/${tour_id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-             Authorization: `Bearer ${localStorage.getItem("token")}`, // ✅ thêm cái này
-          },
-        }
+        { headers }
       );
-
-      if (!response.ok) {
-        throw new Error("Lỗi khi tải bình luận");
-      }
+      if (!response.ok) throw new Error("Lỗi khi tải bình luận");
 
       const data = await response.json();
-      setComments(data.data || []);
+      const list: Comment[] = data.data || [];
+      setComments(list);
+
+      // Fetch tên user theo user_id
+      const uniqueIds = Array.from(new Set(
+        list.filter(c => c.user_id && !c.user_name).map(c => c.user_id)
+      ));
+      if (uniqueIds.length > 0) {
+        const map = new Map<string, string>();
+        await Promise.all(uniqueIds.map(async (id) => {
+          try {
+            const r = await fetch(`https://db-pickyourway.vercel.app/api/users/${id}`, { headers });
+            const d = await r.json();
+            const u = d.data || d.user || d;
+            map.set(id, u?.name || u?.fullName || u?.username || u?.email || "Ẩn danh");
+          } catch {
+            map.set(id, "Ẩn danh");
+          }
+        }));
+        setUserNames(map);
+      }
     } catch (err) {
       console.error("Lỗi:", err);
       setError("Không thể tải bình luận");
@@ -234,7 +250,7 @@ export default function CommentsDisplay({
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="font-semibold text-gray-900">
-                      {comment.user_name}
+                      {comment.user_name || userNames.get(comment.user_id) || "Ẩn danh"}
                     </p>
                     <p className="text-xs text-gray-500">
                       {formatDate(comment.createdAt)}

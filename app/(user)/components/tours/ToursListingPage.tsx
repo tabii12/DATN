@@ -64,7 +64,8 @@ function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[], commentMap: Record<s
     const score = commentData && commentData.count > 0
         ? parseFloat(Math.min(9.9, commentData.avg * 1.8 + 0.8).toFixed(1))
         : 0;
-    const label = score >= 9.0 ? "Tuyệt vời" : score >= 8.5 ? "Rất tốt" : score > 0 ? "Tốt" : "Chưa có đánh giá";
+    const label = score >= 9.0 ? "Tuyệt vời" : score >= 8.5 ? "Rất tốt" : score
+     > 0 ? "Tốt" : "Chưa có đánh giá";
     const comboDesc = tour.descriptions?.find(d => d.title === "Giá tour bao gồm");
     const comboText = comboDesc?.content?.split("\n")?.[0]?.replace("- ", "") ?? null;
     let days = tour.itineraries?.length ?? 0;
@@ -235,11 +236,7 @@ function HotelCard({ hotel, isSale }: { hotel: Hotel; isSale?: boolean }) {
             <div className="p-3 flex flex-col gap-1.5 flex-1">
                 <StarRating count={hotel.stars} />
                 <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-orange-500 transition-colors">{hotel.name}</h3>
-                <div className="flex items-center gap-1.5">
-                    <RatingBadge rating={hotel.rating} />
-                    <span className="text-xs font-semibold text-green-600">{hotel.ratingLabel}</span>
-                    <span className="text-xs text-gray-400">({hotel.reviewCount})</span>
-                </div>
+                
 
                 <div className="flex flex-col gap-1">
                     {nextTrip ? (

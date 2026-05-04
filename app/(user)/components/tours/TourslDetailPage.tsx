@@ -157,11 +157,11 @@ function StarRating({ count }: { count: number }) {
 }
 
 function scoreFromRating(s: number) {
-  if (!s || isNaN(s)) return 8.0;
+  if (!s || isNaN(s)) return 5.0;
   return Math.min(9.9, parseFloat((s * 1.8 + 0.8).toFixed(1)));
 }
 function scoreLabel(s: number) {
-  return s >= 9.0 ? "Tuyệt vời" : s >= 8.5 ? "Rất tốt" : "Tốt";
+  return s >= 5.0 ? "Tuyệt vời" : s >= 5.0 ? "Rất tốt" : "Tốt";
 }
 function formatVND(n: number) {
   return n.toLocaleString("vi-VN");
@@ -259,7 +259,7 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const [commentRefresh, setCommentRefresh] = useState(0);
-  const [latestComment, setLatestComment] = useState<{ user_name: string; rating: number; content: string; createdAt: string } | null>(null);
+  const [latestComment, setLatestComment] = useState<{ user_id?: string; user_name: string; rating: number; content: string; createdAt: string } | null>(null);
   const [avgCommentRating, setAvgCommentRating] = useState<number | null>(null);
 
   // ── Booking state ──
@@ -349,18 +349,35 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (!tour?._id) return;
-    fetch(`https://db-pickyourway.vercel.app/api/comments/tour/${tour._id}`)
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    fetch(`https://db-pickyourway.vercel.app/api/comments/tour/${tour._id}`, { headers })
       .then((r) => r.json())
-      .then((res) => {
+      .then(async (res) => {
         const list = res.data ?? [];
         if (list.length > 0) {
           const sorted = [...list].sort((a: { createdAt: string }, b: { createdAt: string }) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
-          setLatestComment(sorted[0]);
+          const latest = sorted[0];
+          // Fetch tên user nếu chỉ có user_id
+          if (!latest.user_name && latest.user_id) {
+            try {
+              const uRes = await fetch(`https://db-pickyourway.vercel.app/api/users/${latest.user_id}`, { headers });
+              const uData = await uRes.json();
+              const u = uData.data || uData.user || uData;
+              latest.user_name = u?.name || u?.fullName || u?.username || u?.email || "Ẩn danh";
+            } catch {
+              latest.user_name = "Ẩn danh";
+            }
+          }
+          setLatestComment(latest);
           const avg = list.reduce((s: number, c: { rating: number }) => s + (c.rating || 0), 0) / list.length;
           setAvgCommentRating(avg);
         } else {
+          setLatestComment(null);
           setAvgCommentRating(null);
         }
       })
@@ -461,11 +478,9 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
   // Query map: dùng địa chỉ đầy đủ nếu có, fallback về city
   const mapQuery = hotelAddress ? `${hotelAddress}, ${hotelCity}, Việt Nam` : `${hotelCity}, Việt Nam`;
   const images = tour.images ?? [];
-  const score = avgCommentRating !== null
-    ? Math.min(9.9, parseFloat((avgCommentRating * 1.8 + 0.8).toFixed(1)))
-    : null;
-  const label = score !== null ? scoreLabel(score) : null;
-  const scoreColor = score !== null ? (score >= 9.0 ? "bg-green-600" : "bg-lime-500") : "bg-gray-400";
+  const score = avgCommentRating !== null ? avgCommentRating : null;
+  const label = score !== null ? (score >= 4.5 ? "Tuyệt vời" : score >= 4.0 ? "Rất tốt" : "Tốt") : null;
+  const scoreColor = score !== null ? (score >= 4.5 ? "bg-green-600" : "bg-lime-500") : "bg-gray-400";
 
   const FAKE_IMGS = [
     "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80",
@@ -579,9 +594,9 @@ export default function HotelDetailPage({ slug }: { slug: string }) {
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center text-[10px] font-bold text-orange-500 shrink-0">
-                              {latestComment.user_name.slice(0, 2).toUpperCase()}
+                              {(latestComment.user_name || "?").slice(0, 2).toUpperCase()}
                             </div>
-                            <span className="text-xs font-semibold text-gray-700">{latestComment.user_name}</span>
+                            <span className="text-xs font-semibold text-gray-700">{latestComment.user_name || "Ẩn danh"}</span>
                           </div>
                           <span className="text-[11px] text-gray-400">
                             {new Date(latestComment.createdAt).toLocaleDateString("vi-VN")}
