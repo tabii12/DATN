@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface TripReport {
   tripId: string;
@@ -53,6 +53,7 @@ interface Booking {
   infants: number;
   singleRooms: number;
   totalPrice: number;
+  payNow: number;
   paymentPct: number;
   remaining: number;
   status: string;
@@ -62,7 +63,9 @@ interface Booking {
 }
 
 const API = "https://db-pickyourway.vercel.app/api";
-const ACTIVE_STATUSES = ["pending", "paid_50", "paid_100", "confirmed"];
+
+// Chỉ đếm booking active (bỏ cancelled/refunded)
+const ACTIVE_STATUSES = ["pending", "confirmed", "paid"];
 
 function parseDate(d: any): string {
   return (d?.$date ? d.$date : d) || "";
@@ -98,7 +101,8 @@ function normalizeBooking(raw: BookingRaw): Booking {
     children: Number(raw.children ?? 0),
     infants: Number(raw.infants ?? 0),
     singleRooms: Number(raw.singleRooms ?? 0),
-    totalPrice: Number(raw.payNow ?? raw.total_price ?? 0),
+    totalPrice: Number(raw.total_price ?? 0),
+    payNow: Number(raw.payNow ?? 0),
     paymentPct: Number(raw.paymentPct ?? 0),
     remaining: Number(raw.remaining ?? 0),
     status: raw.status?.toLowerCase() ?? "pending",
@@ -108,39 +112,29 @@ function normalizeBooking(raw: BookingRaw): Booking {
   };
 }
 
-function StatusBadge({ status }: { status: string }) {
+// Badge trạng thái thanh toán
+function PaymentBadge({ status }: { status: string }) {
   const s = status.toLowerCase();
-  if (s === "paid_100" || s === "confirmed")
+  if (s === "paid")
     return (
-      <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
+      <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap">
         ✓ Đã TT 100%
       </span>
     );
-  if (s === "paid_50")
+  if (s === "confirmed")
     return (
-      <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
+      <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap">
         ◑ Đã TT 50%
       </span>
     );
-  if (s === "cancelled" || s === "canceled")
-    return (
-      <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-        ✕ Đã hủy
-      </span>
-    );
-  if (s === "refunded")
-    return (
-      <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-400 border border-gray-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-        ↩ Đã hoàn
-      </span>
-    );
   return (
-    <span className="inline-flex items-center gap-1 bg-yellow-50 text-yellow-700 border border-yellow-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-      ○ Chưa xác nhận
+    <span className="inline-flex items-center gap-1 bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap">
+      ○ Chờ xác nhận
     </span>
   );
 }
 
+// Danh sách khách của một chuyến
 function BookingList({ bookings }: { bookings: Booking[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -151,8 +145,39 @@ function BookingList({ bookings }: { bookings: Booking[] }) {
       </div>
     );
 
+  // Tổng hợp nhanh
+  const total50 = bookings.filter((b) => b.status === "confirmed").length;
+  const total100 = bookings.filter((b) => b.status === "paid").length;
+  const totalPax = bookings.reduce((s, b) => s + b.totalMembers, 0);
+  const totalCollected = bookings.reduce((s, b) => s + b.payNow, 0);
+  const totalRemaining = bookings.reduce((s, b) => s + b.remaining, 0);
+
   return (
-    <div className="mt-4 space-y-2">
+    <div className="mt-3 space-y-3">
+      {/* Tổng hợp nhanh */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2">
+        <div className="bg-white rounded-xl border border-gray-100 px-3 py-2">
+          <p className="text-[10px] text-gray-400 font-bold uppercase">Tổng khách</p>
+          <p className="text-lg font-black text-gray-800">{totalPax} người</p>
+        </div>
+        <div className="bg-blue-50 rounded-xl border border-blue-100 px-3 py-2">
+          <p className="text-[10px] text-blue-500 font-bold uppercase">Đã TT 50%</p>
+          <p className="text-lg font-black text-blue-700">{total50} đơn</p>
+        </div>
+        <div className="bg-emerald-50 rounded-xl border border-emerald-100 px-3 py-2">
+          <p className="text-[10px] text-emerald-500 font-bold uppercase">Đã TT 100%</p>
+          <p className="text-lg font-black text-emerald-700">{total100} đơn</p>
+        </div>
+        <div className="bg-orange-50 rounded-xl border border-orange-100 px-3 py-2">
+          <p className="text-[10px] text-orange-500 font-bold uppercase">Đã thu</p>
+          <p className="text-base font-black text-orange-600">{fmt(totalCollected)}</p>
+          {totalRemaining > 0 && (
+            <p className="text-[10px] text-red-400 font-semibold">Còn: {fmt(totalRemaining)}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Danh sách từng booking */}
       {bookings.map((b) => {
         const isExpanded = expandedId === b.id;
         return (
@@ -168,22 +193,39 @@ function BookingList({ bookings }: { bookings: Booking[] }) {
               className="px-4 py-3 flex items-center gap-3 cursor-pointer"
               onClick={() => setExpandedId(isExpanded ? null : b.id)}
             >
+              {/* Avatar */}
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0 bg-gradient-to-br from-orange-400 to-amber-400">
                 {b.customerName.charAt(0).toUpperCase()}
               </div>
+
+              {/* Tên + SĐT */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate text-gray-900">{b.customerName}</p>
-                <p className="text-[10px] text-gray-400 truncate">{b.phone} · {b.email}</p>
+                <p className="text-[10px] text-gray-400 truncate">{b.phone}</p>
               </div>
-              <div className="shrink-0 text-right">
-                <p className="text-sm font-black text-orange-600">{fmt(b.totalPrice)}</p>
-                <StatusBadge status={b.status} />
+
+              {/* Số khách */}
+              <div className="hidden md:block shrink-0 text-right">
+                <p className="text-xs font-semibold text-gray-700">
+                  {b.adults}NL
+                  {b.children > 0 ? ` · ${b.children}TE` : ""}
+                  {b.infants > 0 ? ` · ${b.infants}EB` : ""}
+                </p>
+                <p className="text-[10px] text-gray-400">{b.totalMembers} khách</p>
               </div>
+
+              {/* Thanh toán + Badge */}
+              <div className="shrink-0 text-right space-y-1">
+                <p className="text-sm font-black text-orange-600">{fmt(b.payNow)}</p>
+                <PaymentBadge status={b.status} />
+              </div>
+
               <div className="shrink-0 text-gray-400 text-xs ml-1">
                 {isExpanded ? "▲" : "▼"}
               </div>
             </div>
 
+            {/* Chi tiết mở rộng */}
             {isExpanded && (
               <div className="px-4 pb-4">
                 <div className="bg-white rounded-xl border border-gray-100 p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs shadow-inner">
@@ -201,15 +243,21 @@ function BookingList({ bookings }: { bookings: Booking[] }) {
                   </div>
                   <div>
                     <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Thanh toán</p>
-                    <p className="text-slate-700">Đã TT: <span className="font-bold text-emerald-600">{fmt(b.totalPrice)}</span></p>
+                    <p className="text-slate-700">
+                      Đã TT: <span className="font-bold text-emerald-600">{fmt(b.payNow)}</span>
+                    </p>
                     {b.remaining > 0 && (
-                      <p className="text-slate-700">Còn lại: <span className="font-bold text-orange-500">{fmt(b.remaining)}</span></p>
+                      <p className="text-slate-700">
+                        Còn lại: <span className="font-bold text-orange-500">{fmt(b.remaining)}</span>
+                      </p>
                     )}
                     <p className="text-slate-500">{b.paymentPct}% tổng đơn</p>
                   </div>
                   <div>
                     <p className="text-gray-400 font-bold uppercase text-[9px] mb-1">Mã đơn</p>
-                    <code className="text-[10px] bg-gray-100 p-1 rounded text-gray-600 break-all block">{b.orderId}</code>
+                    <code className="text-[10px] bg-gray-100 p-1 rounded text-gray-600 break-all block">
+                      {b.orderId}
+                    </code>
                     <p className="text-gray-400 mt-2 text-[9px] font-bold uppercase">Ngày đặt</p>
                     <p className="text-slate-700">{fmtDate(b.createdAt)}</p>
                   </div>
@@ -228,34 +276,37 @@ export function TripReportTab() {
   const [allBookings, setAllBookings] = useState<BookingRaw[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedTripId, setExpandedTripId] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
-        const [reportRes, bookingRes] = await Promise.all([
-          fetch(`${API}/bookings/admin/status-report`, { headers }),
-          fetch(`${API}/bookings/admin/all`, { headers }),
-        ]);
-        const reportJson = await reportRes.json();
-        const bookingJson = await bookingRes.json();
-        if (reportJson.success) setReports(reportJson.data);
-        const raw: BookingRaw[] = Array.isArray(bookingJson)
-          ? bookingJson
-          : bookingJson.data ?? [];
-        setAllBookings(raw);
-      } catch (err) {
-        console.error("Lỗi tải dữ liệu:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const headers = { Authorization: `Bearer ${token}` };
+      const [reportRes, bookingRes] = await Promise.all([
+        fetch(`${API}/bookings/admin/status-report`, { headers }),
+        fetch(`${API}/bookings/admin/all`, { headers }),
+      ]);
+      const reportJson = await reportRes.json();
+      const bookingJson = await bookingRes.json();
+      if (reportJson.success) setReports(reportJson.data);
+      const raw: BookingRaw[] = Array.isArray(bookingJson)
+        ? bookingJson
+        : bookingJson.data ?? [];
+      setAllBookings(raw);
+      setLastRefresh(new Date());
+    } catch (err) {
+      console.error("Lỗi tải dữ liệu:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Tính lại capacity từ frontend — chỉ đếm booking active (bỏ cancelled/refunded)
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  // Tính capacity + lọc booking active theo trip
   function calcCapacity(tripId: string, totalCapStr: string) {
     const maxPax = parseInt(totalCapStr.split("/")[1] ?? "0");
 
@@ -273,12 +324,15 @@ export function TripReportTab() {
 
     const occupancy = maxPax > 0 ? Math.round((bookedPax / maxPax) * 100) : 0;
     const isFull = bookedPax >= maxPax && maxPax > 0;
+    // Đủ điều kiện khởi hành khi >= 80% sức chứa
+    const canDepart = maxPax > 0 && occupancy >= 80;
 
     return {
       capacityStr: `${bookedPax}/${maxPax}`,
       occupancyStr: `${occupancy}%`,
       occupancyNum: occupancy,
       isFull,
+      canDepart,
       activeBookings: activeBookings.map(normalizeBooking),
     };
   }
@@ -292,6 +346,17 @@ export function TripReportTab() {
             <span className="text-slate-900 font-bold">{reports.length}</span>{" "}
             chuyến đi đang vận hành
           </p>
+          <div className="flex items-center gap-3">
+            <p className="text-[11px] text-gray-400">
+              Cập nhật lúc {lastRefresh.toLocaleTimeString("vi-VN")}
+            </p>
+            <button
+              onClick={fetchAll}
+              className="text-[11px] px-3 py-1.5 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              ↻ Làm mới
+            </button>
+          </div>
         </div>
       )}
 
@@ -299,12 +364,12 @@ export function TripReportTab() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">
             <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-400 text-sm font-medium">Đang tính toán hiệu suất...</p>
+            <p className="text-gray-400 text-sm font-medium">Đang tải dữ liệu chuyến đi...</p>
           </div>
         ) : (
           reports.map((trip) => {
             const isExpanded = expandedTripId === trip.tripId;
-            const { capacityStr, occupancyStr, occupancyNum, isFull, activeBookings } =
+            const { capacityStr, occupancyStr, occupancyNum, isFull, canDepart, activeBookings } =
               calcCapacity(trip.tripId, trip.capacity);
 
             return (
@@ -372,11 +437,15 @@ export function TripReportTab() {
                         <div className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
                           isFull
                             ? "bg-gray-200 text-gray-400 border border-gray-300"
-                            : trip.shouldStart
+                            : canDepart
                             ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
                             : "bg-rose-50 text-rose-600 border border-rose-100"
                         }`}>
-                          {isFull ? "Đã đủ chỗ" : trip.note}
+                          {isFull
+                            ? "✅ Đã đủ chỗ"
+                            : canDepart
+                            ? "✅ Đủ điều kiện khởi hành"
+                            : "⚠️ Cân nhắc gộp tour"}
                         </div>
                       </div>
                     </div>
@@ -387,17 +456,23 @@ export function TripReportTab() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <p className="text-[10px] text-gray-400 uppercase font-black tracking-tighter">Lấp đầy</p>
-                        <p className={`text-xl font-black ${isFull ? "text-gray-400" : occupancyNum >= 80 ? "text-emerald-600" : "text-slate-800"}`}>
+                        <p className={`text-xl font-black ${isFull ? "text-gray-400" : canDepart ? "text-emerald-600" : occupancyNum >= 50 ? "text-orange-500" : "text-rose-500"}`}>
                           {occupancyStr}
                         </p>
                       </div>
-                      <div className="w-1.5 h-10 bg-gray-100 rounded-full overflow-hidden relative">
-                        <div
-                          className={`absolute bottom-0 left-0 w-full transition-all duration-1000 ${
-                            isFull ? "bg-gray-400" : trip.shouldStart ? "bg-orange-500" : "bg-rose-400"
-                          }`}
-                          style={{ height: occupancyStr }}
-                        />
+                      {/* Thanh progress với mốc 80% */}
+                      <div className="flex flex-col gap-1 min-w-[80px]">
+                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden relative">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              isFull ? "bg-gray-400" : canDepart ? "bg-emerald-500" : occupancyNum >= 50 ? "bg-orange-400" : "bg-rose-400"
+                            }`}
+                            style={{ width: `${Math.min(occupancyNum, 100)}%` }}
+                          />
+                          {/* Mốc 80% */}
+                          <div className="absolute top-0 bottom-0 w-px bg-gray-400/60" style={{ left: "80%" }} />
+                        </div>
+                        <p className="text-[9px] text-gray-400 font-semibold text-right">mốc 80%</p>
                       </div>
                     </div>
 
@@ -407,6 +482,16 @@ export function TripReportTab() {
                         {capacityStr}
                       </p>
                       <p className="text-[10px] text-gray-400 font-bold">vé đã bán</p>
+                    </div>
+
+                    {/* Mini badge 50%/100% */}
+                    <div className="hidden md:flex flex-col gap-1 text-right">
+                      <span className="text-[10px] bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full font-bold">
+                        ◑ {activeBookings.filter((b) => b.status === "confirmed").length} đơn 50%
+                      </span>
+                      <span className="text-[10px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full font-bold">
+                        ✓ {activeBookings.filter((b) => b.status === "paid").length} đơn 100%
+                      </span>
                     </div>
 
                     <div className="shrink-0 flex flex-col items-center gap-1">
@@ -420,11 +505,11 @@ export function TripReportTab() {
                   </div>
                 </div>
 
-                {/* Expanded booking list */}
+                {/* Expanded: danh sách khách */}
                 {isExpanded && (
                   <div className="px-5 pb-5 border-t border-dashed border-gray-100 pt-4">
-                    <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3">
-                      📋 Danh sách khách đã đặt ({activeBookings.length})
+                    <p className="text-xs font-black text-gray-500 uppercase tracking-wider mb-1">
+                      📋 Danh sách khách đã đặt ({activeBookings.length} đơn)
                     </p>
                     <BookingList bookings={activeBookings} />
                   </div>
