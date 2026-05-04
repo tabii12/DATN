@@ -29,14 +29,14 @@ interface Tour {
 
 function StarRating({ count }: { count: number }) {
   return (
-    <div className="flex gap-0.5">
+    <span className="flex gap-0.5">
       {Array.from({ length: count }).map((_, i) => (
         <span key={i} className="text-yellow-400">★</span>
       ))}
       {Array.from({ length: 5 - count }).map((_, i) => (
         <span key={i} className="text-gray-300">★</span>
       ))}
-    </div>
+    </span>
   );
 }
 
@@ -102,7 +102,7 @@ export default function AdminComments() {
 
       // Lấy tất cả comments
       const response = await fetch(
-        `https://db-pickyourway.vercel.app/api/comments/admin/all?status=${filterStatus === "all" ? "" : filterStatus}`,
+        `https://db-pickyourway.vercel.app/api/comments`,
         {
           headers: {
             Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
@@ -117,29 +117,36 @@ export default function AdminComments() {
       const data = await response.json();
       setComments(data.data && data.data.length > 0 ? data.data : []);
 
-      // Tải thông tin tour
-      const tourMap = new Map<string, string>([["tour-demo", "Tour thử nghiệm"]]);
-      for (const comment of data.data || []) {
-        if (!tourMap.has(comment.tour_id)) {
-          try {
-            const tourRes = await fetch(
-              `https://db-pickyourway.vercel.app/api/tours/${comment.tour_id}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
-                },
-              }
-            );
-            if (tourRes.ok) {
-              const tourData = await tourRes.json();
-              tourMap.set(comment.tour_id, tourData.data?.name || "N/A");
-            }
-          } catch (e) {
-            console.error("Lỗi khi tải tour:", e);
-            tourMap.set(comment.tour_id, "N/A");
-          }
-        }
+      // Tải thông tin tour (FIXED)
+const tourMap = new Map<string, string>();
+
+for (const comment of data.data || []) {
+  const id = comment.tour_id;
+
+  if (!id || tourMap.has(id)) continue;
+
+  try {
+    const tourRes = await fetch(
+      `https://db-pickyourway.vercel.app/api/tours/${comment.tour_id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token || "TOKEN_ADMIN"}`,
+        },
       }
+    );
+
+    if (tourRes.ok) {
+      const tourData = await tourRes.json();
+      tourMap.set(id, tourData.data?.title || "Không có tên");
+    } else {
+      tourMap.set(id, "Không tìm thấy");
+    }
+  } catch (e) {
+    console.error("Lỗi khi tải tour:", e);
+    tourMap.set(id, "Lỗi tải");
+  }
+}
+
       setTours(tourMap);
     } catch (err) {
       console.error("Lỗi:", err);
