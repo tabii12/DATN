@@ -94,7 +94,7 @@ export default function AdminComments() {
     if (!confirm("Xóa đánh giá này?")) return;
     setProcessingId(id);
     try {
-      const res = await fetch(`https://db-pickyourway.vercel.app/api/comments/admin/${id}`, {
+      const res = await fetch(`https://db-pickyourway.vercel.app/api/comments/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
