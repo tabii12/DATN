@@ -1,42 +1,3 @@
-3 nhóm khách
-Nhóm  Độ tuổiVai trò
-Người lớn (NL)> 9 tuổiTrả 100% base, tạo quotaTrẻ em (TE)5–9 tuổiGiá động, cũng tạo quotaTrẻ nhỏ (TN)< 5 tuổiHưởng quota miễn phí
-
-Bước 1 — Tính Quota
-quota = floor((NL + TE) / 2)
-      + 1  nếu NL lẻ ≥ 3 và TE = 0
-Quota là số "slot" miễn phí dành cho TN:
-NLTEQuota100111201211222302322333
-
-Bước 2 — Giá Trẻ Nhỏ (TN)
-Nếu TN ≤ quota  →  tất cả TN = FREE (0đ)
-Nếu TN > quota  →  tất cả TN = (TN − quota) × base / TN
-Không có đứa nào free riêng — tất cả TN chia đều phần vượt quota:
-CaseQuotaGiá mỗi TN2NL + 1TN10đ (free)2NL + 2TN1(2−1)×base/2 = 50% base2NL + 3TN1(3−1)×base/3 = 66.7% base3NL + 3TN2(3−2)×base/3 = 33.3% base
-
-Bước 3 — Giá Trẻ Em (TE)
-Nếu có TN (dù free hay paid)  →  TE = 100% base
-Nếu NL = 1                    →  TE = 100% base
-Nếu NL ≥ 2 và không có TN    →  TE = base × (1 − 1/((2×NL+1)×TE_count))
-Khi NL ≥ 2 và không có TN, giá TE tăng dần về 100% khi thêm TE:
-NLSố TEGiá TE2180% base2290% base2393.3% base2495% base2∞→ 100%
-
-Bước 4 — NL
-NL luôn = 100% base, không đổi
-
-Ví dụ tổng hợp với base = 4.390.000đ
-2NL + 2TE + 3TN:
-
-quota = floor((2+2)/2) = 2
-TN: 3 > 2 → tất cả = (3−2)×4.39M/3 = 1.463.333đ/bé
-TE: có TN → 100% = 4.390.000đ/bé
-Tổng = 2×4.39M + 2×4.39M + 3×1.463.333 = 22.169.999đ
-
-2NL + 2TE + 0TN:
-
-quota = 2, không có TN
-TE: NL≥2, không có TN → 90% = 3.951.000đ/bé
-Tổng = 2×4.39M + 2×3.951M = 16.682.000đ
 
 
 
@@ -65,3 +26,84 @@ luôn = base (100%)
 
 Tổng
 Tổng = NL × base + TE × giá_TE + TN × giá_TN + phụ_thu_phòng_đơn
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Logic tính giá Pick Your Way
+
+1. Giá dịch vụ (Backend — tính base_price của trip)
+Backend tính tổng chi phí vận hành dựa trên từng loại dịch vụ:
+
+per_person / per_meal
+chi phí = giá × số người tối đa × số lượng
+Ví dụ: Ăn trưa 150.000đ/người, 16 người, 3 bữa:
+→ 150.000 × 16 × 3 = 7.200.000đ
+
+per_room
+chi phí = giá × ceil(số người / 2) × số đêm
+Ví dụ: Khách sạn 800.000đ/phòng, 16 người, 2 đêm:
+→ 800.000 × 8 phòng × 2 đêm = 12.800.000đ
+
+per_day
+chi phí = giá × số ngày × số lượng
+Ví dụ: Xe 2.000.000đ/ngày, 3 ngày:
+→ 2.000.000 × 3 = 6.000.000đ
+
+per_tour
+chi phí = giá × số lượng (tính 1 lần cố định)
+Ví dụ: Thuyền rồng 3.000.000đ:
+→ 3.000.000đ dù 5 hay 20 người
+
+Tổng và giá bán:
+Tổng chi phí = cộng tất cả dịch vụ
+Giá/người = (Tổng × 1.2) / số người tối đa   ← lợi nhuận 20%
+Làm tròn: ceil(giá/10.000) × 10.000 − 1.000  ← vd: 2.199.000đ
+
+2. Giá hiển thị cho khách (Frontend — tính grandTotal)
+Khi khách chọn số người trên trang chi tiết tour:
+
+Người lớn (trên 9 tuổi) — 100%
+= giá trip × số người lớn
+Trẻ nhỏ (dưới 5 tuổi) — có quota miễn phí
+Quota free = floor((NL + TE) / 2)
+           + 1 nếu NL lẻ ≥ 3 và không có TE
+
+Nếu TN ≤ quota → tất cả FREE
+Nếu TN > quota → giá mỗi bé = (TN - quota) × base / TN
+
+Ví dụ: 4 NL, 0 TE, 3 TN:
+→ quota = floor(4/2) + 1 = 3
+→ 3 TN ≤ 3 quota → tất cả miễn phí
+
+Ví dụ: 2 NL, 0 TE, 4 TN:
+→ quota = floor(2/2) = 1
+→ 4 TN > 1 quota → giá mỗi bé = (4-1) × base / 4 = 75% base
+
+Trẻ em (5–9 tuổi) — giá động
+Nếu có TN hoặc chỉ 1 NL → 100% base
+Nếu ≥ 2 NL và không có TN:
+  giá/bé = base × (1 − 1/((2×NL+1) × TE))
+
+Ví dụ: 2 NL, 2 TE, 0 TN:
+→ base × (1 − 1/(5×2)) = base × 0.9 = 90%
+
+Phòng đơn
+Phụ thu = số phòng đơn × (base × 30%)
+
+Tổng cuối:
+Grand Total = (NL × base) + (TE × giá TE) + (TN × giá TN) + phụ thu phòng đơn
+
+Tóm tắt 
+
+Backend tính giá trip dựa trên tổng chi phí thực tế của tất cả dịch vụ chia đều cho số người tối đa, cộng thêm 20% lợi nhuận. Frontend tính giá hiển thị cho từng nhóm khách theo công thức chuẩn ngành du lịch: trẻ nhỏ dưới 5 tuổi được miễn phí trong giới hạn quota, trẻ em 5–9 tuổi giảm giá theo tỉ lệ phụ thuộc số lượng người lớn, đảm bảo tính minh bạch và công bằng cho khách hàng.
