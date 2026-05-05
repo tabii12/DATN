@@ -44,18 +44,15 @@ interface Booking {
   thumbnail: string;
 }
 
-// --- Logic chuyển trạng thái ---
-// confirmed = đã TT 50%, paid = đã TT 100%
-// confirmed → paid (50% lên 100%)
-// confirmed → cancelled (50% có thể huỷ)
-// paid → cancelled (100% có thể huỷ)
-// paid → confirmed KHÔNG được (100% không về 50%)
-// cancelled → refunded (đã huỷ chỉ được hoàn tiền)
-// refunded → không đi đâu được nữa
+// pending   → confirmed (50%), cancelled
+// confirmed → paid (100%), cancelled
+// paid      → cancelled  ✅
+// cancelled → refunded
+// refunded  → (khoá)
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending:   ["confirmed", "cancelled"],
   confirmed: ["paid", "cancelled"],
-  paid:      [],
+  paid:      ["cancelled"],
   cancelled: ["refunded"],
   refunded:  [],
 };
@@ -67,11 +64,9 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "refunded",  label: "↩ Đã hoàn tiền" },
 ];
 
-// --- Logic xử lý dữ liệu ---
 function normalizeBooking(raw: any): Booking {
   const resolveId = (id: any) => (id?.$oid ? id.$oid : id) || "";
   const resolveDate = (d: any) => (d?.$date ? d.$date : d) || "";
-
   return {
     id: resolveId(raw._id),
     customerName: raw.contactName || "—",
@@ -99,68 +94,35 @@ const fmt = (n: number) => n.toLocaleString("vi-VN") + "đ";
 function fmtDate(str: string) {
   if (!str || str === "—") return "—";
   const d = new Date(str);
-  return isNaN(d.getTime())
-    ? str
-    : d.toLocaleDateString("vi-VN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
+  return isNaN(d.getTime()) ? str : d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-// --- Badge hiển thị trạng thái ---
 function StatusBadge({ status }: { status: string }) {
   const s = status.toLowerCase();
-
   if (s === "paid")
-    return (
-      <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-        ✓ Đã TT 100%
-      </span>
-    );
+    return <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-bold">✓ Đã TT 100%</span>;
   if (s === "confirmed")
-    return (
-      <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-        ◑ Đã TT 50%
-      </span>
-    );
+    return <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full text-[10px] font-bold">◑ Đã TT 50%</span>;
   if (s === "cancelled")
-    return (
-      <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-        ✕ Đã hủy
-      </span>
-    );
+    return <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-full text-[10px] font-bold">✕ Đã hủy</span>;
   if (s === "refunded")
-    return (
-      <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 border border-gray-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
-        ↩ Đã hoàn
-      </span>
-    );
+    return <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-500 border border-gray-200 px-2.5 py-1 rounded-full text-[10px] font-bold">↩ Đã hoàn</span>;
 
 }
 
-// --- Dropdown chuyển trạng thái ---
-function StatusSelect({
-  booking,
-  onUpdate,
-}: {
-  booking: Booking;
-  onUpdate: (id: string, newStatus: string) => void;
-}) {
+function StatusSelect({ booking, onUpdate }: { booking: Booking; onUpdate: (id: string, newStatus: string) => void }) {
   const currentStatus = booking.status.toLowerCase();
   const allowedNext = VALID_TRANSITIONS[currentStatus] ?? [];
 
-  // Đã hoàn tiền hoặc đã TT 100%: không làm gì được nữa → tô xám
-  if (currentStatus === "refunded" || currentStatus === "paid") {
-    const label = STATUS_OPTIONS.find((o) => o.value === currentStatus)?.label ?? currentStatus;
+  // Chỉ khoá khi refunded
+  if (currentStatus === "refunded") {
     return (
       <span className="text-[11px] px-2.5 py-1.5 border border-gray-200 rounded-lg bg-gray-100 text-gray-400 font-medium shadow-sm select-none">
-        {label}
+        ↩ Đã hoàn tiền
       </span>
     );
   }
 
-  // Không còn transition nào khả dụng (edge case)
   if (allowedNext.length === 0) {
     return (
       <span className="text-[11px] px-2.5 py-1.5 border border-gray-200 rounded-lg bg-gray-100 text-gray-400 font-medium shadow-sm select-none">
@@ -174,25 +136,16 @@ function StatusSelect({
       value={currentStatus}
       onChange={(e) => {
         const nextStatus = e.target.value;
-        if (nextStatus && nextStatus !== currentStatus) {
-          onUpdate(booking.id, nextStatus);
-        }
+        if (nextStatus && nextStatus !== currentStatus) onUpdate(booking.id, nextStatus);
       }}
       className="text-[11px] p-1.5 border border-gray-200 rounded-lg bg-white font-medium outline-none focus:border-orange-500 cursor-pointer shadow-sm"
     >
-      {/* Option hiện tại — disabled để không chọn lại */}
       <option value={currentStatus} disabled>
         {STATUS_OPTIONS.find((o) => o.value === currentStatus)?.label ?? currentStatus}
       </option>
-
-      {/* Chỉ render các trạng thái được phép chuyển sang */}
       {allowedNext.map((nextVal) => {
         const opt = STATUS_OPTIONS.find((o) => o.value === nextVal);
-        return opt ? (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ) : null;
+        return opt ? <option key={opt.value} value={opt.value}>{opt.label}</option> : null;
       })}
     </select>
   );
@@ -220,9 +173,7 @@ export function BookingTab() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API}/bookings/admin/all`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(`${API}/bookings/admin/all`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error();
       const json = await res.json();
       const raw: BookingRaw[] = Array.isArray(json) ? json : (json.data ?? []);
@@ -235,41 +186,25 @@ export function BookingTab() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     const token = localStorage.getItem("token");
     if (!token) return alert("Vui lòng đăng nhập!");
-
-    // Guard thêm ở frontend: kiểm tra transition hợp lệ trước khi gọi API
     const booking = bookings.find((b) => b.id === id);
     if (!booking) return;
-
     const currentStatus = booking.status.toLowerCase();
     const allowed = VALID_TRANSITIONS[currentStatus] ?? [];
-    if (!allowed.includes(newStatus)) {
-      alert("Thao tác không hợp lệ!");
-      return;
-    }
-
+    if (!allowed.includes(newStatus)) { alert("Thao tác không hợp lệ!"); return; }
     try {
       const res = await fetch(`${API}/bookings/detail/${id}/status`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ newStatus }),
       });
-
       const result = await res.json();
-
       if (res.ok) {
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? normalizeBooking(result.data) : b)),
-        );
+        setBookings((prev) => prev.map((b) => (b.id === id ? normalizeBooking(result.data) : b)));
         alert("Cập nhật thành công!");
       } else {
         alert(`Lỗi: ${result.message || "Không thể cập nhật trạng thái"}`);
@@ -282,12 +217,11 @@ export function BookingTab() {
   const filtered = bookings.filter((b) => {
     const matchStatus = filterStatus === "all" || b.status === filterStatus;
     const q = search.toLowerCase();
-    return (
-      matchStatus &&
-      (b.customerName.toLowerCase().includes(q) ||
-        b.tourName.toLowerCase().includes(q) ||
-        b.phone.includes(q) ||
-        b.email.toLowerCase().includes(q))
+    return matchStatus && (
+      b.customerName.toLowerCase().includes(q) ||
+      b.tourName.toLowerCase().includes(q) ||
+      b.phone.includes(q) ||
+      b.email.toLowerCase().includes(q)
     );
   });
 
@@ -298,7 +232,6 @@ export function BookingTab() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="mx-auto px-4 py-6 space-y-5">
-        {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-xl font-black text-gray-900">📋 Quản lý Booking</h1>
@@ -307,16 +240,11 @@ export function BookingTab() {
               {isLive ? "Dữ liệu thật từ API" : "Chưa tải được dữ liệu"}
             </p>
           </div>
-          <button
-            onClick={fetchBookings}
-            disabled={loading}
-            className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-xl disabled:opacity-60"
-          >
+          <button onClick={fetchBookings} disabled={loading} className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-xl disabled:opacity-60">
             {loading ? "Đang tải..." : "↻ Làm mới"}
           </button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="bg-white rounded-xl border border-gray-100 p-4">
             <p className="text-[11px] text-gray-500 font-semibold mb-1">Tổng đơn</p>
@@ -324,21 +252,15 @@ export function BookingTab() {
           </div>
           <div className="bg-yellow-50 rounded-xl border border-yellow-100 p-4">
             <p className="text-[11px] text-yellow-600 font-semibold mb-1">Chờ xác nhận</p>
-            <p className="text-2xl font-black text-yellow-700">
-              {bookings.filter((b) => b.status === "pending").length}
-            </p>
+            <p className="text-2xl font-black text-yellow-700">{bookings.filter((b) => b.status === "pending").length}</p>
           </div>
           <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
             <p className="text-[11px] text-blue-600 font-semibold mb-1">Đã TT 50%</p>
-            <p className="text-2xl font-black text-blue-700">
-              {bookings.filter((b) => b.status === "confirmed").length}
-            </p>
+            <p className="text-2xl font-black text-blue-700">{bookings.filter((b) => b.status === "confirmed").length}</p>
           </div>
           <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
             <p className="text-[11px] text-emerald-600 font-semibold mb-1">Đã TT 100%</p>
-            <p className="text-2xl font-black text-emerald-700">
-              {bookings.filter((b) => b.status === "paid").length}
-            </p>
+            <p className="text-2xl font-black text-emerald-700">{bookings.filter((b) => b.status === "paid").length}</p>
           </div>
           <div className="bg-orange-500 rounded-xl p-4 text-white shadow-lg col-span-2 md:col-span-1">
             <p className="text-[11px] text-white/80 font-semibold mb-1">Thực thu (payNow)</p>
@@ -346,7 +268,6 @@ export function BookingTab() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <input
             value={search}
@@ -356,45 +277,23 @@ export function BookingTab() {
           />
           <div className="flex gap-1.5 bg-white border border-gray-200 rounded-xl p-1 shadow-sm overflow-x-auto">
             {FILTER_OPTIONS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setFilter(f.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
-                  filterStatus === f.value ? "bg-orange-500 text-white" : "text-gray-500"
-                }`}
-              >
+              <button key={f.value} onClick={() => setFilter(f.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${filterStatus === f.value ? "bg-orange-500 text-white" : "text-gray-500"}`}>
                 {f.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Booking list */}
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
           <div className="divide-y divide-gray-50">
             {filtered.map((b) => {
               const isExpanded = expandedId === b.id;
               const isRefunded = b.status === "refunded";
               const isCancelled = b.status === "cancelled";
-              const isDimmed = isRefunded || isCancelled;
-
               return (
-                <div
-                  key={b.id}
-                  className={`transition-colors ${
-                    isRefunded
-                      ? "opacity-50 bg-gray-50"        // hoàn tiền: xám đậm hơn
-                      : isCancelled
-                      ? "opacity-60 bg-gray-50"         // đã huỷ: xám nhẹ
-                      : isExpanded
-                      ? "bg-orange-50/30"
-                      : "hover:bg-gray-50/60"
-                  }`}
-                >
-                  <div
-                    className="px-5 py-4 flex items-center gap-4 cursor-pointer"
-                    onClick={() => setExpanded(isExpanded ? null : b.id)}
-                  >
+                <div key={b.id} className={`transition-colors ${isRefunded ? "opacity-50 bg-gray-50" : isCancelled ? "opacity-60 bg-gray-50" : isExpanded ? "bg-orange-50/30" : "hover:bg-gray-50/60"}`}>
+                  <div className="px-5 py-4 flex items-center gap-4 cursor-pointer" onClick={() => setExpanded(isExpanded ? null : b.id)}>
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black shrink-0 bg-gradient-to-br from-orange-400 to-amber-400">
                       {b.customerName.charAt(0).toUpperCase()}
                     </div>
@@ -410,7 +309,6 @@ export function BookingTab() {
                       <p className="text-sm font-black text-orange-600">{fmt(b.payNow)}</p>
                       <StatusBadge status={b.status} />
                     </div>
-                    {/* Chặn click expand khi bấm vào dropdown */}
                     <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
                       <StatusSelect booking={b} onUpdate={handleUpdateStatus} />
                     </div>
@@ -443,11 +341,8 @@ export function BookingTab() {
                 </div>
               );
             })}
-
             {filtered.length === 0 && !loading && (
-              <div className="py-16 text-center text-sm text-gray-400">
-                Không tìm thấy booking nào.
-              </div>
+              <div className="py-16 text-center text-sm text-gray-400">Không tìm thấy booking nào.</div>
             )}
           </div>
         </div>
