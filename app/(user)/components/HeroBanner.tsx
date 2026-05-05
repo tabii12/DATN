@@ -22,7 +22,7 @@ interface HeroBannerProps {
 const CITIES = [
   "Hà Nội", "Hạ Long", "Sapa", "Ninh Bình", "Hải Phòng",
   "Đà Nẵng", "Hội An", "Huế", "Quảng Bình", "Nha Trang",
-  "TP. HCM", "TP.HCM", "Vũng Tàu", "Cần Thơ", "Phú Quốc",
+  "TP. HCM", "TP. Hồ Chí Minh", "Vũng Tàu", "Cần Thơ", "Phú Quốc",
   "Đà Lạt", "Buôn Ma Thuột", "Quy Nhơn", "Phan Thiết", "Mũi Né",
 ];
 
@@ -45,7 +45,7 @@ export default function HeroBanner({
   const [bannerIdx, setBannerIdx] = useState(0);
   // ✅ checkIn lưu ngày khởi hành dạng "YYYY-MM-DD"
   const [checkIn, setCheckIn] = useState("");
-  const [origin, setOrigin] = useState("TP.HCM");
+  const [origin, setOrigin] = useState("TP. Hồ Chí Minh");
   const [destination, setDestination] = useState(searchDestination ?? "");
   const [allTours, setAllTours] = useState<
     { id: string; slug: string; name: string; city: string; image: string }[]
@@ -305,7 +305,7 @@ export default function HeroBanner({
                         onChange={(e) => setOrigin(e.target.value)}
                         className="text-sm font-medium outline-none bg-transparent w-full cursor-pointer text-gray-700"
                       >
-                        {["TP.HCM", "Hà Nội", "Đà Nẵng", "Huế", "Cần Thơ"].map((c) => (
+                        {["TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Huế", "Cần Thơ"].map((c) => (
                           <option key={c}>{c}</option>
                         ))}
                       </select>
