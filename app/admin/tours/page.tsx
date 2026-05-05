@@ -115,22 +115,22 @@ export default function AdminTours() {
     if (!editingTour) return;
     setSaving(true);
     try {
-      const res = await fetch(`${API}/tours/${editingTour._id}`, {
+      const res = await fetch(`${API}/tours/update/${editingTour.slug}`, {  // ← sửa chỗ này
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editName, status: editStatus }),
       });
-      if (!res.ok) throw new Error();
-      setTours((prev) =>
-        prev.map((t) =>
-          t._id === editingTour._id
-            ? { ...t, name: editName, status: editStatus }
-            : t,
-        ),
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      setTours(prev =>
+        prev.map(t => t._id === editingTour._id
+          ? { ...t, name: editName, status: editStatus }
+          : t
+        )
       );
       setEditingTour(null);
-    } catch {
-      alert("❌ Cập nhật thất bại");
+    } catch (err: any) {
+      alert("❌ " + (err.message || "Cập nhật thất bại"));
     } finally {
       setSaving(false);
     }
@@ -309,6 +309,12 @@ export default function AdminTours() {
                     {/* Actions */}
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-1 justify-end">
+                        <button
+                          onClick={() => openEdit(t)}
+                          className="text-xs font-semibold text-orange-500 hover:bg-orange-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors"
+                        >
+                          Trạng thái
+                        </button>
                         <button
                           onClick={() => router.push(`/admin/tours/${t.slug}`)}
                           className="text-xs font-semibold text-blue-600 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg border-none cursor-pointer bg-transparent transition-colors"

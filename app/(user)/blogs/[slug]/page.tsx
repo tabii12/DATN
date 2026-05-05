@@ -30,7 +30,7 @@ const CITIES = [
   "Phú Yên", "Bình Định", "Lý Sơn", "Quảng Nam", "Quảng Ngãi", "Quảng Bình", "Quảng Trị",
   "Hà Tĩnh", "Nghệ An", "Thanh Hóa", "Hải Phòng", "Quảng Ninh", "Lào Cai",
   "Kon Tum", "Gia Lai", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Lai Châu",
-  "Hà Giang", "Sa Pa", "Cao Bằng", "Lạng Sơn", "Bắc Kạn", "Thái Nguyên",
+  "Hà Giang", "Sa Pa", "Cao Bằng", "Lạng Sơn", "Bắc Kạn", "Thái Nguyên","Côn Đảo", "Phú Quốc", "Cần Thơ", "Vĩnh Phúc", "Bắc Giang", "Bắc Ninh", "Hưng Yên",
   "Tuyên Quang", "Yên Bái", "Hòa Bình", "Sơn La", "Mộc Châu", "Bắc Ninh", "Lý Sơn", "Vĩnh Long", "Bến Tre", "Trà Vinh", "Phan Thiết"
 ];
 

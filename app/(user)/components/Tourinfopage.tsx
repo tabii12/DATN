@@ -60,7 +60,7 @@ const CONTENT: Record<string, JSX.Element> = {
           miền Bắc và cao nguyên Tây Nguyên.
         </p>
         <p>
-          Với hơn <strong>100 tour đa dạng</strong> và đội ngũ hướng dẫn viên chuyên nghiệp, Pick Your Way
+          Với hơn <strong>75+ tour đa dạng</strong> và đội ngũ hướng dẫn viên chuyên nghiệp, Pick Your Way
           cam kết mang đến trải nghiệm du lịch an toàn, chất lượng và đáng giá — dù bạn đi một mình,
 cùng gia đình hay theo nhóm bạn.
         </p>
@@ -69,7 +69,7 @@ cùng gia đình hay theo nhóm bạn.
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-7">
         {[
-          ["100+",      "Tour đa dạng",           "🏖️"],
+          ["75+",      "Tour đa dạng",           "🏖️"],
           ["Toàn quốc", "Điểm đến khắp Việt Nam", "📍"],
           ["24/7",      "Hỗ trợ khách hàng",      "📞"],
         ].map(([num, label, icon]) => (

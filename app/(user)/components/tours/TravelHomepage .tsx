@@ -106,7 +106,7 @@ export default function HomePage() {
       <HeroBanner
         images={banners.map(b => b.image)}
         title="Trải nghiệm kỳ nghỉ tuyệt vời"
-        subtitle="Combo khách sạn · giá tốt nhất"
+        subtitle="Combo các loại Tour · giá tốt nhất"
       />
 
       {/* ── COMBO ── */}

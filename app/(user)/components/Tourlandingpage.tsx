@@ -157,7 +157,7 @@ export default function ToursLandingPage() {
 
       <HeroBanner
         title="Hành trình đáng nhớ bắt đầu từ đây"
-        subtitle="Hơn 100 tour du lịch trong nước, giá tốt nhất, dịch vụ chuyên nghiệp"
+        subtitle="Hơn 75 tour du lịch trong nước, giá tốt nhất, dịch vụ chuyên nghiệp"
         searchPlaceholder="Tìm điểm đến, tên tour..."
         searchRoute="/tours/search"
         images={bannerImages}
