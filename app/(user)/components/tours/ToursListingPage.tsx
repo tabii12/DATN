@@ -51,7 +51,6 @@ interface Hotel {
   trips: TripAPI[]; // ← thêm trips
 }
 
-<<<<<<< HEAD
 function mapTourToHotel(
   tour: TourAPI,
   allTrips: TripAPI[],
@@ -89,32 +88,6 @@ function mapTourToHotel(
     const m = tour.name.match(/(\d+)\s*ngày/i);
     if (m) days = parseInt(m[1]);
   }
-=======
-function mapTourToHotel(tour: TourAPI, allTrips: TripAPI[], commentMap: Record<string, { avg: number; count: number }>, categoryMap: Record<string, string> = {}): Hotel {
-    const rawCatId = typeof tour.category_id === "object"
-        ? (tour.category_id as any)?._id
-        : tour.category_id as string;
-    const categoryName = (tour.category_id as any)?.name
-        ?? categoryMap[rawCatId]
-        ?? "Tour du lịch";
-    const hotel = tour.hotel_id;
-    const hotelStars = Math.round(hotel?.rating ?? 0);
-    const commentData = commentMap[tour._id];
-    const score = commentData && commentData.count > 0
-        ? parseFloat(Math.min(9.9, commentData.avg * 1.8 + 0.8).toFixed(1))
-        : 0;
-    const label = score >= 9.0 ? "Tuyệt vời" : score >= 8.5 ? "Rất tốt" : score
-     > 0 ? "Tốt" : "Chưa có đánh giá";
-    const comboDesc = tour.descriptions?.find(d => d.title === "Giá tour bao gồm");
-    const comboText = comboDesc?.content?.split("\n")?.[0]?.replace("- ", "") ?? null;
-    let days = tour.itineraries?.length ?? 0;
-    if (!days) {
-        const m = tour.name.match(/(\d+)\s*ngày/i);
-        if (m) days = parseInt(m[1]);
-    }
-    const routeMatch = tour.name.match(/từ\s+([A-ZÀ-Ỹa-zà-ỹ\s.]+?)(?:\s*[-–]|$)/i);
-    const route = routeMatch ? routeMatch[1].trim() : "TP.HCM";
->>>>>>> adfc69c52ffa5a3a4ef046cd67d3830900fd6513
 
   const trips = allTrips.filter((t) => {
     const tid =
@@ -436,7 +409,6 @@ function HotelCard({ hotel, isSale }: { hotel: Hotel; isSale?: boolean }) {
                 )}
               </p>
             </div>
-<<<<<<< HEAD
           </div>
           {hotel.tags[1] && (
             <span className="text-[10px] text-orange-500 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full font-semibold shrink-0 ml-2 max-w-[100px] truncate">
@@ -447,64 +419,6 @@ function HotelCard({ hotel, isSale }: { hotel: Hotel; isSale?: boolean }) {
       </div>
     </a>
   );
-=======
-            <div className="p-3 flex flex-col gap-1.5 flex-1">
-                <StarRating count={hotel.stars} />
-                <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-orange-500 transition-colors">{hotel.name}</h3>
-                
-
-                <div className="flex flex-col gap-1">
-                    {nextTrip ? (
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-orange-400 text-xs shrink-0">🗓</span>
-                            <span className="text-[11px] text-gray-600 font-semibold">
-                                {new Date(nextTrip.start_date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
-                            </span>
-                            {hotel.trips.filter(t => t.status === "open" && new Date(t.start_date) >= new Date()).length > 1 && (
-                                <span className="text-[10px] text-gray-400">
-                                    +{hotel.trips.filter(t => t.status === "open" && new Date(t.start_date) >= new Date()).length - 1} lịch khác
-                                </span>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-gray-300 text-xs shrink-0">🗓</span>
-                            <span className="text-[11px] text-gray-400 italic">Chưa có lịch khởi hành</span>
-                        </div>
-                    )}
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-orange-400 text-xs shrink-0">📍</span>
-                        <span className="text-[11px] text-gray-500 line-clamp-1">Từ {hotel.route}</span>
-                    </div>
-                </div>
-
-                {/* Giá + danh mục */}
-                <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-50">
-                    <div>
-                        <div>
-                            <p className="text-[10px] text-gray-400 leading-none mb-0.5">
-                                {nextTrip
-                                    ? `Khởi hành ${new Date(nextTrip.start_date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}`
-                                    : "Giá từ"}
-                            </p>
-                            <p className="text-sm font-black text-orange-500">
-                                {nextTrip
-                                    ? <>{(nextTrip.price || 0).toLocaleString("vi-VN")}<span className="text-[10px] font-normal text-gray-400">đ/người</span></>
-                                    : <span className="text-gray-300 text-xs font-normal italic">Chưa có lịch</span>
-                                }
-                            </p>
-                        </div>
-                    </div>
-                    {hotel.tags[1] && (
-                        <span className="text-[10px] text-orange-500 bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full font-semibold shrink-0 ml-2 max-w-[100px] truncate">
-                            {hotel.tags[1]}
-                        </span>
-                    )}
-                </div>
-            </div>
-        </a>
-    );
->>>>>>> adfc69c52ffa5a3a4ef046cd67d3830900fd6513
 }
 
 // ─────────────────────────── SIDEBAR ───────────────────────────
