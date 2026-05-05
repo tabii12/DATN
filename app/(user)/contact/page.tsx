@@ -53,7 +53,6 @@ export default function ContactPage() {
           setTours(
             data.data
               .filter((tour: any) => tour?._id && tour?.name)
-              .slice(0, 30)
               .map((tour: any) => ({ _id: tour._id, name: tour.name }))
           );
         }
